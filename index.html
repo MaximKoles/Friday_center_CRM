@@ -380,21 +380,21 @@ main { padding: 20px 0 50px; min-height: calc(100vh - 120px); }
 .bubble-limit { background: transparent; color: var(--muted); border: 1px solid #D6D2C8; }
 
 .modal-triplet-card {
-  background: #F8F6F2; border-radius: 18px; padding: 14px 18px;
-  margin-bottom: 16px; border: 1px solid var(--line);
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: #F8F6F2; border-radius: 14px; padding: 8px 14px;
+  margin-bottom: 12px; border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
 }
-.triplet-box { display: flex; align-items: center; gap: 14px; }
-.triplet-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.triplet-box { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.triplet-item { display: flex; align-items: center; gap: 6px; }
 .triplet-circle {
-  width: 44px; height: 44px; border-radius: 50%;
+  width: 26px; height: 26px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 17px; font-weight: 800; transition: transform .15s ease;
+  font-size: 12px; font-weight: 800; flex-shrink: 0;
 }
-.triplet-circle.green { background: #E7F5EE; color: #2E7D56; border: 2px solid #C4EBD7; }
+.triplet-circle.green { background: #E7F5EE; color: #2E7D56; border: 1.5px solid #C4EBD7; }
 .triplet-circle.dark { background: #202430; color: #FFFFFF; }
-.triplet-circle.gray { background: #FFFFFF; color: #7B8191; border: 2px dashed #D6D2C8; }
-.triplet-lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: .04em; }
+.triplet-circle.gray { background: #FFFFFF; color: #7B8191; border: 1.5px dashed #D6D2C8; }
+.triplet-lbl { font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: -.01em; }
 
 .day-layout-grid {
   display: grid;
@@ -841,7 +841,8 @@ let ui = {
   guestListFilter: 'all',
   guestListSearch: '',
   firebaseUrl: '',
-  cloudStatus: 'disconnected'
+  cloudStatus: 'disconnected',
+  quickBookingOpen: false
 };
 
 function normalizeFirebaseUrl(url){
@@ -2437,101 +2438,127 @@ function getEventDetailsModalHtml(ev){
   }
 
   return `
-    <div class="modal-head">
-      <div>
-        <div class="modal-title">${esc(ev.title)}</div>
-        <div class="modal-sub">${fmtDateFull(ev.date)} · ${ev.time}–${ev.endTime}</div>
+    <div class="modal-head" style="padding:14px 18px 10px">
+      <div style="min-width:0;flex:1;padding-right:8px">
+        <div class="modal-title" style="font-size:17px;line-height:1.25;word-break:break-word">${esc(ev.title)}</div>
+        <div class="modal-sub" style="font-size:12px;margin-top:2px">${fmtDateFull(ev.date)} · ${ev.time}–${ev.endTime}</div>
       </div>
       <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
     </div>
 
-    <div class="modal-body">
-      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">
-        <span class="tag" style="background:${p.bg};color:${p.color}"><span class="dot" style="background:${p.color}"></span>${p.label}</span>
-        <span class="tag" style="background:#F3EFE8;color:var(--ink2)">${ev.price ? money(ev.price) : 'Бесплатно'}</span>
-        ${ev.note ? `<span class="tag" style="background:#FCF3DE;color:#A88F5E">${esc(ev.note)}</span>` : ''}
+    <div class="modal-body" style="padding:12px 18px 18px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="tag" style="background:${p.bg};color:${p.color};font-size:11px;padding:2px 8px"><span class="dot" style="background:${p.color}"></span>${p.label}</span>
+        <span class="tag" style="background:#F3EFE8;color:var(--ink2);font-size:11px;padding:2px 8px">${ev.price ? money(ev.price) : 'Бесплатно'}</span>
+        ${ev.note ? `<span class="tag" style="background:#FCF3DE;color:#A88F5E;font-size:11px;padding:2px 8px">${esc(ev.note)}</span>` : ''}
       </div>
 
+      <!-- Компактная плашка счетчиков -->
       <div class="modal-triplet-card">
         <div class="triplet-box">
-          <div class="triplet-item" title="Фактически пришли на событие">
-            <div class="triplet-circle green">${checked}</div>
-            <span class="triplet-lbl">Пришли</span>
+          <div class="triplet-item" title="Фактически пришли">
+            <span class="triplet-circle green">${checked}</span>
+            <span class="triplet-lbl">пришли</span>
           </div>
-          <div class="triplet-item" title="Всего занято билетов/мест">
-            <div class="triplet-circle dark">${taken}</div>
-            <span class="triplet-lbl">Записаны</span>
+          <div class="triplet-item" title="Всего записано">
+            <span class="triplet-circle dark">${taken}</span>
+            <span class="triplet-lbl">записаны</span>
           </div>
-          <div class="triplet-item" title="Максимальная вместимость">
-            <div class="triplet-circle gray">${ev.capacity || '∞'}</div>
-            <span class="triplet-lbl">Лимит</span>
+          <div class="triplet-item" title="Лимит зала">
+            <span class="triplet-circle gray">${ev.capacity || '∞'}</span>
+            <span class="triplet-lbl">лимит</span>
           </div>
         </div>
-        <div style="text-align:right;font-size:12px;color:var(--muted);line-height:1.4">
-          оплачено билетов:<br>
-          <b style="color:var(--ink);font-size:15px">${money(paidSum)}</b>
+        <div style="font-size:11.5px;color:var(--muted);white-space:nowrap;margin-left:auto">
+          оплачено: <b style="color:var(--ink);font-size:13.5px">${money(paidSum)}</b>
         </div>
       </div>
 
-      <div class="section-title">Быстрая запись гостя</div>
-      <form onsubmit="handleQuickBookingSubmit(event, '${ev.id}')" style="background:#F8F6F2;padding:16px;border-radius:16px;margin-bottom:16px;border:1px solid var(--line)">
-        <div class="grid2">
-          <div class="field" style="margin-bottom:8px">
-            <label>Имя гостя *</label>
-            <input class="inp" id="bkGuestName" required placeholder="Например: Аня Васильева" list="dlClientNames" oninput="handleGuestNameAutofill(this.value)" onchange="handleGuestNameAutofill(this.value)">
-          </div>
-          <div class="field" style="margin-bottom:8px">
-            <label>Telegram</label>
-            <input class="inp" id="bkGuestTg" placeholder="@telegram" list="dlClientNicks" oninput="handleGuestTgAutofill(this.value)" onchange="handleGuestTgAutofill(this.value)">
-          </div>
-        </div>
-        <datalist id="dlClientNames">${Object.values(db.clients||{}).map(c => `<option value="${esc(c.name)}">`).join('')}</datalist>
-        <datalist id="dlClientNicks">${Object.values(db.clients||{}).filter(c => c.telegram).map(c => `<option value="${esc(c.telegram)}">${esc(c.name || '')}</option>`).join('')}</datalist>
+      <!-- Раскрывающаяся кнопка быстрой записи -->
+      <div style="margin-bottom:12px">
+        <button type="button" class="btn btn-soft btn-sm" id="btnToggleBookingForm" 
+                style="width:100%;min-height:36px;display:flex;justify-content:space-between;align-items:center;border-style:dashed;border-color:var(--line2);background:#FAF9F6" 
+                onclick="toggleQuickBookingForm('${ev.id}')">
+          <span style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:12.5px">
+            ${ic('plus')} Записать нового гостя
+          </span>
+          <span id="bookingFormChevron" style="font-size:11.5px;color:var(--muted);font-weight:500">
+            ${ui.quickBookingOpen ? 'Скрыть ▲' : 'Раскрыть ▼'}
+          </span>
+        </button>
 
-        <div class="grid3">
-          <div class="field" style="margin-bottom:8px"><label>Билетов</label><input class="inp" type="number" id="bkTickets" min="1" value="1"></div>
-          <div class="field" style="display:flex;align-items:flex-end;padding-bottom:10px;margin-bottom:8px">
-            <label class="check"><input type="checkbox" id="bkPaid"> Оплачено</label>
+        <!-- Лаконичная минималистичная форма -->
+        <form id="quickBookingForm" onsubmit="handleQuickBookingSubmit(event, '${ev.id}')" 
+              style="display:${ui.quickBookingOpen ? 'block' : 'none'};background:#FAF9F6;padding:12px;border-radius:14px;margin-top:6px;border:1px solid var(--line2)">
+          <div class="grid2" style="gap:8px;margin-bottom:8px">
+            <div>
+              <input class="inp" id="bkGuestName" required placeholder="Имя гостя *" list="dlClientNames" 
+                     style="min-height:36px;padding:7px 10px;font-size:13px"
+                     oninput="handleGuestNameAutofill(this.value)" onchange="handleGuestNameAutofill(this.value)">
+            </div>
+            <div>
+              <input class="inp" id="bkGuestTg" placeholder="@telegram (необязательно)" list="dlClientNicks" 
+                     style="min-height:36px;padding:7px 10px;font-size:13px"
+                     oninput="handleGuestTgAutofill(this.value)" onchange="handleGuestTgAutofill(this.value)">
+            </div>
           </div>
-          <div class="field" style="display:flex;align-items:flex-end;padding-bottom:10px;margin-bottom:8px">
-            <label class="check"><input type="checkbox" id="bkWait"> В лист ожидания</label>
-          </div>
-        </div>
-        <div class="field" style="margin-bottom:10px">
-          <label>Заметка к записи</label>
-          <input class="inp" id="bkNote" placeholder="Первый ряд, аллергия на мяту...">
-        </div>
-        <button type="submit" class="btn btn-primary btn-sm" style="width:100%">${ic('plus')} Записать гостя</button>
-      </form>
+          <datalist id="dlClientNames">${Object.values(db.clients||{}).map(c => `<option value="${esc(c.name)}">`).join('')}</datalist>
+          <datalist id="dlClientNicks">${Object.values(db.clients||{}).filter(c => c.telegram).map(c => `<option value="${esc(c.telegram)}">${esc(c.name || '')}</option>`).join('')}</datalist>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;flex-wrap:wrap;gap:8px">
-        <div class="section-title" style="margin:0">Список гостей (${mainBookings.length})</div>
-        <div class="chips" style="margin:0">
-          <button class="chip ${ui.guestListFilter==='all'?'on':''}" onclick="setGuestListFilter('${ev.id}','all')">Все</button>
-          <button class="chip ${ui.guestListFilter==='checked'?'on':''}" onclick="setGuestListFilter('${ev.id}','checked')">Пришли (${checked})</button>
-          <button class="chip ${ui.guestListFilter==='pending'?'on':''}" onclick="setGuestListFilter('${ev.id}','pending')">Ждем (${mainBookings.length - checked})</button>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line2);border-radius:10px;padding:3px 8px">
+              <span style="font-size:11.5px;color:var(--muted);font-weight:600">Мест:</span>
+              <input class="inp" type="number" id="bkTickets" min="1" value="1" 
+                     style="width:42px;min-height:28px;padding:2px 4px;font-size:13px;font-weight:700;border:none;background:transparent;text-align:center">
+            </div>
+
+            <label class="check" style="background:#fff;border:1px solid var(--line2);border-radius:10px;padding:4px 9px;font-size:12px">
+              <input type="checkbox" id="bkPaid" style="width:15px;height:15px"> Оплачено
+            </label>
+
+            <label class="check" style="background:#fff;border:1px solid var(--line2);border-radius:10px;padding:4px 9px;font-size:12px">
+              <input type="checkbox" id="bkWait" style="width:15px;height:15px"> Лист ожидания
+            </label>
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="inp" id="bkNote" placeholder="Заметка (чай, первый ряд...)" 
+                   style="min-height:36px;padding:6px 10px;font-size:12.5px;flex:1">
+            <button type="submit" class="btn btn-primary btn-sm" style="min-height:36px;padding:6px 14px;font-size:12.5px;flex-shrink:0">
+              ${ic('check')} Записать
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 8px;flex-wrap:wrap;gap:8px">
+        <div class="section-title" style="margin:0;font-size:11px">Список гостей (${mainBookings.length})</div>
+        <div class="chips" style="margin:0;min-height:auto;gap:5px">
+          <button class="chip ${ui.guestListFilter==='all'?'on':''}" style="padding:4px 9px;font-size:11px" onclick="setGuestListFilter('${ev.id}','all')">Все</button>
+          <button class="chip ${ui.guestListFilter==='checked'?'on':''}" style="padding:4px 9px;font-size:11px" onclick="setGuestListFilter('${ev.id}','checked')">Пришли (${checked})</button>
+          <button class="chip ${ui.guestListFilter==='pending'?'on':''}" style="padding:4px 9px;font-size:11px" onclick="setGuestListFilter('${ev.id}','pending')">Ждем (${mainBookings.length - checked})</button>
         </div>
       </div>
 
       ${mainBookings.length > 3 ? `
-        <div class="search" style="padding:8px 12px;margin-bottom:10px">
+        <div class="search" style="padding:6px 10px;margin-bottom:8px;border-radius:10px">
           ${ic('search')}
-          <input placeholder="Найти в списке этого события..." value="${esc(ui.guestListSearch)}" oninput="ui.guestListSearch = this.value; openEventDetailsModal('${ev.id}')">
+          <input placeholder="Найти в списке этого события..." style="font-size:12.5px" value="${esc(ui.guestListSearch)}" oninput="ui.guestListSearch = this.value; openEventDetailsModal('${ev.id}')">
         </div>
       ` : ''}
 
       ${displayedBookings.length === 0 ? `
         <div class="empty" style="padding:16px">${ic('users')}<div>Гостей не найдено</div></div>
       ` : displayedBookings.map(b => `
-        <div class="guest">
-          <button class="checkin ${b.isCheckedIn?'on':''}" onclick="toggleGuestCheckin('${b.id}')" title="Отметить присутствие">
+        <div class="guest" style="padding:8px 4px">
+          <button class="checkin ${b.isCheckedIn?'on':''}" style="width:32px;height:32px" onclick="toggleGuestCheckin('${b.id}')" title="Отметить присутствие">
             ${b.isCheckedIn ? ic('check') : ''}
           </button>
           <div class="guest-main">
-            <div class="guest-name" style="${b.isCheckedIn?'text-decoration:line-through;opacity:.6':''}">
-              ${esc(b.guestName)}${b.ticketsCount > 1 ? `<span class="pill">${b.ticketsCount} чел.</span>` : ''}
+            <div class="guest-name" style="${b.isCheckedIn?'text-decoration:line-through;opacity:.6':''};font-size:13.5px">
+              ${esc(b.guestName)}${b.ticketsCount > 1 ? `<span class="pill" style="font-size:10.5px">${b.ticketsCount} чел.</span>` : ''}
             </div>
-            <div class="guest-sub">
+            <div class="guest-sub" style="font-size:11.5px">
               <button class="pay-toggle ${b.isPaid?'paid':'unpaid'}" onclick="toggleGuestPayment('${b.id}')" title="Нажмите, чтобы переключить статус оплаты">
                 ${b.isPaid ? '✓ Оплачено' : '⏳ Оплата на входе'}
               </button>
@@ -2547,14 +2574,14 @@ function getEventDetailsModalHtml(ev){
       `).join('')}
 
       ${waitBookings.length > 0 ? `
-        <div class="section-title" style="color:var(--rent);margin-top:20px">Лист ожидания / Резерв (${waitBookings.length})</div>${waitBookings.map(b => `
-          <div class="guest" style="background:#FFFDF7;padding:10px;border-radius:12px;margin-bottom:6px;border:1px solid #F6ECD8">
+        <div class="section-title" style="color:var(--rent);margin-top:16px;font-size:11px">Лист ожидания / Резерв (${waitBookings.length})</div>${waitBookings.map(b => `
+          <div class="guest" style="background:#FFFDF7;padding:8px 10px;border-radius:10px;margin-bottom:6px;border:1px solid #F6ECD8">
             <div class="guest-main">
-              <div class="guest-name">${esc(b.guestName)} (${b.ticketsCount} чел.)</div>
-              <div class="guest-sub">${b.telegram || 'Без контакта'} ${b.note ? ' · ' + esc(b.note) : ''}</div>
+              <div class="guest-name" style="font-size:13px">${esc(b.guestName)} (${b.ticketsCount} чел.)</div>
+              <div class="guest-sub" style="font-size:11.5px">${b.telegram || 'Без контакта'} ${b.note ? ' · ' + esc(b.note) : ''}</div>
             </div>
             <div class="guest-actions">
-              <button class="mini on" onclick="transferFromWaitlist('${b.id}')">Перевести в основу</button>
+              <button class="mini on" onclick="transferFromWaitlist('${b.id}')">В основу</button>
               <button class="icon-btn sm" onclick="confirmDeleteBooking('${b.id}')">${ic('trash')}</button>
             </div>
           </div>
@@ -2562,13 +2589,29 @@ function getEventDetailsModalHtml(ev){
       ` : ''}
     </div>
 
-    <div class="modal-foot">
+    <div class="modal-foot" style="padding:10px 18px 16px">
       <button class="btn btn-danger btn-sm" onclick="confirmDeleteEvent('${ev.id}')">${ic('trash')} Удалить</button>
       <div style="flex:1"></div>
       <button class="btn btn-soft btn-sm" onclick="openAddEventModal('', '', '', '${ev.id}')">${ic('edit')} Редактировать</button>
       <button class="btn btn-primary btn-sm" onclick="closeModal()">Готово</button>
     </div>
   `;
+}
+
+function toggleQuickBookingForm(eventId){
+  ui.quickBookingOpen = !ui.quickBookingOpen;
+  const form = document.getElementById('quickBookingForm');
+  const chevron = document.getElementById('bookingFormChevron');
+  if(form && chevron){
+    form.style.display = ui.quickBookingOpen ? 'block' : 'none';
+    chevron.textContent = ui.quickBookingOpen ? 'Скрыть ▲' : 'Раскрыть ▼';
+    if(ui.quickBookingOpen){
+      const nameInp = document.getElementById('bkGuestName');
+      if(nameInp) nameInp.focus();
+    }
+  } else if(eventId) {
+    openEventDetailsModal(eventId);
+  }
 }
 
 function openEventDetailsModal(id){
@@ -3105,8 +3148,8 @@ function generateTelegramPostText(){
   }
 
   if(tgPostOptions.includeAddress){
-    text += `📍 Наш адрес: ул. Пятницкая, 12\n`;
-    text += `💌 Запись и вопросы в личные сообщения: @lena_pyatnitsa\n`;
+    text += `📍 Наш адрес: ул. Тургенева, 14/1\n`;
+    text += `💌 Запись и вопросы: @lena_timinova\n`;
   }
   return text;
 }
