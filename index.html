@@ -1,0 +1,3853 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Пятница.Пульт — Центр управления пространством</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FAF8F5;
+  --card: #FFFFFF;
+  --ink: #202430;
+  --ink2: #4E5568;
+  --muted: #858B9C;
+  --line: #EFECE6;
+  --line2: #E3DFD5;
+  --must: #DE6254;
+  --must-bg: #FDEDE9;
+  --team: #3E946E;
+  --team-bg: #E7F5EE;
+  --rent: #C8942A;
+  --rent-bg: #FCF3DE;
+  --trip: #7E8594;
+  --trip-bg: #ECEEF2;
+  --sh: 0 4px 20px rgba(32,36,48, 0.04);
+  --sh2: 0 10px 32px rgba(32,36,48, 0.08);
+}
+* { box-sizing: border-box; }
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+html, body { margin: 0; padding: 0; min-height: 100%; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: none; }
+.ic { width: 18px; height: 18px; flex: 0 0 auto; display: block; }
+.wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+
+.app-head {
+  position: sticky; top: 0; z-index: 40;
+  background: rgba(250, 248, 245, 0.94);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.head-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; flex-shrink: 0; }
+.brand-mark {
+  width: 38px; height: 38px; border-radius: 12px;
+  background: var(--ink); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 17px; flex: 0 0 auto;
+  box-shadow: 0 3px 10px rgba(32,36,48, 0.15);
+}
+.brand-title { font-weight: 700; font-size: 15px; letter-spacing: -.02em; white-space: nowrap; }
+.brand-sub { font-size: 11px; color: var(--muted); margin-top: -1px; white-space: nowrap; }
+
+.head-right { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.top-nav { display: flex; gap: 5px; align-items: center; }
+.top-nav button {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 12px;
+  font-size: 13.5px; font-weight: 500;
+  color: var(--ink2); transition: background .16s ease, color .16s ease;
+  white-space: nowrap;
+}
+.top-nav button:hover { background: #fff; box-shadow: var(--sh); color: var(--ink); }
+.top-nav button.active { background: var(--ink); color: #fff; box-shadow: 0 4px 14px rgba(32,36,48, 0.16); }
+
+.bottom-nav { display: none; }
+
+/* Капсула облака и импорта */
+.cloud-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: var(--sh);
+  border: 1px solid var(--line);
+  transition: all .16s ease;
+  height: 40px;
+}
+.cloud-pill:hover {
+  box-shadow: var(--sh2);
+  border-color: var(--line2);
+}
+.cloud-pill.active {
+  border-color: var(--ink);
+}
+.cloud-pill-inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+.cloud-status-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 100%;
+  border-radius: 11px 0 0 11px;
+  transition: background .15s;
+}
+.cloud-status-btn:hover {
+  background: #F8F5EE;
+}
+.cloud-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+}
+.cloud-import-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px 0 9px;
+  height: 100%;
+  border-radius: 0 11px 11px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  transition: background .15s;
+}
+.cloud-import-btn:hover {
+  background: #F8F5EE;
+  color: var(--ink);
+}
+
+.icon-btn {
+  position: relative;
+  width: 40px; height: 40px; min-width: 40px; min-height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  color: var(--ink2); background: #fff;
+  box-shadow: var(--sh); transition: transform .14s ease, box-shadow .14s ease, background .14s ease; border: 1px solid var(--line);
+}
+.icon-btn:hover { color: var(--ink); box-shadow: var(--sh2); transform: translateY(-1px); }
+.icon-btn.active { background: var(--ink); color: #fff; }
+.icon-btn.sm { width: 32px; height: 32px; min-width: 32px; min-height: 32px; border-radius: 9px; box-shadow: none; background: #F3EFE8; border-color: transparent; }
+.icon-btn.sm:hover { background: #EAE5DC; }
+
+main { padding: 20px 0 50px; min-height: calc(100vh - 120px); }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; min-height: 44px; }
+.month-nav { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.month-label { font-size: 19px; font-weight: 700; letter-spacing: -.02em; min-width: 175px; text-align: center; white-space: nowrap; }
+.day-label { font-size: 19px; font-weight: 700; letter-spacing: -.02em; min-width: 240px; text-align: center; white-space: nowrap; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 10px 16px; border-radius: 12px;
+  font-size: 13.5px; font-weight: 600; min-height: 42px;
+  transition: background .16s ease, transform .12s ease; white-space: nowrap; user-select: none;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--ink); color: #fff; box-shadow: 0 4px 14px rgba(32,36,48,.18); }
+.btn-primary:hover { background: #12141c; }
+.btn-soft { background: #fff; box-shadow: var(--sh); color: var(--ink); border: 1px solid var(--line); }
+.btn-soft:hover { box-shadow: var(--sh2); border-color: var(--line2); }
+.btn-ghost { background: transparent; color: var(--ink2); }
+.btn-ghost:hover { background: #fff; box-shadow: var(--sh); color: var(--ink); }
+.btn-sm { min-height: 36px; padding: 7px 13px; font-size: 13px; border-radius: 10px; }
+.btn-danger { background: #FDEEEB; color: #C63D31; }
+.btn-danger:hover { background: #FCDDD7; }
+
+.banner {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: #fff; border-radius: 18px; padding: 14px 18px;
+  box-shadow: var(--sh); margin-bottom: 16px; border: 1px solid #F7EAD0;
+}
+.banner-ic {
+  width: 36px; height: 36px; border-radius: 12px;
+  background: var(--rent-bg); color: var(--rent);
+  display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+}
+.banner-txt { flex: 1; font-size: 13.5px; color: var(--ink2); min-width: 0; }
+.banner-txt b { color: var(--ink); font-weight: 600; }
+.banner-act { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; min-height: 36px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px; border-radius: 999px; background: #fff;
+  box-shadow: var(--sh); font-size: 12.5px; font-weight: 600;
+  color: var(--ink2); transition: opacity .16s ease, border-color .16s ease; opacity: .65; border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.chip:hover { opacity: .9; }
+.chip.on { opacity: 1; color: var(--ink); border-color: var(--ink2); box-shadow: var(--sh2); }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+.chip .cnt { font-size: 11px; color: var(--muted); font-weight: 500; background: #F3EFE8; padding: 1px 6px; border-radius: 999px; }
+
+/* Адаптивные фильтры: кнопки на десктопе, компактный список на мобильных */
+.chips-desktop { display: flex; }
+.chips-mobile { display: none; }
+@media (max-width: 900px) {
+  .chips-desktop { display: none !important; }
+  .chips-mobile {
+    display: flex !important;
+    align-items: center;
+    margin-bottom: 14px;
+    width: 100%;
+  }
+  .mobile-filter-select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 1.5px solid var(--line2);
+    border-radius: 14px;
+    padding: 0 14px;
+    height: 42px;
+    width: 100%;
+    box-shadow: var(--sh);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .mobile-filter-select-wrap:focus-within {
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(32,36,48, 0.08);
+  }
+  .mobile-filter-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
+  .mobile-filter-select {
+    border: none;
+    background: transparent;
+    width: 100%;
+    height: 100%;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    padding-right: 22px;
+  }
+  .mobile-filter-arrow {
+    position: absolute;
+    right: 14px;
+    pointer-events: none;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+  }
+}
+
+.tt-scroll {
+  overflow-x: auto; margin-bottom: 18px; border-radius: 20px;
+  background: #fff; box-shadow: var(--sh); -webkit-overflow-scrolling: touch;
+}
+.tt { min-width: 860px; width: 100%; }
+.tt.tt-single { min-width: 0 !important; width: 100% !important; }
+.tt-week-card { border-radius: 20px; background: #fff; box-shadow: var(--sh); margin-bottom: 18px; overflow: hidden; border: 1px solid var(--line); width: 100%; }
+.tt-week-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 18px; background: #FAF7F2; border-bottom: 1px solid var(--line);
+  font-size: 12.5px; font-weight: 600; color: var(--ink);
+}
+.tt-head {
+  display: flex;
+  width: 100%;
+  border-bottom: 1px solid var(--line);
+  background: #FAF8F5;
+}
+.tt.tt-single .tt-head { display: flex; }
+.tt-time-head {
+  position: -webkit-sticky;
+  position: sticky;
+  left: 0;
+  z-index: 30;
+  flex: 0 0 60px;
+  width: 60px;
+  background: #FAF8F5;
+  padding: 9px 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--line);
+  box-shadow: 3px 0 8px rgba(32,36,48, 0.06);
+  user-select: none;
+}
+.tt-day {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 9px 4px; gap: 2px; border-left: 1px solid var(--line); cursor: pointer;
+  transition: background .15s; width: 100%;
+}
+.tt-day:hover { background: #F4EFE6; }
+.tt-dow { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tt-date { font-size: 15px; font-weight: 700; letter-spacing: -.02em; }
+.tt-day.is-today .tt-date {
+  color: #fff; background: var(--ink);
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 13px;
+}
+.tt-day.is-other { opacity: .35; }
+
+.tt-body { display: flex; position: relative; width: 100%; }
+.tt.tt-single .tt-body { display: flex; }
+.tt-gutter {
+  position: -webkit-sticky;
+  position: sticky;
+  left: 0;
+  z-index: 25;
+  flex: 0 0 60px;
+  width: 60px;
+  background: #FAF8F5;
+  border-right: 1px solid var(--line);
+  box-shadow: 3px 0 8px rgba(32,36,48, 0.06);
+}
+.tt-hour-row {
+  height: 28px; line-height: 28px; text-align: right;
+  padding-right: 9px; font-size: 10.5px; color: var(--muted); font-weight: 600;
+  border-bottom: 1px solid var(--line); user-select: none;
+  background: #FAF8F5;
+}
+.tt-col {
+  flex: 1 1 0;
+  min-width: 0;
+  position: relative;
+  border-left: 1px solid var(--line);
+  cursor: pointer;
+}
+.tt-slot-row { height: 28px; border-bottom: 1px solid var(--line); transition: background .12s; }
+.tt-slot-row.even { background: #FFFFFF; }
+.tt-slot-row.odd { background: #FAF8F4; }
+.tt-col:hover .tt-slot-row { background: #F7F3EB; }
+
+.tt-event {
+  position: absolute; border-radius: 8px; padding: 4px 6px; overflow: hidden;
+  background: var(--cbg); border-left: 3.5px solid var(--c); cursor: pointer;
+  transition: transform .14s, box-shadow .14s; display: flex; flex-direction: column;
+  justify-content: space-between; z-index: 5; box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.tt-event:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(32,36,48,.16); z-index: 15; }
+.tt-ev-title {
+  font-size: 11px; font-weight: 700; color: var(--ink); line-height: 1.18;
+  word-break: break-word; overflow-wrap: break-word;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.tt-ev-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 4px;
+  margin-top: auto; padding-top: 3px; border-top: 1px solid rgba(0,0,0,0.06);
+  font-size: 9.5px; font-weight: 700; color: var(--ink2);
+}
+.tt-ev-time { white-space: nowrap; }
+
+/* Тройные счётчики в кружочках */
+.badge-triplet {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px 3px; border-radius: 999px; background: rgba(255,255,255,0.85);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.badge-bubble {
+  width: 15px; height: 15px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8.5px; font-weight: 800; line-height: 1;
+}
+.bubble-checked { background: var(--team-bg); color: var(--team); }
+.bubble-booked { background: #F0EDE6; color: var(--ink); }
+.bubble-limit { background: transparent; color: var(--muted); border: 1px solid #D6D2C8; }
+
+.modal-triplet-card {
+  background: #F8F6F2; border-radius: 18px; padding: 14px 18px;
+  margin-bottom: 16px; border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.triplet-box { display: flex; align-items: center; gap: 14px; }
+.triplet-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.triplet-circle {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 800; transition: transform .15s ease;
+}
+.triplet-circle.green { background: #E7F5EE; color: #2E7D56; border: 2px solid #C4EBD7; }
+.triplet-circle.dark { background: #202430; color: #FFFFFF; }
+.triplet-circle.gray { background: #FFFFFF; color: #7B8191; border: 2px dashed #D6D2C8; }
+.triplet-lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: .04em; }
+
+.day-layout-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .day-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.list-card { background: #fff; border-radius: 20px; box-shadow: var(--sh); overflow: hidden; border: 1px solid var(--line); width: 100%; }
+.row { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--line); transition: background .14s; }
+.row:last-child { border-bottom: none; }
+.row:hover { background: #FCFAF6; }
+.row-click { cursor: pointer; }
+.row-main { flex: 1; min-width: 0; }
+.row-title { font-weight: 700; font-size: 14.5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.row-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; }
+.row-actions { display: flex; gap: 8px; align-items: center; flex: 0 0 auto; }
+.tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.tag .dot { width: 6px; height: 6px; border-radius: 50%; }
+.pill { font-size: 11.5px; color: var(--ink2); background: #F3EFE8; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+
+.search { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 14px; padding: 11px 16px; box-shadow: var(--sh); margin-bottom: 16px; border: 1px solid var(--line); }
+.search input { border: none; outline: none; background: none; flex: 1; font-size: 14px; min-width: 0; }
+.search .ic { color: var(--muted); }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.stat { background: #fff; border-radius: 20px; box-shadow: var(--sh); padding: 20px; border: 1px solid var(--line); }
+.stat-label { font-size: 12px; color: var(--muted); font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: .05em; }
+.stat-val { font-size: 28px; font-weight: 700; letter-spacing: -.03em; margin-top: 8px; color: var(--ink); }
+.stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+.analytics-item { border-bottom: 1px solid var(--line); padding: 13px 18px; transition: background .14s; }
+.analytics-item:last-child { border-bottom: none; }
+.analytics-item:hover { background: #FCFAF6; }
+.bar-row { display: flex; align-items: center; gap: 16px; }
+.bar-name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; line-height: 1.35; word-break: break-word; }
+.bar-track { flex: 0 0 50%; width: 50%; height: 9px; border-radius: 999px; background: #EFECE6; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 999px; transition: width .4s ease; }
+.bar-val { width: 90px; text-align: right; font-size: 13.5px; font-weight: 700; flex: 0 0 auto; }
+.bar-sub { font-size: 12px; color: var(--muted); margin-top: 6px; padding-left: 2px; }
+
+.section-title { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 24px 0 10px; display: flex; align-items: center; justify-content: space-between; }
+.section-title:first-child { margin-top: 0; }
+
+#modalRoot { position: fixed; inset: 0; z-index: 100; display: none; }
+#modalRoot.open { display: block; }
+.modal-backdrop {
+  position: absolute; inset: 0; background: rgba(32,36,48,.42);
+  backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center;
+  padding: 0;
+}
+.modal-backdrop.animate-in { animation: fade .18s ease; }
+.modal-backdrop.animate-in .modal { animation: rise .22s cubic-bezier(.22,1,.36,1); }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rise { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal {
+  background: #fff; width: 100%; max-width: 660px; max-height: 92vh;
+  overflow-y: auto; border-radius: 24px 24px 0 0;
+  box-shadow: 0 -12px 60px rgba(32,36,48,.22);
+}
+.modal-wide { max-width: 760px; }
+.modal-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 20px 22px 14px; position: sticky; top: 0; background: #fff; z-index: 10;
+  border-radius: 24px 24px 0 0; border-bottom: 1px solid var(--line);
+}
+.modal-title { font-size: 19px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
+.modal-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.modal-body { padding: 18px 22px 22px; }
+.modal-foot {
+  display: flex; gap: 10px; justify-content: flex-end; padding: 16px 22px 22px;
+  position: sticky; bottom: 0; background: #fff; border-top: 1px solid var(--line);
+  flex-wrap: wrap; z-index: 10;
+}
+
+.field { margin-bottom: 15px; }
+.field label { display: block; font-size: 12px; font-weight: 700; color: var(--ink2); margin-bottom: 6px; letter-spacing: .01em; }
+.inp {
+  width: 100%; padding: 11px 14px; border-radius: 12px; background: #FAF9F6;
+  border: 1.5px solid var(--line2); outline: none; font-size: 14px; color: var(--ink);
+  transition: all .16s ease; min-height: 44px;
+}
+.inp::placeholder { color: var(--muted); opacity: 0.85; }
+.inp:focus { background: #fff; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(32,36,48, 0.08); }
+select.inp {
+  cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234E5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px;
+}
+textarea.inp { resize: vertical; min-height: 75px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.pres-pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.pres-opt {
+  padding: 10px 6px; border-radius: 12px; background: #F6F4EF;
+  font-size: 12.5px; font-weight: 600; text-align: center; transition: all .16s ease; color: var(--ink2);
+}
+.pres-opt.on { color: #fff; font-weight: 700; box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
+.check { display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 500; color: var(--ink2); cursor: pointer; user-select: none; padding: 4px 0; }
+.check input { width: 18px; height: 18px; accent-color: #202430; cursor: pointer; border-radius: 4px; }
+
+/* Карточки радио-выбора режима */
+.import-mode-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.import-mode-card {
+  border: 1.5px solid var(--line2); border-radius: 14px; padding: 12px 14px; cursor: pointer;
+  background: #FAF9F6; transition: all .16s ease; display: flex; flex-direction: column; gap: 4px;
+}
+.import-mode-card:hover { border-color: var(--ink2); }
+.import-mode-card.selected {
+  background: #fff; border-color: var(--ink); box-shadow: 0 4px 16px rgba(32,36,48,0.08);
+}
+.import-mode-title { font-weight: 700; font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
+.import-mode-desc { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+
+.guest { display: flex; align-items: center; gap: 12px; padding: 12px 6px; border-bottom: 1px solid var(--line); }
+.guest:last-child { border-bottom: none; }
+.checkin {
+  width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--line2);
+  display: flex; align-items: center; justify-content: center; flex: 0 0 auto; color: #fff; transition: all .16s ease;
+}
+.checkin:hover { border-color: var(--team); }
+.checkin.on { background: var(--team); border-color: var(--team); box-shadow: 0 3px 10px rgba(62,148,110,0.3); }
+.guest-main { flex: 1; min-width: 0; }
+.guest-name { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.guest-sub { font-size: 12px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.pay-toggle {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; transition: all .16s ease; cursor: pointer; border: 1px solid transparent;
+}
+.pay-toggle.paid { background: var(--team-bg); color: var(--team); border-color: rgba(62,148,110,0.2); }
+.pay-toggle.paid:hover { background: #DCF2E6; }
+.pay-toggle.unpaid { background: var(--rent-bg); color: #B37D14; border-color: rgba(200,148,42,0.25); }
+.pay-toggle.unpaid:hover { background: #FAEECB; }
+
+.guest-actions { display: flex; gap: 6px; align-items: center; flex: 0 0 auto; }
+.mini { font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 9px; background: #F3EFE8; color: var(--muted); white-space: nowrap; }
+.mini.on { background: var(--team-bg); color: var(--team); }
+.empty { padding: 36px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+.empty .ic { width: 32px; height: 32px; margin: 0 auto 12px; color: #D1CCC2; }
+.hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
+
+.toast-root {
+  position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%);
+  z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none;
+}
+.toast {
+  background: var(--ink); color: #fff; font-size: 13.5px; font-weight: 600;
+  padding: 11px 20px; border-radius: 14px; box-shadow: 0 12px 34px rgba(32,36,48,.32); animation: rise .2s ease;
+  display: flex; align-items: center; gap: 8px;
+}
+.toast.out { opacity: 0; transform: translateY(6px); transition: all .25s ease; }
+
+.post-box {
+  background: #F7F5F0; border-radius: 16px; padding: 18px; font-size: 13px;
+  line-height: 1.65; white-space: pre-wrap; max-height: 48vh; overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 900px) {
+  .top-nav { display: none; }
+  .bottom-nav {
+    display: grid; grid-template-columns: repeat(5, 1fr); position: fixed;
+    left: 0; right: 0; bottom: 0; z-index: 60; background: rgba(255,255,255,.96);
+    backdrop-filter: blur(18px); border-top: 1px solid var(--line);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  .bottom-nav button {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 6px 2px; border-radius: 12px; font-size: 10px; font-weight: 600;
+    color: var(--muted); transition: all .15s ease;
+  }
+  .bottom-nav button.active { color: var(--ink); }
+  .bottom-nav button.active .ic { transform: translateY(-1px); color: var(--ink); }
+  main { padding: 14px 0 100px; }
+  .head-inner { height: 58px; }
+  .brand-sub { display: none; }
+  .month-label { font-size: 16.5px; min-width: 140px; }
+  .day-label { font-size: 16.5px; min-width: 170px; }
+  .toast-root { bottom: 76px; }
+  .grid3 { grid-template-columns: 1fr 1fr; }
+  .bar-track { flex: 0 0 45%; width: 45%; }
+  .bar-val { width: 75px; font-size: 12.5px; }
+}
+@media (max-width: 600px) {
+  .cloud-import-btn span { display: none; }
+  .cloud-import-btn { padding: 0 10px; }
+  .import-mode-cards { grid-template-columns: 1fr; }
+}
+@media (min-width: 641px) {
+  .modal-backdrop { align-items: center; padding: 24px; }
+  .modal { border-radius: 24px; }
+}
+
+/* Стилизация кнопки статуса облака */
+.cloud-status-btn {
+  position: relative;
+  min-width: 42px; min-height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s ease;
+  box-shadow: var(--sh);
+}
+.cloud-status-btn.synced {
+  background: #F4FAF6;
+  border: 1.5px solid #C4EBD7;
+}
+.cloud-status-btn.synced:hover {
+  background: #EAF6F0;
+  box-shadow: 0 4px 14px rgba(62,148,110,0.18);
+}
+.cloud-status-btn.not-synced {
+  background: #FFF7F6;
+  border: 1.5px solid #F8C8C2;
+}
+.cloud-status-btn.not-synced:hover {
+  background: #FDEEEB;
+  box-shadow: 0 4px 14px rgba(222,98,84,0.18);
+}
+.cloud-status-btn .ic {
+  width: 22px;
+  height: 22px;
+}
+
+.notif-btn {
+  position: relative;
+}
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--must);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(222,98,84,0.3);
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<header class="app-head">
+  <div class="wrap head-inner">
+    <div class="brand" onclick="navTo('month')" title="На главную сетку месяца">
+      <div class="brand-mark">П</div>
+      <div>
+        <div class="brand-title">Пятница.Пульт</div>
+        <div class="brand-sub">центр управления пространством</div>
+      </div>
+    </div>
+    <div class="head-right">
+      <nav class="top-nav" id="topNav"></nav>
+      <!-- Кнопка уведомлений о событиях -->
+      <button class="icon-btn notif-btn" id="notifBtn" onclick="openNotificationsModal()" aria-label="Уведомления" title="Напоминания о событиях">
+      </button>
+      <!-- Кнопка вызова модального окна синхронизации -->
+      <button class="icon-btn cloud-status-btn" id="settingsBtn" onclick="openSyncModal()" aria-label="Синхронизация и импорт" title="Настройки синхронизации и импорт">
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="view"></main>
+<nav class="bottom-nav" id="bottomNav"></nav>
+<div id="modalRoot"></div>
+<div class="toast-root" id="toastRoot"></div>
+
+<script>
+const STORE_KEY = 'pyatnitsa_hub_db_v3';
+const FIREBASE_URL_KEY = 'pyatnitsa_firebase_url';
+const H_START = 8, H_END = 23;
+const HOUR_H = 28;
+const MIN_DURATION_MIN = 90;
+
+const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const DOW = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const DOW_FULL = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+
+const PRESENCE = {
+  must: { label:'Со мной',    color:'#DE6254', bg:'#FDEDE9' },
+  team: { label:'Без меня',  color:'#3E946E', bg:'#E7F5EE' },
+  rent: { label:'Аренда',    color:'#C8942A', bg:'#FCF3DE' },
+  trip: { label:'Отсутствую', color:'#7E8594', bg:'#ECEEF2' }
+};
+
+const NAV = [
+  { id:'month',     label:'Месяц',           icon:'calendar' },
+  { id:'day',       label:'День',            icon:'clock'    },
+  { id:'events',    label:'Реестр событий',  icon:'list'     },
+  { id:'clients',   label:'Гости',           icon:'users'    },
+  { id:'analytics', label:'Аналитика',       icon:'chart'    }
+];
+
+const ICONS = {
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1 2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83-2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  chevLeft:'<path d="M15 18l-6-6 6-6"/>',
+  chevRight:'<path d="M9 18l6-6-6-6"/>',
+  send:'<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>',
+  trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  check:'<path d="M20 6L9 17l-5-5"/>',
+  x:'<path d="M18 6L6 18M6 6l12 12"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  sparkle:'<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4L12 3z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>',
+  wallet:'<path d="M3 7a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M16 12h3"/>',
+  refresh:'<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  cloudOk:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" fill="rgba(62,148,110,0.14)" stroke="#2E7D56" stroke-width="1.8"/><polyline points="8.5 14 11 16.5 15.5 11" stroke="#2E7D56" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>',
+  cloudWarn:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" fill="rgba(222,98,84,0.12)" stroke="#DE6254" stroke-width="1.8"/><line x1="9.5" y1="11.5" x2="14.5" y2="16.5" stroke="#DE6254" stroke-width="2.3" stroke-linecap="round"/><line x1="14.5" y1="11.5" x2="9.5" y2="16.5" stroke="#DE6254" stroke-width="2.3" stroke-linecap="round"/>',
+  alert:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'
+};
+
+function ic(n){
+  return `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]||''}</svg>`;
+}
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = p => p + '-' + Math.random().toString(36).slice(2,9);
+const toMin = t => { const [h,m] = String(t||'00:00').split(':').map(Number); return (h||0)*60 + (m||0); };
+const money = n => new Intl.NumberFormat('ru-RU').format(Math.round(n||0)) + ' ₽';
+
+function getTgLink(tg) {
+  if (!tg) return '';
+  let clean = tg.trim();
+  if (clean.startsWith('https://t.me/') || clean.startsWith('http://t.me/')) return clean;
+  if (clean.startsWith('t.me/')) return 'https://' + clean;
+  clean = clean.replace(/^@/, '');
+  return 'https://t.me/' + clean;
+}
+
+function stableStringify(obj) {
+  if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
+  if (Array.isArray(obj)) return '[' + obj.map(stableStringify).join(',') + ']';
+  const keys = Object.keys(obj).sort();
+  return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(obj[k])).join(',') + '}';
+}
+
+function isUserInteractingWithModal() {
+  const modalRoot = document.getElementById('modalRoot');
+  if (!modalRoot || !modalRoot.classList.contains('open')) return false;
+  
+  if (modalRoot.contains(document.activeElement) && 
+     (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'SELECT')) {
+    return true;
+  }
+  
+  const textInputs = modalRoot.querySelectorAll('input[type="text"], input:not([type]), input[type="number"], textarea');
+  for (const inp of textInputs) {
+    if (inp.id && (inp.id.startsWith('bk') || inp.id.startsWith('newCl') || inp.id.startsWith('cl') || inp.id.startsWith('ev') || inp.id.startsWith('fmt')) && inp.value.trim() !== '') {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function copySafe(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch(e) {}
+  }
+  let success = false;
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    success = document.execCommand('copy');
+    document.body.removeChild(ta);
+  } catch(e) {
+    success = false;
+  }
+  return success;
+}
+
+function ymd(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+function parseYmd(s){ const [y,m,d] = String(s).split('-').map(Number); return new Date(y, m-1, d); }
+function fmtDateRu(s){ const d = parseYmd(s); return `${d.getDate()} ${MONTHS_GEN[d.getMonth()]}`; }
+function fmtDateFull(s){ const d = parseYmd(s); const dow = DOW[(d.getDay()+6)%7]; return `${dow}, ${d.getDate()} ${MONTHS_GEN[d.getMonth()]}`; }
+function daysBetween(a,b){ return Math.floor((b-a)/86400000); }
+function plural(n, one, few, many){
+  const m10 = n%10, m100 = n%100;
+  if(m10===1 && m100!==11) return one;
+  if(m10>=2 && m10<=4 && (m100<10 || m100>=20)) return few;
+  return many;
+}
+
+function toast(msg){
+  const r = document.getElementById('toastRoot');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `${ic('check')} <span>${esc(msg)}</span>`;
+  r.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 260); }, 2400);
+}
+
+let db = null;
+const TODAY_ISO = ymd(new Date());
+
+let ui = {
+  view: 'month',
+  year: new Date().getFullYear(),
+  month: new Date().getMonth(),
+  dayDate: TODAY_ISO,
+  filter: 'all',
+  search: '',
+  analyticsPeriod: 'month',
+  modal: null,
+  guestListFilter: 'all',
+  guestListSearch: '',
+  firebaseUrl: '',
+  cloudStatus: 'disconnected'
+};
+
+function normalizeFirebaseUrl(url){
+  let u = (url || '').trim();
+  if(!u) return '';
+  if(!u.endsWith('.json')){
+    if(u.endsWith('/')) u += 'data.json';
+    else u += '/data.json';
+  }
+  return u;
+}
+
+function normalizeDB(d){
+  if(!d || typeof d !== 'object') d = {};
+  d.formats  = Array.isArray(d.formats) ? d.formats : (d.formats ? Object.values(d.formats) : []);
+  d.events   = Array.isArray(d.events) ? d.events : (d.events ? Object.values(d.events) : []);
+  d.bookings = Array.isArray(d.bookings) ? d.bookings : (d.bookings ? Object.values(d.bookings) : []);
+  d.clients  = (d.clients && typeof d.clients === 'object' && !Array.isArray(d.clients)) ? d.clients : {};
+  return d;
+}
+
+function seedDatabase(){
+  const t = TODAY_ISO;
+  return {
+    formats: [
+      {
+        id: 'fmt-1',
+        title: 'Квартирник при свечах',
+        shortDescription: 'Акустический вечер авторской песни, живой диалог и травяной чай при свечах.',
+        defaultPrice: 900,
+        defaultCapacity: 25,
+        frequencyDays: 28,
+        defaultPresence: 'must'
+      },
+      {
+        id: 'fmt-2',
+        title: 'Книжный клуб',
+        shortDescription: 'Обсуждение классики и нон-фикшн за круглым столом.',
+        defaultPrice: 500,
+        defaultCapacity: 14,
+        frequencyDays: 21,
+        defaultPresence: 'team'
+      },
+      {
+        id: 'fmt-3',
+        title: 'Плейбэк-театр «Драмеди»',
+        shortDescription: 'Театр зрительских историй: актеры играют ваши воспоминания прямо здесь и сейчас.',
+        defaultPrice: 1000,
+        defaultCapacity: 28,
+        frequencyDays: 30,
+        defaultPresence: 'must'
+      },
+      {
+        id: 'fmt-4',
+        title: 'Утренняя виньяса-йога',
+        shortDescription: 'Мягкая практика пробуждения тела и дыхания под спокойную музыку.',
+        defaultPrice: 600,
+        defaultCapacity: 12,
+        frequencyDays: 7,
+        defaultPresence: 'team'
+      },
+      {
+        id: 'fmt-5',
+        title: 'Аренда под закрытый праздник',
+        shortDescription: 'Почасовая аренда пространства для лекций, мастер-классов или дней рождения.',
+        defaultPrice: 2000,
+        defaultCapacity: 30,
+        frequencyDays: 0,
+        defaultPresence: 'rent'
+      }
+    ],
+    events: [
+      {
+        id: 'ev-201',
+        formatId: 'fmt-4',
+        title: 'Утренняя виньяса-йога',
+        date: t,
+        time: '09:00',
+        endTime: '11:00',
+        price: 600,
+        capacity: 12,
+        presenceType: 'team',
+        isPublic: true,
+        contactPerson: 'Оля (тренер)',
+        note: 'Проветрить зал перед практикой'
+      },
+      {
+        id: 'ev-202',
+        formatId: 'fmt-1',
+        title: 'Осенний Квартирник при свечах',
+        date: t,
+        time: '19:00',
+        endTime: '21:30',
+        price: 900,
+        capacity: 25,
+        presenceType: 'must',
+        isPublic: true,
+        contactPerson: 'Лена',
+        note: 'Купить свечи и растопить камин'
+      }
+    ],
+    bookings: [
+      {
+        id: 'bk-1',
+        eventId: 'ev-202',
+        guestName: 'Марина Соколова',
+        telegram: '@sokol_marina',
+        ticketsCount: 2,
+        isPaid: true,
+        isCheckedIn: true,
+        isWaitlist: false,
+        note: 'Первый ряд у камина'
+      },
+      {
+        id: 'bk-2',
+        eventId: 'ev-202',
+        guestName: 'Алексей Кузнецов',
+        telegram: '@kuznetsov_alex',
+        ticketsCount: 1,
+        isPaid: true,
+        isCheckedIn: false,
+        isWaitlist: false,
+        note: 'Придет чуть позже'
+      }
+    ],
+    clients: {
+      '@sokol_marina': {
+        telegram: '@sokol_marina',
+        name: 'Марина Соколова',
+        visitsCount: 1,
+        totalPaid: 1800,
+        clientNotes: 'Любит травяной чай, ходит на квартирники',
+        firstSeen: t,
+        lastSeen: t
+      },
+      '@kuznetsov_alex': {
+        telegram: '@kuznetsov_alex',
+        name: 'Алексей Кузнецов',
+        visitsCount: 0,
+        totalPaid: 900,
+        clientNotes: 'Играет на гитаре, предпочитает тихие вечера',
+        firstSeen: t,
+        lastSeen: t
+      }
+    }
+  };
+}
+
+function loadDatabase(){
+  try {
+    ui.firebaseUrl = normalizeFirebaseUrl(localStorage.getItem(FIREBASE_URL_KEY) || '');
+    const stored = localStorage.getItem(STORE_KEY);
+    if(stored){
+      db = normalizeDB(JSON.parse(stored));
+    } else {
+      db = normalizeDB(seedDatabase());
+      saveDatabase(false);
+    }
+  } catch(e){
+    db = normalizeDB(seedDatabase());
+  }
+}
+
+let cloudTimer = null;
+let isLocalPushing = false;
+let lastPushedStr = '';
+let firebaseEventSource = null;
+let bgSyncInterval = null;
+
+function saveDatabase(syncToCloud = true){
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(db));
+  } catch(e){
+    toast('Ошибка сохранения в локальное хранилище');
+  }
+  if(syncToCloud && ui.firebaseUrl){
+    debouncedCloudPush();
+  }
+}
+
+function debouncedCloudPush(){
+  clearTimeout(cloudTimer);
+  // Мгновенная отправка изменений (150 мс для группировки быстрых правок)
+  cloudTimer = setTimeout(pushToFirebase, 150);
+}
+
+async function pushToFirebase(){
+  if(!ui.firebaseUrl) {
+    ui.cloudStatus = 'disconnected';
+    renderSettingsBtn();
+    updateSyncModalStatus();
+    return;
+  }
+  isLocalPushing = true;
+  lastPushedStr = stableStringify(db);
+  try {
+    const res = await fetch(ui.firebaseUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(db)
+    });
+    if(res.ok){
+      ui.cloudStatus = 'connected';
+    } else {
+      ui.cloudStatus = 'disconnected';
+    }
+  } catch(e){
+    console.warn('Cloud sync push error', e);
+    ui.cloudStatus = 'disconnected';
+  } finally {
+    setTimeout(() => { isLocalPushing = false; }, 400);
+    renderSettingsBtn();
+    updateSyncModalStatus();
+  }
+}
+
+async function pullFromFirebase(manual = false){
+  if(!ui.firebaseUrl){
+    ui.cloudStatus = 'disconnected';
+    renderSettingsBtn();
+    updateSyncModalStatus();
+    if(manual) toast('Укажите URL базы данных в настройках');
+    return;
+  }
+  try {
+    const res = await fetch(ui.firebaseUrl);
+    if(res.ok){
+      const data = await res.json();
+      if(data && (data.events || data.formats)){
+        const normData = normalizeDB(data);
+        const newStr = stableStringify(normData);
+        const oldStr = stableStringify(db);
+
+        if(newStr !== oldStr && newStr !== lastPushedStr && !isLocalPushing){
+          db = normData;
+          try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch(err){}
+          
+          const isModalOpen = document.getElementById('modalRoot') && document.getElementById('modalRoot').classList.contains('open');
+          const isEditing = ui.modal && ui.modal.type && ui.modal.type !== 'event';
+          const interacting = isUserInteractingWithModal();
+          
+          if (!isModalOpen || !isEditing) {
+            render();
+            if(ui.modal && ui.modal.type === 'event' && !interacting){
+              openEventDetailsModal(ui.modal.id);
+            }
+          }
+        }
+        if(manual) toast('Данные успешно загружены из облака');
+      }
+      ui.cloudStatus = 'connected';
+    } else {
+      ui.cloudStatus = 'disconnected';
+      if(manual) toast('Ошибка подключения к базе (проверьте URL)');
+    }
+  } catch(e){
+    ui.cloudStatus = 'disconnected';
+    if(manual) toast('Не удалось подключиться к облаку');
+  }
+  renderSettingsBtn();
+  updateSyncModalStatus();
+}
+
+function setupFirebaseRealtimeListener(){
+  if(firebaseEventSource){
+    try { firebaseEventSource.close(); } catch(e){}
+    firebaseEventSource = null;
+  }
+  if(!ui.firebaseUrl) return;
+
+  try {
+    firebaseEventSource = new EventSource(ui.firebaseUrl);
+    firebaseEventSource.addEventListener('put', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if(payload && payload.path === '/' && payload.data && (payload.data.events || payload.data.formats)){
+          if(isLocalPushing) return;
+          const normData = normalizeDB(payload.data);
+          const newStr = stableStringify(normData);
+          if(newStr !== stableStringify(db) && newStr !== lastPushedStr){
+            db = normData;
+            try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch(err){}
+            
+            const isModalOpen = document.getElementById('modalRoot') && document.getElementById('modalRoot').classList.contains('open');
+            const isEditing = ui.modal && ui.modal.type && ui.modal.type !== 'event';
+            const interacting = isUserInteractingWithModal();
+
+            if (!isModalOpen || !isEditing) {
+              render();
+              if(ui.modal && ui.modal.type === 'event' && !interacting){
+                openEventDetailsModal(ui.modal.id);
+              }
+            }
+          }
+          ui.cloudStatus = 'connected';
+          renderSettingsBtn();
+          updateSyncModalStatus();
+        }
+      } catch(err){}
+    });
+    firebaseEventSource.addEventListener('error', () => {
+      // EventSource reconnects automatically
+    });
+  } catch(err){}
+}
+
+function startBackgroundSync(){
+  clearInterval(bgSyncInterval);
+  // Фоновый опрос каждые 7 секунд для гарантированной синхронизации между вкладками/устройствами
+  bgSyncInterval = setInterval(() => {
+    if(ui.firebaseUrl && !isLocalPushing){
+      pullFromFirebase(false);
+    }
+  }, 7000);
+}
+
+// При возврате пользователя на вкладку браузера сразу проверяем актуальность данных
+window.addEventListener('focus', () => {
+  if(ui.firebaseUrl && !isLocalPushing) pullFromFirebase(false);
+});
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden && ui.firebaseUrl && !isLocalPushing) pullFromFirebase(false);
+});
+
+function getMonday(d) {
+  d = new Date(d);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const mon = new Date(d.setDate(diff));
+  mon.setHours(0, 0, 0, 0);
+  return mon;
+}
+
+function getMonthWeeks(year, month) {
+  const weeks = [];
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  let currentMonday = getMonday(firstDay);
+
+  while (currentMonday <= lastDay) {
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(currentMonday);
+      d.setDate(currentMonday.getDate() + i);
+      days.push({
+        date: d,
+        iso: ymd(d),
+        isCurrentMonth: d.getMonth() === month,
+        isToday: ymd(d) === TODAY_ISO
+      });
+    }
+    weeks.push({
+      monday: new Date(currentMonday),
+      sunday: new Date(days[6].date),
+      days
+    });
+    currentMonday.setDate(currentMonday.getDate() + 7);
+  }
+  return weeks;
+}
+
+function computeDayEventLayouts(events) {
+  if (!events || !events.length) return [];
+  const items = events.map(ev => {
+    const start = toMin(ev.time);
+    const end = Math.max(toMin(ev.endTime || ev.time), start + 30);
+    return { ev, start, end };
+  }).sort((a,b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+
+  const clusters = [];
+  let curCluster = [];
+  let clusterEnd = -1;
+
+  items.forEach(item => {
+    if (curCluster.length === 0 || item.start < clusterEnd) {
+      curCluster.push(item);
+      clusterEnd = Math.max(clusterEnd, item.end);
+    } else {
+      clusters.push(curCluster);
+      curCluster = [item];
+      clusterEnd = item.end;
+    }
+  });
+  if (curCluster.length) clusters.push(curCluster);
+
+  const results = [];
+  clusters.forEach(cluster => {
+    const columns = [];
+    cluster.forEach(item => {
+      let placed = false;
+      for (let i = 0; i < columns.length; i++) {
+        const lastInCol = columns[i][columns[i].length - 1];
+        if (lastInCol.end <= item.start) {
+          columns[i].push(item);
+          item.col = i;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        item.col = columns.length;
+        columns.push([item]);
+      }
+    });
+
+    const totalCols = columns.length;
+    cluster.forEach(item => {
+      results.push({
+        ev: item.ev,
+        start: item.start,
+        end: item.end,
+        colIndex: item.col,
+        totalCols: totalCols
+      });
+    });
+  });
+  return results;
+}
+
+const SNOOZE_KEY = 'pyatnitsa_snoozed_prompts';
+
+function getSnoozedPrompts() {
+  try {
+    return JSON.parse(localStorage.getItem(SNOOZE_KEY) || '{}');
+  } catch(e) {
+    return {};
+  }
+}
+
+function saveSnoozedPrompts(data) {
+  try {
+    localStorage.setItem(SNOOZE_KEY, JSON.stringify(data));
+  } catch(e) {}
+}
+
+function getNextMondayIso(refDate = new Date()) {
+  const d = new Date(refDate);
+  const day = d.getDay();
+  const diff = ((8 - day) % 7) || 7;
+  d.setDate(d.getDate() + diff);
+  return ymd(d);
+}
+
+function snoozePromptUntilNextWeek(formatId) {
+  const snoozed = getSnoozedPrompts();
+  snoozed[formatId] = getNextMondayIso();
+  saveSnoozedPrompts(snoozed);
+  updateNotifButton();
+}
+
+function getActivePrompts() {
+  if (!db || !db.formats) return [];
+  const now = parseYmd(TODAY_ISO);
+  const snoozed = getSnoozedPrompts();
+  const warnings = [];
+
+  db.formats.forEach(f => {
+    if(!f.frequencyDays || f.frequencyDays <= 0) return;
+    if (snoozed[f.id] && TODAY_ISO < snoozed[f.id]) return;
+
+    const past = db.events
+      .filter(e => e.formatId === f.id)
+      .sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    let daysSince = 999;
+    if(past.length > 0){
+      daysSince = daysBetween(new Date(past[0].date), now);
+    }
+    if(daysSince >= f.frequencyDays){
+      warnings.push({ format: f, daysSince, target: f.frequencyDays });
+    }
+  });
+
+  return warnings;
+}
+
+function updateNotifButton() {
+  const notifBtn = document.getElementById('notifBtn');
+  if (!notifBtn) return;
+  const active = getActivePrompts();
+  const count = active.length;
+
+  notifBtn.innerHTML = `
+    ${ic('bell')}
+    ${count > 0 ? `<span class="notif-badge">${count}</span>` : ''}
+  `;
+  notifBtn.setAttribute('title', count > 0 ? `Напоминаний о событиях: ${count}` : 'Напоминаний нет');
+}
+
+function dismissPrompt(formatId) {
+  snoozePromptUntilNextWeek(formatId);
+  toast('Уведомление скрыто до следующей недели');
+  const active = getActivePrompts();
+  if (active.length > 0 && ui.modal && ui.modal.type === 'notifications') {
+    const row = document.getElementById(`prompt-row-${formatId}`);
+    if (row) {
+      row.style.transition = 'all .18s ease';
+      row.style.opacity = '0';
+      row.style.transform = 'translateX(16px)';
+      setTimeout(() => {
+        openNotificationsModal();
+      }, 180);
+      return;
+    }
+    openNotificationsModal();
+  } else {
+    closeModal();
+  }
+}
+
+function dismissAllPrompts() {
+  const warnings = getActivePrompts();
+  warnings.forEach(w => snoozePromptUntilNextWeek(w.format.id));
+  toast('Все напоминания скрыты до следующей недели');
+  closeModal();
+}
+
+function openNotificationsModal() {
+  ui.modal = { type: 'notifications' };
+  const warnings = getActivePrompts();
+
+  openModal(`
+    <div class="modal-head">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="color:var(--rent)">${ic('bell')}</div>
+        <div>
+          <div class="modal-title">Напоминания о событиях</div>
+          <div class="modal-sub">${warnings.length ? `Подошел срок проведения (${warnings.length}):` : 'Все регулярные события в графике'}</div>
+        </div>
+      </div>
+      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+    </div>
+
+    <div class="modal-body" style="padding-top:14px">
+      ${warnings.length === 0 ? `
+        <div class="empty" style="padding:28px 16px">
+          ${ic('check')}
+          <div style="font-weight:600;color:var(--ink);margin-bottom:4px">Все регулярные события запланированы вовремя!</div>
+          <div style="font-size:12.5px;color:var(--muted)">Нет активных напоминаний о необходимости бронирования.</div>
+        </div>
+      ` : `
+        <div class="list-card">
+          ${warnings.map(w => `
+            <div class="row" id="prompt-row-${w.format.id}" style="padding:12px 16px; gap:12px; transition: background .15s ease">
+              <div class="row-main">
+                <div style="font-weight:700; font-size:14px; color:var(--ink)">
+                  ${esc(w.format.title)}
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; margin-top:4px; font-size:12px; color:var(--muted); flex-wrap:wrap">
+                  <span class="tag" style="background:#FDEDE9; color:#DE6254; font-weight:600; padding:2px 7px">
+                    ${w.daysSince === 999 ? 'Еще не проводилось' : `Пауза ${w.daysSince} дн.`}
+                  </span>
+                  <span>Регулярность: раз в ${w.target} дн.</span>
+                </div>
+              </div>
+              <div class="row-actions" style="gap:8px">
+                <button class="btn btn-primary btn-sm" style="min-height:34px; padding:6px 12px; font-size:12.5px" onclick="closeModal(); openAddEventModal('${w.format.id}')" title="Запланировать дату в расписании">
+                  ${ic('plus')} В график
+                </button>
+                <button class="icon-btn sm" onclick="dismissPrompt('${w.format.id}')" title="Отложить напоминание на неделю">
+                  ${ic('x')}
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </div>
+
+    <div class="modal-foot">
+      ${warnings.length > 1 ? `
+        <button class="btn btn-ghost btn-sm" style="color:var(--muted);font-size:12px" onclick="dismissAllPrompts()">Отложить все на неделю</button>
+      ` : ''}
+      <div style="flex:1"></div>
+      <button class="btn btn-soft btn-sm" onclick="closeModal()">Закрыть</button>
+    </div>
+  `, { wide: true });
+}
+
+function renderSmartPrompts(){
+  return '';
+}
+
+function renderFilterChips(){
+  const counts = {
+    all: db.events.length,
+    must: db.events.filter(e => e.presenceType === 'must').length,
+    team: db.events.filter(e => e.presenceType === 'team').length,
+    rent: db.events.filter(e => e.presenceType === 'rent').length,
+    trip: db.events.filter(e => e.presenceType === 'trip').length
+  };
+
+  const curColor = ui.filter === 'all' ? '#202430' : (PRESENCE[ui.filter]?.color || '#202430');
+
+  return `
+    <!-- Десктопные чипсы -->
+    <div class="chips chips-desktop">
+      <button class="chip ${ui.filter==='all'?'on':''}" onclick="setFilter('all')">Все <span class="cnt">${counts.all}</span></button>
+      <button class="chip ${ui.filter==='must'?'on':''}" onclick="setFilter('must')"><span class="dot" style="background:${PRESENCE.must.color}"></span>Со мной <span class="cnt">${counts.must}</span></button>
+      <button class="chip ${ui.filter==='team'?'on':''}" onclick="setFilter('team')"><span class="dot" style="background:${PRESENCE.team.color}"></span>Без меня <span class="cnt">${counts.team}</span></button>
+      <button class="chip ${ui.filter==='rent'?'on':''}" onclick="setFilter('rent')"><span class="dot" style="background:${PRESENCE.rent.color}"></span>Аренда <span class="cnt">${counts.rent}</span></button>
+      <button class="chip ${ui.filter==='trip'?'on':''}" onclick="setFilter('trip')"><span class="dot" style="background:${PRESENCE.trip.color}"></span>Отсутствую <span class="cnt">${counts.trip}</span></button>
+    </div>
+
+    <!-- Компактный выпадающий список для мобильных -->
+    <div class="chips-mobile">
+      <div class="mobile-filter-select-wrap">
+        <span class="mobile-filter-label">Фильтр:</span>
+        <span class="dot" style="background:${curColor};width:8px;height:8px;border-radius:50%;flex-shrink:0;"></span>
+        <select class="mobile-filter-select" onchange="setFilter(this.value)">
+          <option value="all" ${ui.filter==='all'?'selected':''}>Все события (${counts.all})</option>
+          <option value="must" ${ui.filter==='must'?'selected':''}>Со мной (${counts.must})</option>
+          <option value="team" ${ui.filter==='team'?'selected':''}>Без меня (${counts.team})</option>
+          <option value="rent" ${ui.filter==='rent'?'selected':''}>Аренда (${counts.rent})</option>
+          <option value="trip" ${ui.filter==='trip'?'selected':''}>Отсутствую (${counts.trip})</option>
+        </select>
+        <span class="mobile-filter-arrow">
+          <svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </span>
+      </div>
+    </div>
+  `;
+}
+
+function setFilter(f){
+  ui.filter = f;
+  render();
+}
+
+function renderMonthView(){
+  const { year, month } = ui;
+  const weeks = getMonthWeeks(year, month);
+
+  const filteredEvents = db.events.filter(ev => {
+    if(ui.filter !== 'all' && ev.presenceType !== ui.filter) return false;
+    return true;
+  });
+
+  let html = `
+    <div class="page-head">
+      <div class="month-nav">
+        <button class="icon-btn" onclick="changeMonth(-1)" title="Предыдущий месяц">${ic('chevLeft')}</button>
+        <div class="month-label">${MONTHS[month]} ${year}</div>
+        <button class="icon-btn" onclick="changeMonth(1)" title="Следующий месяц">${ic('chevRight')}</button>
+        <button class="btn btn-ghost btn-sm" onclick="goToCurrentMonth()">Текущий месяц</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-soft btn-sm" onclick="openAddEventModal()">${ic('plus')} Добавить событие</button>
+        <button class="btn btn-primary btn-sm" onclick="openTelegramPostModal()">${ic('send')} Пост в Telegram</button>
+      </div>
+    </div>
+  `;
+
+  html += renderSmartPrompts();
+  html += renderFilterChips();
+
+  weeks.forEach((w, wIdx) => {
+    const monStr = `${w.monday.getDate()} ${MONTHS_GEN[w.monday.getMonth()]}`;
+    const sunStr = `${w.sunday.getDate()} ${MONTHS_GEN[w.sunday.getMonth()]}`;
+
+    html += `
+      <div class="tt-week-card">
+        <div class="tt-week-bar">
+          <span>Неделя ${wIdx + 1}: ${monStr} — ${sunStr}</span>
+          <span style="color:var(--muted);font-weight:500">Сетка 08:00 – 23:00</span>
+        </div>
+        <div class="tt-scroll" style="margin-bottom:0;border-radius:0;box-shadow:none">
+          <div class="tt">
+            <div class="tt-head">
+              <div class="tt-time-head">ВРЕМЯ</div>
+              ${w.days.map((d, dIdx) => `
+                <div class="tt-day ${d.isToday ? 'is-today' : ''} ${!d.isCurrentMonth ? 'is-other' : ''}" onclick="selectDayAndSwitch('${d.iso}')" title="Открыть расписание на этот день">
+                  <span class="tt-dow">${DOW[dIdx]}</span>
+                  <span class="tt-date">${d.date.getDate()}</span>
+                </div>
+              `).join('')}
+            </div>
+
+            <div class="tt-body">
+              <div class="tt-gutter">
+                ${Array.from({ length: H_END - H_START + 1 }, (_, i) => H_START + i).map(h => `
+                  <div class="tt-hour-row">${String(h).padStart(2,'0')}:00</div>
+                `).join('')}
+              </div>
+
+              ${w.days.map((d) => {
+                const dayEvs = filteredEvents.filter(e => e.date === d.iso);
+                const layoutItems = computeDayEventLayouts(dayEvs);
+
+                return `
+                  <div class="tt-col" data-date="${d.iso}">
+                    ${Array.from({ length: H_END - H_START + 1 }, (_, i) => `
+                      <div class="tt-slot-row ${i % 2 === 0 ? 'even' : 'odd'}" onclick="openAddEventModal('', '${d.iso}', '${String(H_START + i).padStart(2,'0')}:00')"></div>
+                    `).join('')}
+
+                    ${layoutItems.map(item => {
+                      const ev = item.ev;
+                      const topPx = (item.start - H_START * 60) * (HOUR_H / 60);
+                      const rawDur = item.end - item.start;
+                      const durMin = Math.max(rawDur, MIN_DURATION_MIN);
+                      const heightPx = durMin * (HOUR_H / 60);
+
+                      if(topPx < 0 || topPx > ((H_END - H_START + 1) * HOUR_H)) return '';
+
+                      const p = PRESENCE[ev.presenceType] || PRESENCE.team;
+                      const bk = db.bookings.filter(b => b.eventId === ev.id && !b.isWaitlist);
+                      const bookedCount = bk.reduce((s, b) => s + (b.ticketsCount || 1), 0);
+                      const checkedCount = bk.filter(b => b.isCheckedIn).reduce((s, b) => s + (b.ticketsCount || 1), 0);
+
+                      const widthPct = (100 / item.totalCols);
+                      const leftPct = item.colIndex * widthPct;
+
+                      return `
+                        <div class="tt-event" onclick="event.stopPropagation(); openEventDetailsModal('${ev.id}')"
+                             style="top:${topPx}px;height:${heightPx - 3}px;left:calc(${leftPct}% + 1px);width:calc(${widthPct}% - 2px);--c:${p.color};--cbg:${p.bg}"
+                             title="${esc(ev.title)} (${ev.time}–${ev.endTime})">
+                          <div class="tt-ev-title">${esc(ev.title)}</div>
+                          <div class="tt-ev-footer">
+                            <span class="tt-ev-time">${ev.time}</span>
+                            <div class="badge-triplet" title="Пришли / Записались / Лимит">
+                              <span class="badge-bubble bubble-checked">${checkedCount}</span>
+                              <span class="badge-bubble bubble-booked">${bookedCount}</span>
+                              <span class="badge-bubble bubble-limit">${ev.capacity || '∞'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  return html;
+}
+
+function changeMonth(delta){
+  let m = ui.month + delta;
+  let y = ui.year;
+  if(m > 11){ m = 0; y++; }
+  else if(m < 0){ m = 11; y--; }
+  ui.month = m;
+  ui.year = y;
+  render();
+}
+
+function goToCurrentMonth(){
+  const now = new Date();
+  ui.year = now.getFullYear();
+  ui.month = now.getMonth();
+  render();
+}
+
+function selectDayAndSwitch(iso){
+  ui.dayDate = iso;
+  navTo('day');
+}
+
+function renderDayView(){
+  const iso = ui.dayDate;
+  const d = parseYmd(iso);
+  const dayOfWeek = (d.getDay() + 6) % 7;
+  const isToday = iso === TODAY_ISO;
+
+  const dayEvents = db.events
+    .filter(e => e.date === iso)
+    .sort((a,b) => toMin(a.time) - toMin(b.time));
+
+  let html = `
+    <div class="page-head">
+      <div class="month-nav">
+        <button class="icon-btn sm" onclick="changeDay(-1)" title="Предыдущий день">${ic('chevLeft')}</button>
+        <div class="day-label">${DOW_FULL[dayOfWeek]}, ${d.getDate()} ${MONTHS_GEN[d.getMonth()]}</div>
+        <button class="icon-btn sm" onclick="changeDay(1)" title="Следующий день">${ic('chevRight')}</button>
+        <button class="btn btn-ghost btn-sm" onclick="goToTodayDay()" ${isToday?'style="opacity:.5"':''}>Сегодня</button>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openAddEventModal('', '${iso}', '19:00')">${ic('plus')} Событие на этот день</button>
+    </div>
+  `;
+
+  html += renderFilterChips();
+
+  const layoutItems = computeDayEventLayouts(dayEvents.filter(e => ui.filter === 'all' || e.presenceType === ui.filter));
+
+  html += `
+    <div class="day-layout-grid">
+      <div class="list-card" style="padding:16px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase">
+          <span>Сетка дня (08:00 – 23:00)</span>
+          <span>Кликните на слот</span>
+        </div>
+        <div class="tt-scroll" style="margin-bottom:0;box-shadow:none;border-radius:14px;border:1px solid var(--line);overflow-x:hidden;width:100%;">
+          <div class="tt tt-single">
+            <div class="tt-body">
+              <div class="tt-gutter">
+                ${Array.from({ length: H_END - H_START + 1 }, (_, i) => H_START + i).map(h => `
+                  <div class="tt-hour-row">${String(h).padStart(2,'0')}:00</div>
+                `).join('')}
+              </div>
+              <div class="tt-col" data-date="${iso}" style="width:100%;">
+                ${Array.from({ length: H_END - H_START + 1 }, (_, i) => `
+                  <div class="tt-slot-row ${i % 2 === 0 ? 'even' : 'odd'}" onclick="openAddEventModal('', '${iso}', '${String(H_START + i).padStart(2,'0')}:00')"></div>
+                `).join('')}
+
+                ${layoutItems.map(item => {
+                  const ev = item.ev;
+                  const topPx = (item.start - H_START * 60) * (HOUR_H / 60);
+                  const rawDur = item.end - item.start;
+                  const durMin = Math.max(rawDur, MIN_DURATION_MIN);
+                  const heightPx = durMin * (HOUR_H / 60);
+
+                  const p = PRESENCE[ev.presenceType] || PRESENCE.team;
+                  const bk = db.bookings.filter(b => b.eventId === ev.id && !b.isWaitlist);
+                  const bookedCount = bk.reduce((s, b) => s + (b.ticketsCount || 1), 0);
+                  const checkedCount = bk.filter(b => b.isCheckedIn).reduce((s, b) => s + (b.ticketsCount || 1), 0);
+
+                  const widthPct = (100 / item.totalCols);
+                  const leftPct = item.colIndex * widthPct;
+
+                  return `
+                    <div class="tt-event" onclick="event.stopPropagation(); openEventDetailsModal('${ev.id}')"
+                         style="top:${topPx}px;height:${heightPx - 3}px;left:calc(${leftPct}% + 1px);width:calc(${widthPct}% - 2px);--c:${p.color};--cbg:${p.bg}">
+                      <div class="tt-ev-title">${esc(ev.title)}</div>
+                      <div class="tt-ev-footer">
+                        <span class="tt-ev-time">${ev.time}–${ev.endTime}</span>
+                        <div class="badge-triplet" title="Пришли / Записались / Лимит">
+                          <span class="badge-bubble bubble-checked">${checkedCount}</span>
+                          <span class="badge-bubble bubble-booked">${bookedCount}</span>
+                          <span class="badge-bubble bubble-limit">${ev.capacity || '∞'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        ${dayEvents.length === 0 ? `
+          <div class="list-card"><div class="empty">${ic('clock')}<div>На этот день событий пока нет.<br>Пространство свободно для бронирования.</div></div></div>
+        ` : dayEvents.map(ev => {
+          const p = PRESENCE[ev.presenceType] || PRESENCE.team;
+          const bookings = db.bookings.filter(b => b.eventId === ev.id && !b.isWaitlist);
+          const checkedCount = bookings.filter(b => b.isCheckedIn).reduce((s,b) => s + (b.ticketsCount||1), 0);
+          const totalBooked = bookings.reduce((s,b) => s + (b.ticketsCount||1), 0);
+
+          return `
+            <div class="list-card" style="padding:18px;border-left:5px solid ${p.color}">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px">
+                <div>
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+                    <span class="tag" style="background:#F3EFE8;color:var(--ink)">${ev.time}–${ev.endTime}</span>
+                    <span class="tag" style="background:${p.bg};color:${p.color}"><span class="dot" style="background:${p.color}"></span>${p.label}</span>
+                    <span class="tag" style="background:#F3EFE8;color:var(--ink2)">${ev.price ? money(ev.price) : 'Бесплатно'}</span>
+                  </div>
+                  <div style="font-weight:700;font-size:16.5px">${esc(ev.title)}</div>
+                  ${ev.note ? `<div style="font-size:12.5px;color:var(--muted);margin-top:3px">Заметка: ${esc(ev.note)}</div>` : ''}
+                </div>
+                <button class="btn btn-soft btn-sm" onclick="openEventDetailsModal('${ev.id}')">Список гостей (${totalBooked})</button>
+              </div>
+
+              <!-- Тройной счётчик в карточке дня -->
+              <div style="display:flex;align-items:center;gap:16px;background:#FAF8F5;padding:8px 14px;border-radius:12px;margin:12px 0 6px">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="badge-bubble bubble-checked" style="width:20px;height:20px;font-size:11px">${checkedCount}</span>
+                  <span style="font-size:12px;color:var(--ink2);font-weight:600">пришли</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="badge-bubble bubble-booked" style="width:20px;height:20px;font-size:11px">${totalBooked}</span>
+                  <span style="font-size:12px;color:var(--ink2);font-weight:600">записаны</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="badge-bubble bubble-limit" style="width:20px;height:20px;font-size:11px">${ev.capacity || '∞'}</span>
+                  <span style="font-size:12px;color:var(--muted);font-weight:600">лимит</span>
+                </div>
+              </div>
+
+              <div style="margin-top:10px">
+                ${bookings.length === 0 ? `
+                  <div style="font-size:12.5px;color:var(--muted);padding:8px 0">Гости пока не записаны</div>
+                ` : bookings.map(bk => `
+                  <div class="guest" style="padding:9px 0">
+                    <button class="checkin ${bk.isCheckedIn?'on':''}" onclick="toggleGuestCheckin('${bk.id}')" title="Отметить приход">
+                      ${bk.isCheckedIn ? ic('check') : ''}
+                    </button>
+                    <div class="guest-main">
+                      <div class="guest-name" style="${bk.isCheckedIn?'text-decoration:line-through;opacity:.6':''}">
+                        ${esc(bk.guestName)} ${bk.ticketsCount > 1 ? `<span class="pill">${bk.ticketsCount} чел.</span>` : ''}
+                      </div>
+                      <div class="guest-sub">
+                        <button class="pay-toggle ${bk.isPaid?'paid':'unpaid'}" onclick="toggleGuestPayment('${bk.id}')" title="Нажмите, чтобы изменить статус оплаты">
+                          ${bk.isPaid ? '✓ Оплачено' : '⏳ Оплата на входе'}
+                        </button>
+                        ${bk.telegram ? ' · ' + esc(bk.telegram) : ''}
+                      </div>
+                    </div>
+                    ${bk.telegram ? `
+                      <button class="icon-btn sm" onclick="openTgReminder('${bk.id}')" title="Напомнить в Telegram">${ic('send')}</button>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  return html;
+}
+
+function changeDay(delta){
+  const d = parseYmd(ui.dayDate);
+  d.setDate(d.getDate() + delta);
+  ui.dayDate = ymd(d);
+  render();
+}
+
+function goToTodayDay(){
+  ui.dayDate = TODAY_ISO;
+  render();
+}
+
+function renderFormatsView(){
+  let html = `
+    <div class="page-head">
+      <div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-.02em">Реестр событий</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:3px">Каталог регулярных мероприятий и мастер-классов — планируйте их на любые даты</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openFormatFormModal()">${ic('plus')} Добавить в реестр</button>
+    </div>
+  `;
+
+  if(!db.formats.length){
+    return html + `<div class="list-card"><div class="empty">${ic('list')}<div>Событий в реестре пока нет</div></div></div>`;
+  }
+
+  html += `<div class="list-card">`;
+  db.formats.forEach(f => {
+    const p = PRESENCE[f.defaultPresence] || PRESENCE.team;
+    const freqText = f.frequencyDays > 0 ? `каждые ${f.frequencyDays} дн.` : 'по запросу / аренда';
+    html += `
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title">
+            ${esc(f.title)}
+            <span class="tag" style="background:${p.bg};color:${p.color}"><span class="dot" style="background:${p.color}"></span>${p.label}</span>
+          </div>
+          <div class="row-sub">
+            ${money(f.defaultPrice)} · ${f.defaultCapacity} мест · ${freqText}
+            ${f.shortDescription ? ' · ' + esc(f.shortDescription) : ''}
+          </div>
+        </div>
+        <div class="row-actions">
+          <button class="btn btn-soft btn-sm" onclick="openAddEventModal('${f.id}')">+ В график</button>
+          <button class="icon-btn sm" onclick="openFormatFormModal('${f.id}')" title="Редактировать">${ic('edit')}</button>
+          <button class="icon-btn sm" onclick="confirmDeleteFormat('${f.id}')" title="Удалить">${ic('trash')}</button>
+        </div>
+      </div>
+    `;
+  });
+  html += `</div>`;
+  return html;
+}
+
+function buildClientList(){
+  const map = {};
+  db.bookings.forEach(b => {
+    const key = b.telegram ? b.telegram.toLowerCase() : 'name:' + String(b.guestName||'').toLowerCase().trim();
+    if(!map[key]){
+      map[key] = { key, name: b.guestName, telegram: b.telegram, visits: 0, total: 0, lastSeen: null, notes: '' };
+    }
+    const item = map[key];
+    const ev = db.events.find(e => e.id === b.eventId);
+    if(b.isCheckedIn) item.visits += (b.ticketsCount || 1);
+    if(b.isPaid && ev) item.total += (b.ticketsCount || 1) * (ev.price || 0);
+    if(ev && (!item.lastSeen || ev.date > item.lastSeen)) item.lastSeen = ev.date;
+  });
+
+  Object.values(db.clients || {}).forEach(c => {
+    const key = c.telegram ? c.telegram.toLowerCase() : 'name:' + String(c.name||'').toLowerCase().trim();
+    if(!map[key]){
+      map[key] = { key, name: c.name, telegram: c.telegram, visits: c.visitsCount || 0, total: c.totalPaid || 0, lastSeen: c.lastSeen, notes: c.clientNotes || '' };
+    } else {
+      if(c.clientNotes) map[key].notes = c.clientNotes;
+      if(c.visitsCount && c.visitsCount > map[key].visits) map[key].visits = c.visitsCount;
+      if(c.totalPaid && c.totalPaid > map[key].total) map[key].total = c.totalPaid;
+    }
+  });
+
+  return Object.values(map);
+}
+
+function renderClientsListHtml(clients){
+  if(!clients.length){
+    return `<div class="empty">${ic('users')}<div>Гости не найдены</div></div>`;
+  }
+  return clients.map(c => `
+    <div class="row row-click" onclick="openClientCardModal('${esc(c.key)}')">
+      <div class="row-main">
+        <div class="row-title">
+          ${esc(c.name)} ${c.telegram ? `<span class="pill">${esc(c.telegram)}</span>` : ''}
+        </div>
+        <div class="row-sub">
+          ${c.visits} ${plural(c.visits,'визит','визита','визитов')} · ${money(c.total)}
+          ${c.lastSeen ? ' · крайний визит ' + fmtDateRu(c.lastSeen) : ''}
+        </div>
+        ${c.notes ? `<div class="row-sub" style="font-style:italic;color:#A88F5E">${esc(c.notes)}</div>` : ''}
+      </div>
+      <div class="row-actions" onclick="event.stopPropagation()">
+        ${c.telegram ? `
+          <a href="${getTgLink(c.telegram)}" target="_blank" rel="noopener noreferrer" class="icon-btn sm" style="color:#2AABEE" title="Написать в Telegram (${esc(c.telegram)})">
+            ${ic('send')}
+          </a>
+        ` : ''}
+        <button class="icon-btn sm" onclick="confirmDeleteClient('${esc(c.key)}')" title="Удалить гостя">${ic('trash')}</button>
+        <button class="icon-btn sm" onclick="openClientCardModal('${esc(c.key)}')" title="Открыть профиль">${ic('chevRight')}</button>
+      </div>
+    </div>
+  `).join('');
+}
+function handleGuestNameAutofill(val){
+  if(!val) return;
+  const q = val.trim().toLowerCase();
+  const clients = Object.values(db.clients || {});
+  const found = clients.find(c => (c.name || '').trim().toLowerCase() === q);
+  const tgInput = document.getElementById('bkGuestTg');
+
+  if(found && found.telegram){
+    if(tgInput) tgInput.value = found.telegram;
+  } else {
+    const bkFound = db.bookings.find(b => (b.guestName || '').trim().toLowerCase() === q && b.telegram);
+    if(bkFound && bkFound.telegram && tgInput){
+      tgInput.value = bkFound.telegram;
+    }
+  }
+}
+
+function handleGuestTgAutofill(val){
+  if(!val) return;
+  let q = val.trim().toLowerCase();
+  if(!q.startsWith('@') && !q.startsWith('http')) q = '@' + q;
+  const clients = Object.values(db.clients || {});
+  const found = clients.find(c => (c.telegram || '').trim().toLowerCase() === q);
+  const nameInput = document.getElementById('bkGuestName');
+
+  if(found && found.name && nameInput && !nameInput.value){
+    nameInput.value = found.name;
+  }
+}
+
+function handleClientSearchInput(val){
+  ui.search = val;
+  const container = document.getElementById('clientsListContainer');
+  if(!container) return;
+
+  let clients = buildClientList();
+  const q = val.toLowerCase().trim();
+  if(q){
+    clients = clients.filter(c => (c.name||'').toLowerCase().includes(q) || (c.telegram||'').toLowerCase().includes(q));
+  }
+  clients.sort((a,b) => b.visits - a.visits || b.total - a.total);
+  container.innerHTML = renderClientsListHtml(clients);
+}
+
+function renderClientsView(){
+  let clients = buildClientList();
+  const q = ui.search.toLowerCase().trim();
+  if(q){
+    clients = clients.filter(c => (c.name||'').toLowerCase().includes(q) || (c.telegram||'').toLowerCase().includes(q));
+  }
+  clients.sort((a,b) => b.visits - a.visits || b.total - a.total);
+
+  return `
+    <div class="page-head">
+      <div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-.02em">Постоянные гости и участники</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:3px">Синхронизируется автоматически при записи и чекинах</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="openAddClientModal()">${ic('plus')} Добавить гостя</button>
+        <button class="btn btn-soft btn-sm" onclick="openTextImportModal('clients')">${ic('upload')} Импорт гостей</button>
+      </div>
+    </div>
+    <div class="search">
+      ${ic('search')}
+      <input id="clientSearchInput" placeholder="Поиск по имени или @нику..." value="${esc(ui.search)}" oninput="handleClientSearchInput(this.value)">
+    </div>
+    <div class="list-card" id="clientsListContainer">
+      ${renderClientsListHtml(clients)}
+    </div>
+  `;
+}
+
+function openAddClientModal(){
+  ui.modal = { type: 'addClient' };
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Новый гость в базу</div>
+        <div class="modal-sub">Контакт, предпочтения и история посещений</div>
+      </div>
+      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+    </div>
+
+    <form onsubmit="handleCreateClientSubmit(event)">
+      <div class="modal-body">
+        <div class="grid2">
+          <div class="field">
+            <label>Имя и фамилия гостя *</label>
+            <input class="inp" id="newClName" required placeholder="Например: Дарья Морозова">
+          </div>
+          <div class="field">
+            <label>Telegram (@никнейм или ссылка)</label>
+            <input class="inp" id="newClTg" placeholder="@daria_m">
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label>Посещений (визитов)</label>
+            <input class="inp" type="number" id="newClVisits" min="0" value="0">
+          </div>
+          <div class="field">
+            <label>Всего оплачено, ₽</label>
+            <input class="inp" type="number" id="newClTotal" min="0" step="100" value="0">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Вкусовые предпочтения, хобби и заметки</label>
+          <textarea class="inp" id="newClNotes" placeholder="Любит травяной чай, играет на глюкофоне, просила напоминать про квартирники..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+        <button type="submit" class="btn btn-primary">${ic('check')} Добавить гостя</button>
+      </div>
+    </form>
+  `, { wide: true });
+}
+
+function handleCreateClientSubmit(e){
+  e.preventDefault();
+  const name = document.getElementById('newClName').value.trim();
+  let tg = document.getElementById('newClTg').value.trim();
+  if(tg && !tg.startsWith('@') && !tg.startsWith('http')) tg = '@' + tg;
+  const visits = parseInt(document.getElementById('newClVisits').value, 10) || 0;
+  const total = parseFloat(document.getElementById('newClTotal').value) || 0;
+  const notes = document.getElementById('newClNotes').value.trim();
+
+  const key = tg ? tg.toLowerCase() : 'name:' + name.toLowerCase();
+
+  db.clients[key] = {
+    telegram: tg,
+    name: name,
+    visitsCount: visits,
+    totalPaid: total,
+    clientNotes: notes,
+    firstSeen: TODAY_ISO,
+    lastSeen: TODAY_ISO
+  };
+
+  saveDatabase(true);
+  toast(`Гость «${name}» добавлен в базу`);
+  closeModal();
+  render();
+}
+
+function setAnalyticsMonth(m){
+  ui.month = parseInt(m, 10);
+  render();
+}
+
+function setAnalyticsYear(y){
+  ui.year = parseInt(y, 10);
+  render();
+}
+
+function renderAnalyticsView(){
+  const isMonth = ui.analyticsPeriod === 'month';
+  const curY = ui.year;
+  const curM = ui.month;
+
+  const filteredEvents = db.events.filter(ev => {
+    if(!isMonth) return true;
+    const d = parseYmd(ev.date);
+    return d.getFullYear() === curY && d.getMonth() === curM;
+  });
+
+  const evIds = new Set(filteredEvents.map(e => e.id));
+  let totalRevenue = 0;
+  let totalCheckins = 0;
+
+  db.bookings.forEach(b => {
+    if(evIds.has(b.eventId) && !b.isWaitlist){
+      const ev = db.events.find(e => e.id === b.eventId);
+      if(ev && b.isPaid) totalRevenue += (b.ticketsCount || 1) * (ev.price || 0);
+      if(b.isCheckedIn) totalCheckins += (b.ticketsCount || 1);
+    }
+  });
+
+  filteredEvents.forEach(ev => {
+    if(ev.presenceType === 'rent' && ev.price > 0){
+      totalRevenue += ev.price;
+    }
+  });
+
+  const ownCount = filteredEvents.filter(e => e.presenceType !== 'rent' && e.presenceType !== 'trip').length;
+  const rentCount = filteredEvents.filter(e => e.presenceType === 'rent').length;
+  const clientsCount = Object.keys(db.clients || {}).length;
+
+  const byFormat = {};
+  db.formats.forEach(f => { byFormat[f.id] = { title: f.title, rev: 0, guests: 0, count: 0 }; });
+
+  filteredEvents.forEach(ev => {
+    if(ev.formatId && byFormat[ev.formatId]) byFormat[ev.formatId].count++;
+  });
+
+  db.bookings.forEach(b => {
+    if(evIds.has(b.eventId) && !b.isWaitlist){
+      const ev = db.events.find(e => e.id === b.eventId);
+      if(ev && ev.formatId && byFormat[ev.formatId]){
+        if(b.isPaid) byFormat[ev.formatId].rev += (b.ticketsCount || 1) * (ev.price || 0);
+        byFormat[ev.formatId].guests += (b.ticketsCount || 1);
+      }
+    }
+  });
+
+  const sortedFormats = Object.values(byFormat).sort((a,b) => b.rev - a.rev);
+  const maxRev = Math.max(1, ...sortedFormats.map(x => x.rev));
+
+  const yearsList = [];
+  const startY = Math.min(curY - 1, new Date().getFullYear() - 1);
+  const endY = Math.max(curY + 2, new Date().getFullYear() + 2);
+  for(let y = startY; y <= endY; y++) yearsList.push(y);
+
+  return `
+    <div class="page-head">
+      <div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-.02em">Экспресс-аналитика пространства</div>
+        ${isMonth ? `
+          <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <button class="icon-btn sm" onclick="changeMonth(-1)" title="Предыдущий месяц">${ic('chevLeft')}</button>
+            
+            <select class="inp" style="padding:4px 28px 4px 10px;min-height:32px;height:32px;font-size:13px;font-weight:600;width:auto;border-radius:9px;background:#F3EFE8;border:none;cursor:pointer" onchange="setAnalyticsMonth(this.value)">
+              ${MONTHS.map((m, idx) => `<option value="${idx}" ${idx === curM ? 'selected' : ''}>${m}</option>`).join('')}
+            </select>
+
+            <select class="inp" style="padding:4px 28px 4px 10px;min-height:32px;height:32px;font-size:13px;font-weight:600;width:auto;border-radius:9px;background:#F3EFE8;border:none;cursor:pointer" onchange="setAnalyticsYear(this.value)">
+              ${yearsList.map(y => `<option value="${y}" ${y === curY ? 'selected' : ''}>${y}</option>`).join('')}
+            </select>
+
+            <button class="icon-btn sm" onclick="changeMonth(1)" title="Следующий месяц">${ic('chevRight')}</button>
+            <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:12px;height:32px;min-height:32px" onclick="goToCurrentMonth()">Текущий</button>
+          </div>
+        ` : `
+          <div style="font-size:13px;color:var(--muted);margin-top:4px">
+            За все время работы пространства
+          </div>
+        `}
+      </div>
+      <div class="chips" style="margin:0">
+        <button class="chip ${isMonth?'on':''}" onclick="ui.analyticsPeriod='month'; render();">Выбранный месяц</button>
+        <button class="chip ${!isMonth?'on':''}" onclick="ui.analyticsPeriod='all'; render();">За всё время</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">${ic('wallet')} Выручка</div>
+        <div class="stat-val">${money(totalRevenue)}</div>
+        <div class="stat-sub">билеты и закрытая аренда</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">${ic('check')} Чекинов</div>
+        <div class="stat-val">${totalCheckins} чел.</div>
+        <div class="stat-sub">пришли физически</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">${ic('calendar')} Событий</div>
+        <div class="stat-val">${filteredEvents.length}</div>
+        <div class="stat-sub">${ownCount} форматов / ${rentCount} аренд</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">${ic('users')} База гостей</div>
+        <div class="stat-val">${clientsCount}</div>
+        <div class="stat-sub">уникальных профилей</div>
+      </div>
+    </div>
+
+    <div class="section-title">Финансовая отдача форматов</div>
+    <div class="list-card">
+      ${sortedFormats.map((f) => `
+        <div class="analytics-item">
+          <div class="bar-row">
+            <div class="bar-name">${esc(f.title)}</div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${Math.round(f.rev/maxRev*100)}%;background:var(--team)"></div>
+            </div>
+            <div class="bar-val">${money(f.rev)}</div>
+          </div>
+          <div class="bar-sub">
+            ${f.count} ${plural(f.count,'событие','события','событий')} · ${f.guests} ${plural(f.guests,'гость','гостя','гостей')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderSettingsView(){
+  return `
+    <div class="page-head">
+      <div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-.02em">Синхронизация и бэкапы</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:3px">Синхронизация между устройствами и сохранность данных</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openSyncModal()">${ic('settings')} Настройки синхронизации</button>
+    </div>
+
+    <div class="section-title">Быстрый текстовый импорт</div>
+    <div class="list-card" style="padding:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700;font-size:14.5px">Импорт событий и списка гостей</div>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:3px">Вставка строк из таблиц с автоматическим дублированием в Реестр событий</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openTextImportModal('events')">${ic('upload')} Открыть окно импорта</button>
+      </div>
+    </div>
+
+    <div class="section-title">Firebase Realtime Database</div>
+    <div class="list-card" style="padding:18px">
+      <div class="field">
+        <label>URL базы данных (REST JSON):</label>
+        <input class="inp" id="cfgFbUrl" placeholder="https://[PROJECT-ID].firebasedatabase.app/data.json" value="${esc(ui.firebaseUrl)}">
+      </div>
+      <div class="hint" style="margin-bottom:14px">
+        Укажите прямую ссылку на базу данных, чтобы расписание и чекины автоматически синхронизировались между ноутбуком и телефоном администратора.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="saveFirebaseUrl()">${ic('link')} Сохранить URL</button>
+        <button class="btn btn-soft btn-sm" onclick="pullFromFirebase(true)">${ic('refresh')} Проверить и загрузить</button>
+      </div>
+    </div>
+
+    <div class="section-title">Локальные резервные копии</div>
+    <div class="list-card">
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title">${ic('download')} Экспорт базы данных</div>
+          <div class="row-sub">Скачать полную копию расписания и гостей в файл .json</div>
+        </div>
+        <button class="btn btn-soft btn-sm" onclick="exportBackupFile()">Скачать</button>
+      </div>
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title">${ic('upload')} Импорт из файла</div>
+          <div class="row-sub">Восстановить данные из ранее сохраненного файла</div>
+        </div>
+        <input type="file" id="backupFileInput" accept=".json" style="display:none" onchange="importBackupFile(event)">
+        <button class="btn btn-soft btn-sm" onclick="document.getElementById('backupFileInput').click()">Выбрать файл</button>
+      </div>
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title" style="color:#C8942A">${ic('refresh')} Сброс до демо-данных</div>
+          <div class="row-sub">Сбросить текущие записи и вернуть образец «Пятницы»</div>
+        </div>
+        <button class="btn btn-soft btn-sm" onclick="confirmResetToDemo()">Сбросить к демо</button>
+      </div>
+      <div class="row">
+        <div class="row-main">
+          <div class="row-title" style="color:#C63D31">${ic('trash')} Полная очистка всех данных</div>
+          <div class="row-sub">Безвозвратно стереть все события, шаблоны, гостей и бронирования</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="confirmWipeAllData()">Очистить всё</button>
+      </div>
+    </div>
+  `;
+}
+
+function saveFirebaseUrl(){
+  const inp = document.getElementById('cfgFbUrl');
+  const val = normalizeFirebaseUrl((inp ? inp.value : '').trim());
+  ui.firebaseUrl = val;
+  localStorage.setItem(FIREBASE_URL_KEY, val);
+  toast('Настройки Firebase сохранены');
+  if(val){
+    pullFromFirebase(true);
+    setupFirebaseRealtimeListener();
+    startBackgroundSync();
+  }
+}
+
+function exportBackupFile(){
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pyatnitsa_backup_${ymd(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast('Бэкап успешно сохранен');
+}
+
+function importBackupFile(e){
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if(data && Array.isArray(data.events)){
+        db = normalizeDB(data);
+        saveDatabase(true);
+        render();
+        toast('Данные успешно восстановлены');
+      } else {
+        toast('Некорректная структура файла');
+      }
+    } catch(err){ toast('Ошибка при чтении файла'); }
+  };
+  r.readAsText(file);
+}
+
+function confirmAction(title, message, confirmBtnLabel, onConfirm, isDanger = true){
+  openModal(`
+    <div class="modal-head">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="color:${isDanger?'#C63D31':'var(--ink)'}">${ic('alert')}</div>
+        <div class="modal-title">${esc(title)}</div>
+      </div>
+      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+    </div>
+    <div class="modal-body" style="font-size:14px;color:var(--ink2);line-height:1.6">
+      ${esc(message)}
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+      <button class="btn ${isDanger?'btn-danger':'btn-primary'}" id="confirmActionBtn">${esc(confirmBtnLabel)}</button>
+    </div>
+  `);
+
+  const btn = document.getElementById('confirmActionBtn');
+  if(btn){
+    btn.onclick = () => {
+      closeModal();
+      if(typeof onConfirm === 'function') onConfirm();
+    };
+  }
+}
+
+function confirmDeleteClient(key){
+  const clients = buildClientList();
+  const c = clients.find(x => x.key === key);
+  const name = c ? c.name : 'гостя';
+
+  confirmAction(
+    'Удалить гостя из базы?',
+    `Вы действительно хотите удалить карточку «${name}» и связанные бронирования?`,
+    'Удалить гостя',
+    () => {
+      // Очищаем из клиентов
+      if(db.clients[key]) delete db.clients[key];
+      // Очищаем из броней
+      db.bookings = db.bookings.filter(b => {
+        const bKey = b.telegram ? b.telegram.toLowerCase() : 'name:' + String(b.guestName).toLowerCase().trim();
+        return bKey !== key;
+      });
+      saveDatabase(true);
+      toast(`Гость «${name}» удален`);
+      render();
+    },
+    true
+  );
+}
+
+function confirmWipeAllData(){
+  confirmAction(
+    'Полное удаление всех данных?',
+    'ВНИМАНИЕ! Будут безвозвратно удалены ВСЕ события, реестр шаблонов, история записей и контакты гостей. Приложение станет полностью пустым.',
+    'Да, стереть все данные',
+    () => {
+      db = {
+        formats: [],
+        events: [],
+        bookings: [],
+        clients: {}
+      };
+      saveDatabase(true);
+      toast('Все данные полностью удалены');
+      render();
+    },
+    true
+  );
+}
+
+function confirmResetToDemo(){
+  confirmAction(
+    'Сбросить базу данных?',
+    'Все внесенные изменения, новые мероприятия и записи гостей будут заменены демонстрационным набором данных пространства «Пятница».',
+    'Да, сбросить всё',
+    () => {
+      db = normalizeDB(seedDatabase());
+      saveDatabase(true);
+      render();
+      toast('База данных возвращена к демо-состоянию');
+    },
+    true
+  );
+}
+
+function confirmDeleteEvent(id){
+  const ev = db.events.find(e => e.id === id);
+  confirmAction(
+    'Удалить мероприятие?',
+    `Вы уверены, что хотите удалить «${ev ? ev.title : 'событие'}» и все записи гостей?`,
+    'Удалить событие',
+    () => {
+      db.events = db.events.filter(e => e.id !== id);
+      db.bookings = db.bookings.filter(b => b.eventId !== id);
+      saveDatabase();
+      toast('Событие удалено');
+      render();
+    }
+  );
+}
+
+function confirmDeleteFormat(id){
+  const f = db.formats.find(x => x.id === id);
+  confirmAction(
+    'Удалить шаблон события?',
+    `Шаблон «${f ? f.title : 'событие'}» будет удален из реестра. Ранее созданные в расписании события сохранятся.`,
+    'Удалить из реестра',
+    () => {
+      db.formats = db.formats.filter(x => x.id !== id);
+      saveDatabase();
+      toast('Событие удалено из реестра');
+      render();
+    }
+  );
+}
+
+function confirmDeleteBooking(bookingId){
+  const bk = db.bookings.find(b => b.id === bookingId);
+  confirmAction(
+    'Удалить запись гостя?',
+    `Удалить запись «${bk ? bk.guestName : 'гость'}»? Освободившееся место станет доступно для других.`,
+    'Удалить запись',
+    () => {
+      const evId = bk ? bk.eventId : null;
+      db.bookings = db.bookings.filter(b => b.id !== bookingId);
+      saveDatabase();
+      toast('Запись удалена');
+      if(evId) openEventDetailsModal(evId);
+      render();
+    }
+  );
+}
+
+function getEventDetailsModalHtml(ev){
+  const id = ev.id;
+  const allBookings = db.bookings.filter(b => b.eventId === id);
+  const mainBookings = allBookings.filter(b => !b.isWaitlist);
+  const waitBookings = allBookings.filter(b => b.isWaitlist);
+
+  const taken = mainBookings.reduce((s,b) => s + (b.ticketsCount||1), 0);
+  const checked = mainBookings.filter(b => b.isCheckedIn).reduce((s,b) => s + (b.ticketsCount||1), 0);
+  const paidSum = mainBookings.filter(b => b.isPaid).reduce((s,b) => s + (b.ticketsCount||1) * (ev.price||0), 0);
+  const p = PRESENCE[ev.presenceType] || PRESENCE.team;
+
+  let displayedBookings = mainBookings;
+  if(ui.guestListFilter === 'checked') displayedBookings = mainBookings.filter(b => b.isCheckedIn);
+  else if(ui.guestListFilter === 'pending') displayedBookings = mainBookings.filter(b => !b.isCheckedIn);
+
+  if(ui.guestListSearch){
+    const q = ui.guestListSearch.toLowerCase().trim();
+    displayedBookings = displayedBookings.filter(b => (b.guestName||'').toLowerCase().includes(q) || (b.telegram||'').toLowerCase().includes(q));
+  }
+
+  return `
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">${esc(ev.title)}</div>
+        <div class="modal-sub">${fmtDateFull(ev.date)} · ${ev.time}–${ev.endTime}</div>
+      </div>
+      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+    </div>
+
+    <div class="modal-body">
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">
+        <span class="tag" style="background:${p.bg};color:${p.color}"><span class="dot" style="background:${p.color}"></span>${p.label}</span>
+        <span class="tag" style="background:#F3EFE8;color:var(--ink2)">${ev.price ? money(ev.price) : 'Бесплатно'}</span>
+        ${ev.note ? `<span class="tag" style="background:#FCF3DE;color:#A88F5E">${esc(ev.note)}</span>` : ''}
+      </div>
+
+      <div class="modal-triplet-card">
+        <div class="triplet-box">
+          <div class="triplet-item" title="Фактически пришли на событие">
+            <div class="triplet-circle green">${checked}</div>
+            <span class="triplet-lbl">Пришли</span>
+          </div>
+          <div class="triplet-item" title="Всего занято билетов/мест">
+            <div class="triplet-circle dark">${taken}</div>
+            <span class="triplet-lbl">Записаны</span>
+          </div>
+          <div class="triplet-item" title="Максимальная вместимость">
+            <div class="triplet-circle gray">${ev.capacity || '∞'}</div>
+            <span class="triplet-lbl">Лимит</span>
+          </div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:var(--muted);line-height:1.4">
+          оплачено билетов:<br>
+          <b style="color:var(--ink);font-size:15px">${money(paidSum)}</b>
+        </div>
+      </div>
+
+      <div class="section-title">Быстрая запись гостя</div>
+      <form onsubmit="handleQuickBookingSubmit(event, '${ev.id}')" style="background:#F8F6F2;padding:16px;border-radius:16px;margin-bottom:16px;border:1px solid var(--line)">
+        <div class="grid2">
+          <div class="field" style="margin-bottom:8px">
+            <label>Имя гостя *</label>
+            <input class="inp" id="bkGuestName" required placeholder="Например: Аня Васильева" list="dlClientNames" oninput="handleGuestNameAutofill(this.value)" onchange="handleGuestNameAutofill(this.value)">
+          </div>
+          <div class="field" style="margin-bottom:8px">
+            <label>Telegram</label>
+            <input class="inp" id="bkGuestTg" placeholder="@telegram" list="dlClientNicks" oninput="handleGuestTgAutofill(this.value)" onchange="handleGuestTgAutofill(this.value)">
+          </div>
+        </div>
+        <datalist id="dlClientNames">${Object.values(db.clients||{}).map(c => `<option value="${esc(c.name)}">`).join('')}</datalist>
+        <datalist id="dlClientNicks">${Object.values(db.clients||{}).filter(c => c.telegram).map(c => `<option value="${esc(c.telegram)}">${esc(c.name || '')}</option>`).join('')}</datalist>
+
+        <div class="grid3">
+          <div class="field" style="margin-bottom:8px"><label>Билетов</label><input class="inp" type="number" id="bkTickets" min="1" value="1"></div>
+          <div class="field" style="display:flex;align-items:flex-end;padding-bottom:10px;margin-bottom:8px">
+            <label class="check"><input type="checkbox" id="bkPaid"> Оплачено</label>
+          </div>
+          <div class="field" style="display:flex;align-items:flex-end;padding-bottom:10px;margin-bottom:8px">
+            <label class="check"><input type="checkbox" id="bkWait"> В лист ожидания</label>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Заметка к записи</label>
+          <input class="inp" id="bkNote" placeholder="Первый ряд, аллергия на мяту...">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="width:100%">${ic('plus')} Записать гостя</button>
+      </form>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;flex-wrap:wrap;gap:8px">
+        <div class="section-title" style="margin:0">Список гостей (${mainBookings.length})</div>
+        <div class="chips" style="margin:0">
+          <button class="chip ${ui.guestListFilter==='all'?'on':''}" onclick="setGuestListFilter('${ev.id}','all')">Все</button>
+          <button class="chip ${ui.guestListFilter==='checked'?'on':''}" onclick="setGuestListFilter('${ev.id}','checked')">Пришли (${checked})</button>
+          <button class="chip ${ui.guestListFilter==='pending'?'on':''}" onclick="setGuestListFilter('${ev.id}','pending')">Ждем (${mainBookings.length - checked})</button>
+        </div>
+      </div>
+
+      ${mainBookings.length > 3 ? `
+        <div class="search" style="padding:8px 12px;margin-bottom:10px">
+          ${ic('search')}
+          <input placeholder="Найти в списке этого события..." value="${esc(ui.guestListSearch)}" oninput="ui.guestListSearch = this.value; openEventDetailsModal('${ev.id}')">
+        </div>
+      ` : ''}
+
+      ${displayedBookings.length === 0 ? `
+        <div class="empty" style="padding:16px">${ic('users')}<div>Гостей не найдено</div></div>
+      ` : displayedBookings.map(b => `
+        <div class="guest">
+          <button class="checkin ${b.isCheckedIn?'on':''}" onclick="toggleGuestCheckin('${b.id}')" title="Отметить присутствие">
+            ${b.isCheckedIn ? ic('check') : ''}
+          </button>
+          <div class="guest-main">
+            <div class="guest-name" style="${b.isCheckedIn?'text-decoration:line-through;opacity:.6':''}">
+              ${esc(b.guestName)}${b.ticketsCount > 1 ? `<span class="pill">${b.ticketsCount} чел.</span>` : ''}
+            </div>
+            <div class="guest-sub">
+              <button class="pay-toggle ${b.isPaid?'paid':'unpaid'}" onclick="toggleGuestPayment('${b.id}')" title="Нажмите, чтобы переключить статус оплаты">
+                ${b.isPaid ? '✓ Оплачено' : '⏳ Оплата на входе'}
+              </button>
+              ${b.telegram ? ' · ' + esc(b.telegram) : ''}
+              ${b.note ? ' · ' + esc(b.note) : ''}
+            </div>
+          </div>
+          <div class="guest-actions">
+            ${b.telegram ? `<button class="icon-btn sm" onclick="openTgReminder('${b.id}')" title="Написать в Telegram">${ic('send')}</button>` : ''}
+            <button class="icon-btn sm" onclick="confirmDeleteBooking('${b.id}')" title="Удалить запись">${ic('trash')}</button>
+          </div>
+        </div>
+      `).join('')}
+
+      ${waitBookings.length > 0 ? `
+        <div class="section-title" style="color:var(--rent);margin-top:20px">Лист ожидания / Резерв (${waitBookings.length})</div>${waitBookings.map(b => `
+          <div class="guest" style="background:#FFFDF7;padding:10px;border-radius:12px;margin-bottom:6px;border:1px solid #F6ECD8">
+            <div class="guest-main">
+              <div class="guest-name">${esc(b.guestName)} (${b.ticketsCount} чел.)</div>
+              <div class="guest-sub">${b.telegram || 'Без контакта'} ${b.note ? ' · ' + esc(b.note) : ''}</div>
+            </div>
+            <div class="guest-actions">
+              <button class="mini on" onclick="transferFromWaitlist('${b.id}')">Перевести в основу</button>
+              <button class="icon-btn sm" onclick="confirmDeleteBooking('${b.id}')">${ic('trash')}</button>
+            </div>
+          </div>
+        `).join('')}
+      ` : ''}
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" onclick="confirmDeleteEvent('${ev.id}')">${ic('trash')} Удалить</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-soft btn-sm" onclick="openAddEventModal('', '', '', '${ev.id}')">${ic('edit')} Редактировать</button>
+      <button class="btn btn-primary btn-sm" onclick="closeModal()">Готово</button>
+    </div>
+  `;
+}
+
+function openEventDetailsModal(id){
+  const ev = db.events.find(e => e.id === id);
+  if(!ev) return;
+  ui.modal = { type: 'event', id };
+
+  const prevName = document.getElementById('bkGuestName') ? document.getElementById('bkGuestName').value : undefined;
+  const prevTg = document.getElementById('bkGuestTg') ? document.getElementById('bkGuestTg').value : undefined;
+  const prevTickets = document.getElementById('bkTickets') ? document.getElementById('bkTickets').value : undefined;
+  const prevPaid = document.getElementById('bkPaid') ? document.getElementById('bkPaid').checked : undefined;
+  const prevWait = document.getElementById('bkWait') ? document.getElementById('bkWait').checked : undefined;
+  const prevNote = document.getElementById('bkNote') ? document.getElementById('bkNote').value : undefined;
+
+  const contentHtml = getEventDetailsModalHtml(ev);
+  openModal(contentHtml, { wide: true });
+
+  if (prevName !== undefined && document.getElementById('bkGuestName')) document.getElementById('bkGuestName').value = prevName;
+  if (prevTg !== undefined && document.getElementById('bkGuestTg')) document.getElementById('bkGuestTg').value = prevTg;
+  if (prevTickets !== undefined && document.getElementById('bkTickets')) document.getElementById('bkTickets').value = prevTickets;
+  if (prevPaid !== undefined && document.getElementById('bkPaid')) document.getElementById('bkPaid').checked = prevPaid;
+  if (prevWait !== undefined && document.getElementById('bkWait')) document.getElementById('bkWait').checked = prevWait;
+  if (prevNote !== undefined && document.getElementById('bkNote')) document.getElementById('bkNote').value = prevNote;
+}
+
+function setGuestListFilter(eventId, filter){
+  ui.guestListFilter = filter;
+  openEventDetailsModal(eventId);
+}
+
+function handleQuickBookingSubmit(e, eventId){
+  e.preventDefault();
+  const name = document.getElementById('bkGuestName').value.trim();
+  let tg = document.getElementById('bkGuestTg').value.trim();
+  if(tg && !tg.startsWith('@') && !tg.startsWith('http')) tg = '@' + tg;
+  const count = parseInt(document.getElementById('bkTickets').value) || 1;
+  const isPaid = document.getElementById('bkPaid').checked;
+  const isWait = document.getElementById('bkWait').checked;
+  const note = document.getElementById('bkNote').value.trim();
+
+  const ev = db.events.find(evItem => evItem.id === eventId);
+  const cost = (ev ? ev.price : 0) * count;
+
+  const newBk = {
+    id: uid('bk'),
+    eventId,
+    guestName: name,
+    telegram: tg,
+    ticketsCount: count,
+    isPaid,
+    isCheckedIn: false,
+    isWaitlist: isWait,
+    note
+  };
+
+  db.bookings.push(newBk);
+
+  if(tg){
+    if(!db.clients[tg]){
+      db.clients[tg] = {
+        telegram: tg,
+        name,
+        visitsCount: 0,
+        totalPaid: isPaid ? cost : 0,
+        clientNotes: note,
+        firstSeen: TODAY_ISO,
+        lastSeen: ev ? ev.date : TODAY_ISO
+      };
+    } else {
+      if(isPaid) db.clients[tg].totalPaid = (db.clients[tg].totalPaid || 0) + cost;
+    }
+  }
+
+  saveDatabase();
+  toast(isWait ? 'Гость добавлен в резерв' : 'Гость успешно записан!');
+  openEventDetailsModal(eventId);
+  render();
+}
+
+function toggleGuestCheckin(bookingId){
+  const bk = db.bookings.find(b => b.id === bookingId);
+  if(!bk) return;
+  bk.isCheckedIn = !bk.isCheckedIn;
+
+  if(bk.telegram && db.clients[bk.telegram]){
+    const c = db.clients[bk.telegram];
+    c.visitsCount = (c.visitsCount || 0) + (bk.isCheckedIn ? 1 : -1);
+    if(c.visitsCount < 0) c.visitsCount = 0;
+  }
+
+  saveDatabase();
+  render();
+  if(ui.modal && ui.modal.type === 'event'){
+    openEventDetailsModal(ui.modal.id);
+  }
+}
+
+function toggleGuestPayment(bookingId){
+  const bk = db.bookings.find(b => b.id === bookingId);
+  if(!bk) return;
+  bk.isPaid = !bk.isPaid;
+
+  const ev = db.events.find(e => e.id === bk.eventId);
+  const cost = (bk.ticketsCount || 1) * (ev ? ev.price : 0);
+
+  if(bk.telegram && db.clients[bk.telegram]){
+    const c = db.clients[bk.telegram];
+    c.totalPaid = (c.totalPaid || 0) + (bk.isPaid ? cost : -cost);
+    if(c.totalPaid < 0) c.totalPaid = 0;
+  }
+
+  saveDatabase();
+  toast(bk.isPaid ? 'Отметка: Оплачено' : 'Отметка: Оплата ожидается');
+  render();
+  if(ui.modal && ui.modal.type === 'event'){
+    openEventDetailsModal(ui.modal.id);
+  }
+}
+
+function transferFromWaitlist(bookingId){
+  const bk = db.bookings.find(b => b.id === bookingId);
+  if(!bk) return;
+  bk.isWaitlist = false;
+  saveDatabase();
+  toast('Переведен в основной состав');
+  openEventDetailsModal(bk.eventId);
+  render();
+}
+
+function openTgReminder(bookingId){
+  const bk = db.bookings.find(b => b.id === bookingId);
+  if(!bk || !bk.telegram) return;
+  const ev = db.events.find(e => e.id === bk.eventId);
+  const nick = bk.telegram.replace('@', '');
+  const text = `Привет! Напоминаю о встрече на «${ev ? ev.title : 'мероприятии'}» в «Пятнице»: ${ev ? fmtDateRu(ev.date) : ''} в ${ev ? ev.time : ''}. Ждем в гости!`;
+  window.open(`https://t.me/${nick}?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function openAddEventModal(formatId = '', prefillDate = '', prefillTime = '', editId = null){
+  ui.modal = { type: editId ? 'editEvent' : 'addEvent', id: editId };
+  const existing = editId ? db.events.find(e => e.id === editId) : null;
+  const selectedFormat = formatId ? db.formats.find(f => f.id === formatId) : null;
+
+  const defaultDate = prefillDate || ui.dayDate || TODAY_ISO;
+  const defaultTime = prefillTime || '19:00';
+  const [h, m] = defaultTime.split(':').map(Number);
+  const defaultEndTime = `${String(Math.min(h+2, 23)).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+
+  const initial = existing || {
+    title: selectedFormat ? selectedFormat.title : '',
+    formatId: formatId || '',
+    date: defaultDate,
+    time: defaultTime,
+    endTime: defaultEndTime,
+    price: selectedFormat ? selectedFormat.defaultPrice : 0,
+    capacity: selectedFormat ? selectedFormat.defaultCapacity : 20,
+    presenceType: selectedFormat ? selectedFormat.defaultPresence : 'must',
+    contactPerson: 'Лена',
+    note: ''
+  };
+
+  const presOpts = Object.keys(PRESENCE).map(k => {
+    const p = PRESENCE[k];
+    const on = initial.presenceType === k;
+    return `
+      <button type="button" class="pres-opt ${on?'on':''}" onclick="selectPresenceOpt(this, '${k}')"
+              style="${on?`background:${p.color}`:''}">${p.label}</button>
+    `;
+  }).join('');
+
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">${existing ? 'Редактировать событие' : 'Новое событие в график'}</div>
+        <div class="modal-sub">Запланируйте дату, тайминг и формат присутствия</div>
+      </div>
+      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+    </div>
+
+    <form onsubmit="handleSaveEventSubmit(event, '${editId || ''}')">
+      <div class="modal-body">
+        <div class="field">
+          <label>Выбрать из реестра событий</label>
+          <select class="inp" id="evFormatSelect" onchange="handleEventFormatChange(this.value)">
+            <option value="">— Ручной ввод (без шаблона) —</option>
+            ${db.formats.map(f => `<option value="${f.id}" ${f.id===initial.formatId?'selected':''}>${esc(f.title)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Название события *</label>
+          <input class="inp" id="evTitle" required value="${esc(initial.title)}" placeholder="Например: Осенний квартирник">
+        </div>
+
+        <div class="grid3">
+          <div class="field"><label>Дата</label><input class="inp" type="date" id="evDate" required value="${initial.date}"></div>
+          <div class="field"><label>Начало</label><input class="inp" type="time" id="evTime" required value="${initial.time}"></div>
+          <div class="field"><label>Окончание</label><input class="inp" type="time" id="evEndTime" required value="${initial.endTime}"></div>
+        </div>
+
+        <div class="grid2">
+          <div class="field"><label>Цена билета, ₽</label><input class="inp" type="number" id="evPrice" min="0" step="50" value="${initial.price}"></div>
+          <div class="field"><label>Вместимость зала, мест</label><input class="inp" type="number" id="evCapacity" min="0" value="${initial.capacity}"></div>
+        </div>
+
+        <div class="field">
+          <label>Формат участия</label>
+          <input type="hidden" id="evPresenceType" value="${initial.presenceType}">
+          <div class="pres-pick">${presOpts}</div>
+        </div>
+
+        <div class="field">
+          <label>Заметка (чай, свечи, контакты арендатора)</label>
+          <input class="inp" id="evNote" value="${esc(initial.note)}" placeholder="Подготовить зал к приходу гостей...">
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+        <button type="submit" class="btn btn-primary">${ic('check')} Сохранить событие</button>
+      </div>
+    </form>
+  `, { wide: true });
+}
+
+function selectPresenceOpt(btn, key){
+  document.getElementById('evPresenceType').value = key;
+  btn.closest('.pres-pick').querySelectorAll('.pres-opt').forEach(b => {
+    b.classList.remove('on');
+    b.style.background = '';
+  });
+  btn.classList.add('on');
+  btn.style.background = PRESENCE[key].color;
+}
+
+function handleEventFormatChange(fmtId){
+  if(!fmtId) return;
+  const f = db.formats.find(x => x.id === fmtId);
+  if(!f) return;
+  document.getElementById('evTitle').value = f.title;
+  document.getElementById('evPrice').value = f.defaultPrice;
+  document.getElementById('evCapacity').value = f.defaultCapacity;
+  const presBtn = document.querySelector(`.pres-opt[onclick*="'${f.defaultPresence}'"]`);
+  if(presBtn) selectPresenceOpt(presBtn, f.defaultPresence);
+}
+
+function handleSaveEventSubmit(e, editId){
+  e.preventDefault();
+  const title = document.getElementById('evTitle').value.trim();
+  const formatId = document.getElementById('evFormatSelect').value;
+  const date = document.getElementById('evDate').value;
+  const time = document.getElementById('evTime').value;
+  let endTime = document.getElementById('evEndTime').value;
+  const price = parseFloat(document.getElementById('evPrice').value) || 0;
+  const capacity = parseInt(document.getElementById('evCapacity').value) || 0;
+  const presenceType = document.getElementById('evPresenceType').value;
+  const note = document.getElementById('evNote').value.trim();
+
+  const startMin = toMin(time);
+  const endMin = toMin(endTime);
+  if(endMin <= startMin){
+    const adj = Math.min(startMin + 120, 23 * 60 + 59);
+    endTime = `${String(Math.floor(adj/60)).padStart(2,'0')}:${String(adj%60).padStart(2,'0')}`;
+  }
+
+  const conflicts = db.events.filter(ev => {
+    if(editId && ev.id === editId) return false;
+    if(ev.date !== date) return false;
+    const oStart = toMin(ev.time);
+    const oEnd = toMin(ev.endTime || ev.time);
+    return (startMin < oEnd && toMin(endTime) > oStart);
+  });
+
+  const saveAction = () => {
+    const payload = {
+      title, formatId, date, time, endTime, price, capacity, presenceType, note, contactPerson: 'Лена'
+    };
+
+    if(editId){
+      const idx = db.events.findIndex(x => x.id === editId);
+      if(idx !== -1) db.events[idx] = { ...db.events[idx], ...payload };
+      toast('Событие обновлено');
+    } else {
+      db.events.push({ id: uid('ev'), ...payload });
+      toast('Событие добавлено в график');
+    }
+
+    saveDatabase();
+    closeModal();
+    render();
+  };
+
+  if(conflicts.length > 0){
+    confirmAction(
+      'Пересечение по времени',
+      `В этот интервал уже запланировано: «${conflicts[0].title}» (${conflicts[0].time}–${conflicts[0].endTime}). Сохранить оба события?`,
+      'Да, сохранить оба',
+      saveAction,
+      false
+    );
+    return;
+  }
+
+  saveAction();
+}
+
+function openFormatFormModal(editId = null){
+  ui.modal = { type: 'formatForm', id: editId };
+  const f = editId ? db.formats.find(x => x.id === editId) : null;
+  const initial = f || {
+    title: '', shortDescription: '', defaultPrice: 0, defaultCapacity: 25, frequencyDays: 21, defaultPresence: 'must'
+  };
+
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">${f ? 'Редактировать событие' : 'Новое событие в реестр'}</div>
+        <div class="modal-sub">Шаблон для быстрого назначения в сетку месяца на разные даты</div>
+      </div>
+      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+    </div>
+
+    <form onsubmit="handleSaveFormatSubmit(event, '${editId || ''}')">
+      <div class="modal-body">
+        <div class="field">
+          <label>Название события *</label>
+          <input class="inp" id="fmtTitle" required value="${esc(initial.title)}" placeholder="Плейбэк-театр «Драмеди»">
+        </div>
+
+        <div class="field">
+          <label>Краткое описание (для постов в Telegram)</label>
+          <textarea class="inp" id="fmtDesc" placeholder="Акустический вечер при свечах, авторские песни...">${esc(initial.shortDescription)}</textarea>
+        </div>
+
+        <div class="grid3">
+          <div class="field"><label>Базовая цена, ₽</label><input class="inp" type="number" id="fmtPrice" value="${initial.defaultPrice}"></div>
+          <div class="field"><label>Вместимость, мест</label><input class="inp" type="number" id="fmtCapacity" value="${initial.defaultCapacity}"></div>
+          <div class="field">
+            <label>Частота, в днях</label>
+            <input class="inp" type="number" id="fmtFreq" value="${initial.frequencyDays}" min="0">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Формат участия</label>
+          <select class="inp" id="fmtPresence">
+            <option value="must" ${initial.defaultPresence==='must'?'selected':''}>Со мной</option>
+            <option value="team" ${initial.defaultPresence==='team'?'selected':''}>Без меня</option>
+            <option value="rent" ${initial.defaultPresence==='rent'?'selected':''}>Аренда</option>
+          </select>
+          <div class="hint">Укажите 0 дней, если событие проводится по нерегулярному запросу или аренде.</div>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+        <button type="submit" class="btn btn-primary">${ic('check')} Сохранить событие</button>
+      </div>
+    </form>
+  `, { wide: true });
+}
+
+function handleSaveFormatSubmit(e, editId){
+  e.preventDefault();
+  const title = document.getElementById('fmtTitle').value.trim();
+  const shortDescription = document.getElementById('fmtDesc').value.trim();
+  const defaultPrice = parseFloat(document.getElementById('fmtPrice').value) || 0;
+  const defaultCapacity = parseInt(document.getElementById('fmtCapacity').value) || 0;
+  const frequencyDays = parseInt(document.getElementById('fmtFreq').value) || 0;
+  const defaultPresence = document.getElementById('fmtPresence').value;
+
+  const payload = { title, shortDescription, defaultPrice, defaultCapacity, frequencyDays, defaultPresence };
+
+  if(editId){
+    const idx = db.formats.findIndex(x => x.id === editId);
+    if(idx !== -1) db.formats[idx] = { ...db.formats[idx], ...payload };
+    toast('Событие в реестре обновлено');
+  } else {
+    db.formats.push({ id: uid('fmt'), ...payload });
+    toast('Событие добавлено в реестр');
+  }
+
+  saveDatabase();
+  closeModal();
+  render();
+}
+
+function openClientCardModal(key){
+  ui.modal = { type: 'clientCard', key };
+  const stats = buildClientList();
+  const c = stats.find(x => x.key === key);
+  if(!c) return;
+
+  const visitedEvs = db.bookings
+    .filter(b => (b.telegram && b.telegram.toLowerCase() === key) || ('name:' + String(b.guestName).toLowerCase().trim() === key))
+    .map(b => ({ bk: b, ev: db.events.find(e => e.id === b.eventId) }))
+    .filter(x => !!x.ev);
+
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">${esc(c.name)}</div>
+        <div class="modal-sub">${c.telegram ? esc(c.telegram) : 'без аккаунта TG'} · визитов: ${c.visits}</div>
+      </div>
+      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="stats" style="grid-template-columns:repeat(2, 1fr);margin-bottom:16px">
+        <div class="stat" style="padding:16px">
+          <div class="stat-label">Визиты</div>
+          <div class="stat-val" style="font-size:22px">${c.visits}</div>
+        </div>
+        <div class="stat" style="padding:16px">
+          <div class="stat-label">Оплаты</div>
+          <div class="stat-val" style="font-size:22px">${money(c.total)}</div>
+        </div>
+      </div>
+
+      <form onsubmit="handleSaveClientProfile(event, '${esc(key)}')">
+        <div class="grid2">
+          <div class="field"><label>Имя гостя</label><input class="inp" id="clName" value="${esc(c.name)}" required></div>
+          <div class="field">
+            <label style="display:flex;justify-content:space-between;align-items:center">
+              <span>Telegram (@ник)</span>
+              ${c.telegram ? `<a href="${getTgLink(c.telegram)}" target="_blank" rel="noopener noreferrer" style="color:#2AABEE;font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px">${ic('send')} Открыть диалог</a>` : ''}
+            </label>
+            <input class="inp" id="clTg" value="${esc(c.telegram||'')}">
+          </div>
+        </div>
+        <div class="field">
+          <label>Вкусовые предпочтения и заметки</label>
+          <textarea class="inp" id="clNotes" placeholder="Предпочитает зеленый чай, играет на акустике...">${esc(c.notes)}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="width:100%">${ic('check')} Сохранить профиль гостя</button>
+      </form>
+
+      <div class="section-title">История визитов и записей</div>
+      <div class="list-card" style="box-shadow:none;background:#F9F7F3">
+        ${visitedEvs.length === 0 ? `
+          <div class="empty" style="padding:18px">Записей пока нет</div>
+        ` : visitedEvs.map(({ bk, ev }) => `
+          <div class="row" style="padding:10px 16px">
+            <div class="row-main">
+              <div class="row-title" style="font-size:13.5px">${esc(ev.title)}</div>
+              <div class="row-sub">${fmtDateRu(ev.date)} · ${bk.ticketsCount} билета(ов)</div>
+            </div>
+            <span class="tag" style="${bk.isCheckedIn?'background:#E7F5EE;color:#3E946E':'background:#F3EFE8;color:var(--muted)'}">
+              ${bk.isCheckedIn ? 'Был на встрече' : 'Записан'}
+            </span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" onclick="closeModal(); confirmDeleteClient('${esc(key)}');">${ic('trash')} Удалить гостя</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" onclick="closeModal()">Закрыть</button>
+    </div>
+  `, { wide: true });
+}
+
+function handleSaveClientProfile(e, origKey){
+  e.preventDefault();
+  const name = document.getElementById('clName').value.trim();
+  let tg = document.getElementById('clTg').value.trim();
+  if(tg && !tg.startsWith('@') && !tg.startsWith('http')) tg = '@' + tg;
+  const notes = document.getElementById('clNotes').value.trim();
+
+  const prev = db.clients[origKey] || {};
+  if(origKey && db.clients[origKey]) delete db.clients[origKey];
+  const newKey = tg ? tg.toLowerCase() : 'name:' + name.toLowerCase();
+
+  db.clients[newKey] = {
+    ...prev,
+    telegram: tg,
+    name,
+    clientNotes: notes
+  };
+
+  db.bookings.forEach(b => {
+    const bKey = b.telegram ? b.telegram.toLowerCase() : 'name:' + String(b.guestName).toLowerCase().trim();
+    if(bKey === origKey){
+      b.guestName = name;
+      b.telegram = tg;
+    }
+  });
+
+  saveDatabase();
+  toast('Профиль гостя обновлен');
+  closeModal();
+  render();
+}
+
+let tgPostOptions = {
+  includePrices: true,
+  includeDescriptions: true,
+  includeAddress: true
+};
+
+function generateTelegramPostText(){
+  const curY = ui.year;
+  const curM = ui.month;
+  const mName = MONTHS[curM].toUpperCase();
+
+  const publicEvents = db.events.filter(ev => {
+    if(ev.presenceType === 'trip') return false;
+    const d = parseYmd(ev.date);
+    return d.getFullYear() === curY && d.getMonth() === curM;
+  }).sort((a,b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+  let text = `🕯 РАСПИСАНИЕ НА ${mName} • Пространство «Пятница»\n\n`;
+  text += `Уютный уголок для теплых встреч, квартирников и хороших разговоров.\n\n`;
+
+  if(!publicEvents.length){
+    text += `События на этот месяц еще формируются. Следите за обновлениями!\n\n`;
+  } else {
+    publicEvents.forEach(ev => {
+      const d = parseYmd(ev.date);
+      const dow = DOW[(d.getDay() + 6) % 7];
+      const fmt = db.formats.find(f => f.id === ev.formatId);
+      const desc = (fmt && fmt.shortDescription) ? fmt.shortDescription : (ev.note || '');
+
+      text += `📅 ${d.getDate()} ${MONTHS_GEN[d.getMonth()]} (${dow}), ${ev.time} — ${ev.title}\n`;
+      if(tgPostOptions.includeDescriptions && desc){
+        text += `   ${desc}\n`;
+      }
+      if(tgPostOptions.includePrices){
+        text += `   Билет: ${ev.price > 0 ? ev.price + ' ₽' : 'Вход свободный'} | Мест: ${ev.capacity || 'ограничено'}\n`;
+      }
+      text += `\n`;
+    });
+  }
+
+  if(tgPostOptions.includeAddress){
+    text += `📍 Наш адрес: ул. Пятницкая, 12\n`;
+    text += `💌 Запись и вопросы в личные сообщения: @lena_pyatnitsa\n`;
+  }
+  return text;
+}
+
+function openTelegramPostModal(){
+  ui.modal = { type: 'tgPost' };
+  const text = generateTelegramPostText();
+
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Анонс для Telegram-канала</div>
+        <div class="modal-sub">${MONTHS[ui.month]} ${ui.year} · личные отлучки и закрытая аренда исключены</div>
+      </div>
+      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+    </div>
+
+    <div class="modal-body">
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px">
+        <label class="check">
+          <input type="checkbox" ${tgPostOptions.includePrices?'checked':''} onchange="tgPostOptions.includePrices = this.checked; updateTgPostPreview()"> Цены
+        </label>
+        <label class="check">
+          <input type="checkbox" ${tgPostOptions.includeDescriptions?'checked':''} onchange="tgPostOptions.includeDescriptions = this.checked; updateTgPostPreview()"> Описания
+        </label>
+        <label class="check">
+          <input type="checkbox" ${tgPostOptions.includeAddress?'checked':''} onchange="tgPostOptions.includeAddress = this.checked; updateTgPostPreview()"> Адрес и контакт
+        </label>
+      </div>
+
+      <div class="post-box" id="tgPostArea">${esc(text)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px" id="tgPostChars">Символов: ${text.length}</div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-soft" onclick="window.open('https://t.me/','_blank')">${ic('send')} Открыть TG</button>
+      <button class="btn btn-primary" onclick="copyTelegramPost()">${ic('copy')} Скопировать текст</button>
+    </div>
+  `, { wide: true });
+}
+
+function updateTgPostPreview(){
+  const text = generateTelegramPostText();
+  const el = document.getElementById('tgPostArea');
+  const cnt = document.getElementById('tgPostChars');
+  if(el) el.textContent = text;
+  if(cnt) cnt.textContent = `Символов: ${text.length}`;
+}
+
+async function copyTelegramPost(){
+  const el = document.getElementById('tgPostArea');
+  const text = el ? el.textContent : generateTelegramPostText();
+  const ok = await copySafe(text);
+  if(ok){
+    toast('Текст скопирован в буфер обмена!');
+  } else {
+    toast('Выделите текст и нажмите Ctrl+C');
+  }
+}
+
+function getSyncModalStatusHtml(){
+  const isConnected = ui.cloudStatus === 'connected';
+  if(!ui.firebaseUrl){
+    return {
+      bg: '#FAF8F5',
+      border: 'var(--line2)',
+      color: 'var(--ink2)',
+      icon: ic('cloudWarn'),
+      iconColor: '#DE6254',
+      title: 'Работает только на этом устройстве',
+      sub: 'Чтобы расписание автоматически открывалось на телефоне, подключите ссылку ниже.'
+    };
+  }
+  if(isConnected){
+    return {
+      bg: '#E7F5EE',
+      border: '#C4EBD7',
+      color: '#2E7D56',
+      icon: ic('cloudOk'),
+      iconColor: '#2E7D56',
+      title: 'Синхронизация активна',
+      sub: 'Все изменения мгновенно сохраняются и обновляются на всех ваших устройствах.'
+    };
+  }
+  return {
+    bg: '#FDEDE9',
+    border: '#F8C8C2',
+    color: '#C63D31',
+    icon: ic('cloudWarn'),
+    iconColor: '#DE6254',
+    title: 'Нет связи с базой данных',
+    sub: 'Проверьте подключение к интернету или правильность ссылки.'
+  };
+}
+
+function updateSyncModalStatus(){
+  const box = document.getElementById('syncModalStatusBox');
+  if(!box) return;
+  const s = getSyncModalStatusHtml();
+  box.style.background = s.bg;
+  box.style.borderColor = s.border;
+  box.innerHTML = `
+    <div style="color:${s.iconColor};flex:0 0 auto">${s.icon}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:14px;color:${s.color}">${s.title}</div>
+      <div style="font-size:12px;color:var(--ink2);margin-top:2px;line-height:1.4">${s.sub}</div>
+    </div>
+  `;
+}
+
+function toggleSyncHelpGuide(){
+  const guide = document.getElementById('syncHelpGuide');
+  const btn = document.getElementById('syncHelpBtn');
+  if(!guide) return;
+  const isHidden = guide.style.display === 'none';
+  guide.style.display = isHidden ? 'block' : 'none';
+  if(btn) btn.innerHTML = isHidden ? 'Скрыть подсказку' : 'Как получить ссылку? (инструкция)';
+}
+
+function openSyncModal() {
+  ui.modal = { type: 'sync' };
+  const s = getSyncModalStatusHtml();
+
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Связь и данные</div>
+        <div class="modal-sub">Синхронизация с телефоном, загрузка списков и бэкапы</div>
+      </div>
+      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+    </div>
+
+    <div class="modal-body" style="padding-top:14px">
+      <!-- Статус-плашка -->
+      <div id="syncModalStatusBox" style="display:flex;align-items:center;gap:12px;background:${s.bg};border:1px solid ${s.border};border-radius:16px;padding:14px 16px;margin-bottom:16px;transition:all .2s ease">
+        <div style="color:${s.iconColor};flex:0 0 auto">${s.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px;color:${s.color}">${s.title}</div>
+          <div style="font-size:12px;color:var(--ink2);margin-top:2px;line-height:1.4">${s.sub}</div>
+        </div>
+      </div>
+
+      <!-- Карточка 1: Синхронизация между устройствами -->
+      <div style="background:#fff;border-radius:18px;padding:16px;border:1.5px solid var(--line);margin-bottom:14px;box-shadow:var(--sh)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-weight:700;font-size:14.5px;color:var(--ink);display:flex;align-items:center;gap:8px">
+            ${ic('refresh')} Связь между ноутбуком и телефоном
+          </div>
+          <button type="button" id="syncHelpBtn" class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11.5px;height:auto;min-height:0;color:var(--muted)" onclick="toggleSyncHelpGuide()">
+            Как получить ссылку?
+          </button>
+        </div>
+
+        <div id="syncHelpGuide" style="display:none;background:#FAF8F4;border:1px solid var(--line2);border-radius:12px;padding:12px 14px;font-size:12px;line-height:1.55;color:var(--ink2);margin-bottom:12px">
+          <b>Как подключить за 2 минуты:</b>
+          <ol style="margin:6px 0 0 16px;padding:0">
+            <li>Создайте базу на <a href="https://console.firebase.google.com/" target="_blank" style="color:var(--ink);text-decoration:underline">console.firebase.google.com</a> (Realtime Database).</li>
+            <li>Скопируйте полученную ссылку и вставьте её в поле ниже.</li>
+            <li>Вставьте эту же ссылку на телефоне — и расписание свяжется!</li>
+          </ol>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="inp" id="syncModalFbUrl" placeholder="Вставьте ссылку на базу данных..." value="${esc(ui.firebaseUrl)}" style="flex:1;font-size:13px;min-height:40px">
+          <button class="btn btn-primary btn-sm" style="min-height:40px" onclick="saveFirebaseUrlFromModal()">${ic('check')} Подключить</button>
+        </div>
+      </div>
+
+      <!-- Карточка 2: Загрузка готового расписания или гостей -->
+      <div style="background:#fff;border-radius:18px;padding:16px;border:1.5px solid var(--line);margin-bottom:14px;box-shadow:var(--sh);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <div style="font-weight:700;font-size:14.5px;color:var(--ink);display:flex;align-items:center;gap:8px">
+            ${ic('upload')} Загрузить список событий или гостей
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4">
+            Просто вставьте текст из заметок, Telegram или таблицы — система сама распределит даты, время и цены.
+          </div>
+        </div>
+        <button class="btn btn-soft btn-sm" onclick="openTextImportModal('events')" style="border-color:var(--line2)">
+          ${ic('upload')} Вставить список
+        </button>
+      </div>
+
+      <!-- Карточка 3: Файлы и очистка (аккуратный блок) -->
+      <details style="background:#FAF8F5;border-radius:16px;padding:12px 16px;border:1px solid var(--line2);cursor:pointer">
+        <summary style="font-size:12.5px;font-weight:600;color:var(--ink2);user-select:none;outline:none">
+          Файл резервной копии и сброс данных
+        </summary>
+        <div style="padding-top:12px;cursor:default">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+            <button class="btn btn-soft btn-sm" onclick="exportBackupFile()">${ic('download')} Сохранить файл на диск</button>
+            <button class="btn btn-soft btn-sm" onclick="document.getElementById('backupFileInputModal').click()">${ic('upload')} Загрузить из файла</button>
+            <input type="file" id="backupFileInputModal" accept=".json" style="display:none" onchange="importBackupFile(event)">
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:10px;margin-top:4px">
+            <div style="font-size:11.5px;color:var(--muted)">Нужно очистить систему с нуля?</div>
+            <button class="btn btn-ghost btn-sm" style="color:#C63D31;font-size:12px;padding:4px 8px;height:auto;min-height:0" onclick="confirmWipeAllData()">
+              ${ic('trash')} Стереть все данные
+            </button>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="modal-foot" style="padding-top:12px">
+      <button class="btn btn-ghost" onclick="closeModal()">Закрыть</button>
+    </div>
+  `, { wide: true });
+
+  if(ui.firebaseUrl){
+    pullFromFirebase(false);
+  }
+}
+
+function saveFirebaseUrlFromModal() {
+  const inp = document.getElementById('syncModalFbUrl');
+  let val = normalizeFirebaseUrl((inp ? inp.value : '').trim());
+  if(inp) inp.value = val;
+  ui.firebaseUrl = val;
+  localStorage.setItem(FIREBASE_URL_KEY, val);
+  
+  if (val) {
+    toast('Подключаем базу данных...');
+    pullFromFirebase(true);
+    setupFirebaseRealtimeListener();
+    startBackgroundSync();
+  } else {
+    ui.cloudStatus = 'disconnected';
+    renderSettingsBtn();
+    updateSyncModalStatus();
+    toast('Синхронизация отключена');
+  }
+}
+
+// ----------------------------------------------------
+// ИНТЕЛЛЕКТУАЛЬНЫЙ ИМПОРТ СОБЫТИЙ И КЛИЕНТОВ
+// ----------------------------------------------------
+let importDataType = 'events'; // 'events' | 'clients'
+let importSelectedMode = 'append'; // 'append' | 'replace'
+
+function setImportDataType(type) {
+  importDataType = type;
+  const btnEv = document.getElementById('tabImportEvents');
+  const btnCl = document.getElementById('tabImportClients');
+  const descModeAppend = document.getElementById('descModeAppend');
+  const descModeReplace = document.getElementById('descModeReplace');
+  const hintBox = document.getElementById('importFormatHint');
+  const ta = document.getElementById('importRawText');
+
+  if (btnEv && btnCl) {
+    btnEv.className = `chip ${type === 'events' ? 'on' : ''}`;
+    btnCl.className = `chip ${type === 'clients' ? 'on' : ''}`;
+  }
+
+  if (descModeAppend && descModeReplace) {
+    if (type === 'events') {
+      descModeAppend.textContent = 'Существующие события сохранятся, новые добавятся в график и Реестр событий.';
+      descModeReplace.textContent = 'Удалить все существующие события и записи гостей перед импортом новых.';
+      if (hintBox) {
+        hintBox.innerHTML = `
+          <b>Формат для событий:</b> <code>ДД.ММ.ГГГГ [Tab] ЧЧ:ММ [Tab] Название [Tab] Орг взнос/Цена</code><br>
+          <i>Пример:</i> <code>10.08.2026	19:00	Клуб путешественников "Винодельни Кубани"	800₽</code><br>
+          <i>Импортированные события будут автоматически добавлены в <b>Реестр событий</b>!</i>
+        `;
+      }
+    } else {
+      descModeAppend.textContent = 'Существующая база гостей сохранится, новые контакты пополнят список.';
+      descModeReplace.textContent = 'Удалить текущую базу клиентов и внести только импортируемых.';
+      if (hintBox) {
+        hintBox.innerHTML = `
+          <b>Формат для клиентов:</b> <code>Имя Фамилия [Tab] @telegram [Tab] Заметка / Предпочтения</code><br>
+          <i>Пример:</i> <code>Марина Соколова	@sokol_marina	Любит авторские песни и травяной чай</code>
+        `;
+      }
+    }
+  }
+
+  if (ta && !ta.value.trim()) {
+    ta.placeholder = type === 'events'
+      ? '10.08.2026\t19:00\tКлуб путешественников "Винодельни Кубани"\t800₽\n11.08.2026\t15:00\tЗрелые встречи — играем в игры на сближение\tОрг взнос: 500₽'
+      : 'Марина Соколова\t@sokol_marina\tЛюбит травяной чай\nАлексей Кузнецов\t@kuznetsov_alex\tГитарист, тихие вечера';
+  }
+}
+
+function selectImportMode(mode) {
+  importSelectedMode = mode;
+  const appendCard = document.getElementById('modeCardAppend');
+  const replaceCard = document.getElementById('modeCardReplace');
+  const warnBox = document.getElementById('replaceWarningBox');
+
+  if (appendCard && replaceCard) {
+    appendCard.classList.toggle('selected', mode === 'append');
+    replaceCard.classList.toggle('selected', mode === 'replace');
+  }
+  if (warnBox) {
+    warnBox.style.display = mode === 'replace' ? 'block' : 'none';
+    const targetName = importDataType === 'events' ? 'события и записи гостей' : 'клиенты из базы гостей';
+    warnBox.innerHTML = `⚠️ <b>Внимание:</b> При выборе этого режима все существующие <b>${targetName}</b> будут безвозвратно удалены.`;
+  }
+}
+
+function openTextImportModal(initialType = 'events') {
+  ui.modal = { type: 'import', initialType };
+  importDataType = initialType;
+  importSelectedMode = 'append';
+
+  const defaultPlaceholder = importDataType === 'events'
+    ? `10.08.2026\t19:00\tКлуб путешественников "Винодельни Кубани"\t800₽\n11.08.2026\t15:00\tЗрелые встречи — играем в игры на сближение\tОрг взнос: 500₽`
+    : `Марина Соколова\t@sokol_marina\tЛюбит травяной чай\nАлексей Кузнецов\t@kuznetsov_alex\tГитарист, тихие вечера`;
+
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Импорт данных в систему</div>
+        <div class="modal-sub">Копируйте строки из Google Таблиц, Excel или заметок</div>
+      </div>
+      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Переключатель что импортируем -->
+      <div class="field">
+        <label>Что именно импортируем:</label>
+        <div class="chips" style="margin-bottom:6px">
+          <button type="button" id="tabImportEvents" class="chip ${importDataType==='events'?'on':''}" onclick="setImportDataType('events')">
+            ${ic('calendar')} События (с добавлением в Реестр)
+          </button>
+          <button type="button" id="tabImportClients" class="chip ${importDataType==='clients'?'on':''}" onclick="setImportDataType('clients')">
+            ${ic('users')} Гости и клиенты
+          </button>
+        </div>
+      </div>
+
+      <!-- Выбор режима: добавить или заменить -->
+      <div class="field">
+        <label>Действие с имеющимися данными:</label>
+        <div class="import-mode-cards">
+          <div class="import-mode-card selected" id="modeCardAppend" onclick="selectImportMode('append')">
+            <div class="import-mode-title">
+              <span style="color:var(--team)">●</span> Добавить к имеющимся
+            </div>
+            <div class="import-mode-desc" id="descModeAppend">
+              Текущие события сохранятся, новые добавятся в график и Реестр событий.
+            </div>
+          </div>
+          <div class="import-mode-card" id="modeCardReplace" onclick="selectImportMode('replace')">
+            <div class="import-mode-title">
+              <span style="color:var(--must)">●</span> Удалить и заменить
+            </div>
+            <div class="import-mode-desc" id="descModeReplace">
+              Удалить все существующие события и записи перед импортом новых.
+            </div>
+          </div>
+        </div>
+
+        <div id="replaceWarningBox" style="display:none;background:#FDEEEB;border:1px solid #F8C8C2;border-radius:12px;padding:10px 14px;color:#C63D31;font-size:12.5px;margin-bottom:14px">
+          ⚠️ <b>Внимание:</b> При подтверждении все существующие данные выбранного типа будут удалены.
+        </div>
+      </div>
+
+      <div class="field">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <label style="margin:0">Текстовые данные для импорта:</label>
+          <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11.5px;height:auto;min-height:0" onclick="insertImportTemplate()">Вставить образец</button>
+        </div>
+        <textarea class="inp" id="importRawText" style="min-height: 160px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12.5px; white-space: pre; line-height: 1.5;" placeholder="${esc(defaultPlaceholder)}"></textarea>
+      </div>
+
+      <div id="importFormatHint" style="background:#FAF8F4;border-radius:12px;padding:12px 14px;font-size:12px;color:var(--ink2);line-height:1.5;border:1px solid var(--line)">
+        <b>Формат для событий:</b> <code>ДД.ММ.ГГГГ [Tab] ЧЧ:ММ [Tab] Название [Tab] Орг взнос/Цена</code><br>
+        <i>Пример:</i> <code>10.08.2026	19:00	Клуб путешественников "Винодельни Кубани"	800₽</code><br>
+        <i>Импортированные события будут автоматически добавлены в <b>Реестр событий</b>!</i>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-primary" onclick="executeDataImport()">${ic('check')} Выполнить импорт</button>
+    </div>
+  `, { wide: true });
+}
+
+function insertImportTemplate() {
+  const ta = document.getElementById('importRawText');
+  if (!ta) return;
+  if (importDataType === 'events') {
+    ta.value = "10.08.2026\t19:00\tКлуб путешественников \"Винодельни Кубани\"\t800₽\n11.08.2026\t15:00\tЗрелые встречи — играем в игры на сближение\tОрг взнос: 500₽";
+  } else {
+    ta.value = "Марина Соколова\t@sokol_marina\tЛюбит травяной чай\nАлексей Кузнецов\t@kuznetsov_alex\tИграет на гитаре, тихие вечера";
+  }
+}
+
+function parseImportLines(text, type) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const parsedEvents = [];
+  const parsedClients = [];
+
+  for (const line of lines) {
+    let parts;
+    if (line.includes('\t')) {
+      parts = line.split('\t').map(s => s.trim()).filter(Boolean);
+    } else {
+      parts = line.split(/\s{2,}|;/).map(s => s.trim()).filter(Boolean);
+    }
+
+    // Если строка была разделена обычными пробелами, но содержит дату и время в начале
+    if (parts.length < 3) {
+      const lineMatch = line.match(/^(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})\s+(\d{1,2}:\d{2}(?:\s*[-–—]\s*\d{1,2}:\d{2})?)\s+(.+)$/);
+      if (lineMatch) {
+        const remaining = lineMatch[3].trim();
+        const priceSuffixMatch = remaining.match(/^(.*?)(?:\s+((?:(?:орг\.?\s*взнос|взнос|билет|цена|стоимость)[:\s]*)?\d[\d\s]*\s*(?:₽|руб\.?|р\b)?|(?:бесплатно|вход свободный|свободный|донейшн|шляпный сбор)))$/i);
+        if (priceSuffixMatch) {
+          parts = [lineMatch[1], lineMatch[2], priceSuffixMatch[1].trim(), priceSuffixMatch[2].trim()];
+        } else {
+          parts = [lineMatch[1], lineMatch[2], remaining];
+        }
+      }
+    }
+
+    if (!parts || !parts.length) continue;
+
+    const dateMatch = parts[0].match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/);
+    const isoDateMatch = parts[0].match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
+
+    if (type === 'events' || dateMatch || isoDateMatch) {
+      if (!dateMatch && !isoDateMatch) continue;
+
+      let isoDate = '';
+      if (dateMatch) {
+        let [, d, m, y] = dateMatch;
+        if (y.length === 2) y = '20' + y;
+        isoDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      } else if (isoDateMatch) {
+        let [, y, m, d] = isoDateMatch;
+        isoDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      }
+
+      let time = parts[1] || '19:00';
+      let endTime = '';
+      if (time.includes('-') || time.includes('–') || time.includes('—')) {
+        const tSplit = time.split(/[-–—]/).map(s => s.trim());
+        time = tSplit[0];
+        endTime = tSplit[1];
+      }
+      if (!time.includes(':')) {
+        time = '19:00';
+      }
+      if (!endTime) {
+        const [h, m] = time.split(':').map(Number);
+        const endH = Math.min(23, (h || 0) + 2);
+        endTime = `${String(endH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
+      }
+
+      let title = parts[2] || 'Мероприятие';
+      let priceNote = parts.slice(3).join(' ') || '';
+
+      // Извлечение цены без выдуманных значений
+      let price = 0;
+      let hasExplicitPrice = false;
+
+      if (priceNote) {
+        // Проверяем явное указание бесплатного участия
+        if (/бесплатно|свободн|донейшн|donation|шляпн|free/i.test(priceNote)) {
+          price = 0;
+          hasExplicitPrice = true;
+        } else {
+          // Ищем числовые значения стоимости
+          const numMatch = priceNote.match(/\d[\d\s]*\d|\d/);
+          if (numMatch) {
+            price = parseInt(numMatch[0].replace(/\s+/g, ''), 10) || 0;
+            hasExplicitPrice = true;
+          }
+        }
+      }
+
+      parsedEvents.push({
+        title,
+        date: isoDate,
+        time,
+        endTime,
+        price: hasExplicitPrice ? price : 0,
+        note: priceNote
+      });
+    } else {
+      // Клиенты
+      const name = parts[0];
+      let tg = '';
+      let notes = '';
+
+      for (let i = 1; i < parts.length; i++) {
+        if (parts[i].includes('@') || parts[i].toLowerCase().includes('t.me')) {
+          tg = parts[i];
+        } else {
+          notes += (notes ? ' · ' : '') + parts[i];
+        }
+      }
+
+      if (tg && !tg.startsWith('@') && !tg.startsWith('http')) {
+        tg = '@' + tg;
+      }
+
+      parsedClients.push({ name, telegram: tg, notes });
+    }
+  }
+
+  return { parsedEvents, parsedClients };
+}
+
+function executeDataImport() {
+  const rawText = document.getElementById('importRawText').value.trim();
+  if (!rawText) {
+    toast('Введите или вставьте данные для импорта');
+    return;
+  }
+
+  const { parsedEvents, parsedClients } = parseImportLines(rawText, importDataType);
+
+  if (importDataType === 'events' && parsedEvents.length === 0) {
+    toast('Не удалось распознать события. Проверьте формат строк');
+    return;
+  }
+  if (importDataType === 'clients' && parsedClients.length === 0) {
+    toast('Не удалось распознать клиентов. Проверьте формат строк');
+    return;
+  }
+
+  const performImport = () => {
+    let duplicatedFormatsCount = 0;
+
+    if (importDataType === 'events') {
+      if (importSelectedMode === 'replace') {
+        db.events = [];
+        db.bookings = [];
+      }
+
+      parsedEvents.forEach(item => {
+        // Проверяем, существует ли шаблон в Реестре событий
+        let format = db.formats.find(f => f.title.trim().toLowerCase() === item.title.trim().toLowerCase());
+
+        // Автоматически дублируем событие в Реестр событий при его отсутствии
+        if (!format) {
+          format = {
+            id: uid('fmt'),
+            title: item.title,
+            shortDescription: item.note || '',
+            defaultPrice: item.price || 0, // Без подстановки 800₽
+            defaultCapacity: 20,
+            frequencyDays: 21,
+            defaultPresence: 'must'
+          };
+          db.formats.push(format);
+          duplicatedFormatsCount++;
+        }
+
+        db.events.push({
+          id: uid('ev'),
+          formatId: format.id,
+          title: item.title,
+          date: item.date,
+          time: item.time,
+          endTime: item.endTime,
+          price: item.price !== undefined ? item.price : (format.defaultPrice || 0),
+          capacity: format.defaultCapacity || 20,
+          presenceType: format.defaultPresence || 'must',
+          contactPerson: 'Лена',
+          note: item.note
+        });
+      });
+
+      // Переключаем сетку на дату первого импортированного события
+      if (parsedEvents.length > 0) {
+        const firstDate = parseYmd(parsedEvents[0].date);
+        ui.year = firstDate.getFullYear();
+        ui.month = firstDate.getMonth();
+        ui.dayDate = parsedEvents[0].date;
+        ui.view = 'month';
+      }
+    } else {
+      // Клиенты
+      if (importSelectedMode === 'replace') {
+        db.clients = {};
+      }
+
+      parsedClients.forEach(c => {
+        const key = c.telegram ? c.telegram.toLowerCase() : 'name:' + c.name.toLowerCase().trim();
+        if (!db.clients[key]) {
+          db.clients[key] = {
+            telegram: c.telegram,
+            name: c.name,
+            visitsCount: 0,
+            totalPaid: 0,
+            clientNotes: c.notes,
+            firstSeen: TODAY_ISO,
+            lastSeen: TODAY_ISO
+          };
+        } else {
+          if (c.notes) {
+            db.clients[key].clientNotes = (db.clients[key].clientNotes ? db.clients[key].clientNotes + ' · ' : '') + c.notes;
+          }
+        }
+      });
+      ui.view = 'clients';
+    }
+
+    saveDatabase(true);
+    closeModal();
+
+    if (importDataType === 'events') {
+      let msg = `Импортировано событий: ${parsedEvents.length}`;
+      if (duplicatedFormatsCount > 0) {
+        msg += ` (в Реестр добавлено: ${duplicatedFormatsCount})`;
+      }
+      toast(msg);
+    } else {
+      toast(`Импортировано клиентов: ${parsedClients.length}`);
+    }
+    render();
+  };
+
+  // Запрос подтверждения при удалении существующих данных
+  if (importSelectedMode === 'replace') {
+    const isEvents = importDataType === 'events';
+    const count = isEvents ? db.events.length : Object.keys(db.clients).length;
+    const title = isEvents ? 'Удалить все существующие события?' : 'Удалить существующую базу клиентов?';
+    const msg = isEvents
+      ? `Вы выбрали режим замены. Все текущие события (${count}) и записи гостей будут удалены перед импортом новых. Продолжить?`
+      : `Вы выбрали режим замены. Текущая база клиентов (${count} чел.) будет очищена перед импортом. Продолжить?`;
+
+    confirmAction(title, msg, 'Да, удалить и заменить', performImport, true);
+  } else {
+    performImport();
+  }
+}
+
+const MODAL_ROOT = document.getElementById('modalRoot');
+
+function openModal(innerHtml, opts = {}){
+  const existingBackdrop = MODAL_ROOT.querySelector('.modal-backdrop');
+  const existingModal = MODAL_ROOT.querySelector('.modal');
+
+  // Если модальное окно уже открыто — обновляем только его контент без пересоздания DOM и перезапуска анимаций
+  if (existingBackdrop && existingModal && MODAL_ROOT.classList.contains('open')) {
+    existingBackdrop.classList.remove('animate-in');
+    existingModal.className = `modal ${opts.wide ? 'modal-wide' : ''}`;
+    existingModal.innerHTML = innerHtml;
+  } else {
+    MODAL_ROOT.innerHTML = `
+      <div class="modal-backdrop animate-in" onclick="if(event.target===this) closeModal()">
+        <div class="modal ${opts.wide ? 'modal-wide' : ''}">${innerHtml}</div>
+      </div>
+    `;
+    MODAL_ROOT.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeModal(){
+  MODAL_ROOT.classList.remove('open');
+  MODAL_ROOT.innerHTML = '';
+  document.body.style.overflow = '';
+  ui.modal = null;
+  ui.guestListSearch = '';
+  ui.guestListFilter = 'all';
+}
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && MODAL_ROOT.classList.contains('open')) closeModal();
+});
+
+function navTo(viewId){
+  ui.view = viewId;
+  ui.search = '';
+  render();
+  window.scrollTo(0, 0);
+}
+
+function render(){
+  const topNav = document.getElementById('topNav');
+  const bottomNav = document.getElementById('bottomNav');
+  const viewContainer = document.getElementById('view');
+
+  const navItem = (n, isMobile) => `
+    <button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">
+      ${ic(n.icon)}
+      <span>${n.label}</span>
+    </button>
+  `;
+
+  topNav.innerHTML = NAV.map(n => `
+    <button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">
+      ${ic(n.icon)} ${n.label}
+    </button>
+  `).join('');
+
+  bottomNav.innerHTML = NAV.map(n => navItem(n, true)).join('');
+
+  renderSettingsBtn();
+  updateNotifButton();
+
+  if(ui.view === 'month') viewContainer.innerHTML = renderMonthView();
+  else if(ui.view === 'day') viewContainer.innerHTML = renderDayView();
+  else if(ui.view === 'events') viewContainer.innerHTML = renderFormatsView();
+  else if(ui.view === 'clients') viewContainer.innerHTML = renderClientsView();
+  else if(ui.view === 'analytics') viewContainer.innerHTML = renderAnalyticsView();
+  else if(ui.view === 'settings') viewContainer.innerHTML = renderSettingsView();
+  else viewContainer.innerHTML = renderMonthView();
+}
+
+function renderSettingsBtn(){
+  const cfgBtn = document.getElementById('settingsBtn');
+  if(!cfgBtn) return;
+  const isConnected = ui.cloudStatus === 'connected';
+  const icon = isConnected ? ic('cloudOk') : ic('cloudWarn');
+  const title = isConnected 
+    ? 'Синхронизация активна (Firebase). Нажмите для настроек' 
+    : 'Нет синхронизации с базой (локальный режим или ошибка). Нажмите для настроек';
+
+  cfgBtn.className = `icon-btn cloud-status-btn ${isConnected ? 'synced' : 'not-synced'}`;
+  cfgBtn.setAttribute('title', title);
+  cfgBtn.innerHTML = `
+    ${icon}
+    <span style="position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:${isConnected?'#3E946E':'#DE6254'};border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.15)"></span>
+  `;
+}
+
+(function init(){
+  loadDatabase();
+  if(window.matchMedia('(max-width:900px)').matches){
+    ui.view = 'day';
+  }
+  render();
+  updateNotifButton();
+  if(ui.firebaseUrl){
+    pullFromFirebase(false);
+    setupFirebaseRealtimeListener();
+    startBackgroundSync();
+  } else {
+    ui.cloudStatus = 'disconnected';
+    renderSettingsBtn();
+  }
+})();
+</script>
+</body>
+</html>
