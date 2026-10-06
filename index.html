@@ -39,7 +39,7 @@ body {
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; border: none; background: none; }
 
-/* Tailwind-совместимые микро-утилиты */
+/* Micro-utility system */
 .flex { display: flex; }
 .inline-flex { display: inline-flex; }
 .flex-col { display: flex; flex-direction: column; }
@@ -83,7 +83,6 @@ button { cursor: pointer; border: none; background: none; }
 .border-line { border: 1px solid var(--line); }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Основные компоненты */
 .wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 16px; }
 .ic { width: 18px; height: 18px; flex: 0 0 auto; display: block; }
 .app-head { position: sticky; top: 0; z-index: 40; background: rgba(250,248,245,.95); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
@@ -243,7 +242,6 @@ textarea.inp { resize: vertical; min-height: 70px; }
 </head>
 <body>
 
-<!-- Lucide SVG-спрайт (единый скрытый блок символов 24x24) -->
 <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <symbol id="ic-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol>
@@ -271,6 +269,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
   </defs>
 </svg>
 
+<!-- Header & Mount points -->
 <header class="app-head">
   <div class="wrap head-inner flex items-center justify-between gap-4">
     <div class="brand flex items-center gap-3" onclick="navTo('month')" title="На главную сетку месяца">
@@ -293,7 +292,8 @@ textarea.inp { resize: vertical; min-height: 70px; }
 <div style="position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none" id="toastRoot"></div>
 
 <script>
-const STORE_KEY = 'pyatnitsa_hub_db_v3', FIREBASE_URL_KEY = 'pyatnitsa_firebase_url';
+const STORE_KEY = 'pyatnitsa_hub_db_v3', AUTO_BACKUP_KEY = 'pyatnitsa_hub_auto_backup', FIREBASE_URL_KEY = 'pyatnitsa_firebase_url';
+const SCHEMA_VERSION = 4;
 const H_START = 8, H_END = 23, HOUR_H = 28, MIN_DURATION_MIN = 110;
 const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -311,10 +311,11 @@ const NAV = [
   { id:'analytics', label:'Аналитика', icon:'chart' }
 ];
 
-/* Мгновенная вставка легковесной ссылки на SVG-спрайт */
+/* Sanitization, helpers and utilities */
 const ic = n => `<svg class="ic"><use href="#ic-${n}"/></svg>`;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const uid = p => `${p}-${Math.random().toString(36).slice(2,9)}`;
+const uid = p => `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
+const nowTs = () => Date.now();
 const toMin = t => { const [h,m] = String(t||'00:00').split(':').map(Number); return (h||0)*60 + (m||0); };
 const money = n => `${new Intl.NumberFormat('ru-RU').format(Math.round(n||0))} ₽`;
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -327,20 +328,34 @@ const plural = (n, one, few, many) => { const m10 = n%10, m100 = n%100; return (
 function getTgLink(tg) {
   if (!tg) return '';
   const c = tg.trim();
-  return c.startsWith('http') ? c : c.startsWith('t.me/') ? 'https://' + c : 'https://t.me/' + c.replace(/^@/, '');
+  if (c.startsWith('https://t.me/')) return c;
+  if (c.startsWith('http://') || c.startsWith('https://')) {
+    return c.startsWith('https://t.me/') ? c : '';
+  }
+  const clean = c.replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '');
+  return clean ? `https://t.me/${clean}` : '';
 }
+
 function stableStringify(o) {
   if (o === null || typeof o !== 'object') return JSON.stringify(o);
   if (Array.isArray(o)) return '[' + o.map(stableStringify).join(',') + ']';
   return '{' + Object.keys(o).sort().map(k => `${JSON.stringify(k)}:${stableStringify(o[k])}`).join(',') + '}';
 }
+
 function copySafe(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).then(() => true).catch(() => fallbackCopy(text));
+  }
+  return Promise.resolve(fallbackCopy(text));
+}
+function fallbackCopy(text) {
   const ta = document.createElement('textarea');
   ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px';
   document.body.appendChild(ta); ta.select();
   const ok = document.execCommand('copy');
   ta.remove(); return ok;
 }
+
 function toast(msg) {
   const r = document.getElementById('toastRoot'); if(!r) return;
   const el = document.createElement('div'); el.className = 'toast';
@@ -368,37 +383,128 @@ let ui = {
   tgPostOpts: { includePrices: true, includeDescriptions: true, includeAddress: true }
 };
 
-function normalizeDB(d) {
-  d = d && typeof d === 'object' ? d : {};
-  d.formats = Array.isArray(d.formats) ? d.formats : Object.values(d.formats || {});
-  d.events = Array.isArray(d.events) ? d.events : Object.values(d.events || {});
-  d.bookings = Array.isArray(d.bookings) ? d.bookings : Object.values(d.bookings || {});
-  d.clients = d.clients && typeof d.clients === 'object' && !Array.isArray(d.clients) ? d.clients : {};
-  return d;
-}
-
 function seedDatabase() {
-  const t = TODAY_ISO;
+  const t = TODAY_ISO, stamp = nowTs();
+  const cl1Id = 'cl-seed-1', cl2Id = 'cl-seed-2';
   return {
+    schemaVersion: SCHEMA_VERSION,
+    updatedAt: stamp,
     formats: [
-      { id: 'fmt-1', title: 'Квартирник при свечах', shortDescription: 'Акустический вечер авторской песни, живой диалог и травяной чай при свечах.', defaultPrice: 900, defaultCapacity: 25, frequencyDays: 28, defaultPresence: 'must' },
-      { id: 'fmt-2', title: 'Книжный клуб', shortDescription: 'Обсуждение классики и нон-фикшн за круглым столом.', defaultPrice: 500, defaultCapacity: 14, frequencyDays: 21, defaultPresence: 'team' },
-      { id: 'fmt-3', title: 'Плейбэк-театр «Драмеди»', shortDescription: 'Театр зрительских историй: актеры играют ваши воспоминания прямо здесь и сейчас.', defaultPrice: 1000, defaultCapacity: 28, frequencyDays: 30, defaultPresence: 'must' },
-      { id: 'fmt-4', title: 'Утренняя виньяса-йога', shortDescription: 'Мягкая практика пробуждения тела и дыхания под спокойную музыку.', defaultPrice: 600, defaultCapacity: 12, frequencyDays: 7, defaultPresence: 'team' },
-      { id: 'fmt-5', title: 'Аренда под закрытый праздник', shortDescription: 'Почасовая аренда пространства для лекций, мастер-классов или дней рождения.', defaultPrice: 2000, defaultCapacity: 30, frequencyDays: 0, defaultPresence: 'rent' }
+      { id: 'fmt-1', title: 'Квартирник при свечах', shortDescription: 'Акустический вечер авторской песни, живой диалог и травяной чай при свечах.', defaultPrice: 900, defaultCapacity: 25, frequencyDays: 28, defaultPresence: 'must', updatedAt: stamp },
+      { id: 'fmt-2', title: 'Книжный клуб', shortDescription: 'Обсуждение классики и нон-фикшн за круглым столом.', defaultPrice: 500, defaultCapacity: 14, frequencyDays: 21, defaultPresence: 'team', updatedAt: stamp },
+      { id: 'fmt-3', title: 'Плейбэк-театр «Драмеди»', shortDescription: 'Театр зрительских историй: актеры играют ваши воспоминания прямо здесь и сейчас.', defaultPrice: 1000, defaultCapacity: 28, frequencyDays: 30, defaultPresence: 'must', updatedAt: stamp },
+      { id: 'fmt-4', title: 'Утренняя виньяса-йога', shortDescription: 'Мягкая практика пробуждения тела и дыхания под спокойную музыку.', defaultPrice: 600, defaultCapacity: 12, frequencyDays: 7, defaultPresence: 'team', updatedAt: stamp },
+      { id: 'fmt-5', title: 'Аренда под закрытый праздник', shortDescription: 'Почасовая аренда пространства для лекций, мастер-классов или дней рождения.', defaultPrice: 2000, defaultCapacity: 30, frequencyDays: 0, defaultPresence: 'rent', updatedAt: stamp }
     ],
     events: [
-      { id: 'ev-201', formatId: 'fmt-4', title: 'Утренняя виньяса-йога', date: t, time: '09:00', endTime: '11:00', price: 600, capacity: 12, presenceType: 'team', isPublic: true, contactPerson: 'Оля (тренер)', note: 'Проветрить зал' },
-      { id: 'ev-202', formatId: 'fmt-1', title: 'Осенний Квартирник при свечах', date: t, time: '19:00', endTime: '21:30', price: 900, capacity: 25, presenceType: 'must', isPublic: true, contactPerson: 'Лена', note: 'Зажечь свечи' }
+      { id: 'ev-201', formatId: 'fmt-4', title: 'Утренняя виньяса-йога', date: t, time: '09:00', endTime: '11:00', price: 600, capacity: 12, presenceType: 'team', isPublic: true, contactPerson: 'Оля (тренер)', note: 'Проветрить зал', updatedAt: stamp },
+      { id: 'ev-202', formatId: 'fmt-1', title: 'Осенний Квартирник при свечах', date: t, time: '19:00', endTime: '21:30', price: 900, capacity: 25, presenceType: 'must', isPublic: true, contactPerson: 'Лена', note: 'Зажечь свечи', updatedAt: stamp }
     ],
     bookings: [
-      { id: 'bk-1', eventId: 'ev-202', guestName: 'Марина Соколова', telegram: '@sokol_marina', ticketsCount: 2, isPaid: true, isCheckedIn: true, isWaitlist: false, note: 'У камина' },
-      { id: 'bk-2', eventId: 'ev-202', guestName: 'Алексей Кузнецов', telegram: '@kuznetsov_alex', ticketsCount: 1, isPaid: true, isCheckedIn: false, isWaitlist: false, note: 'Опоздает' }
+      { id: 'bk-1', eventId: 'ev-202', clientId: cl1Id, guestName: 'Марина Соколова', telegram: '@sokol_marina', ticketsCount: 2, isPaid: true, isCheckedIn: true, isWaitlist: false, note: 'У камина', updatedAt: stamp },
+      { id: 'bk-2', eventId: 'ev-202', clientId: cl2Id, guestName: 'Алексей Кузнецов', telegram: '@kuznetsov_alex', ticketsCount: 1, isPaid: true, isCheckedIn: false, isWaitlist: false, note: 'Опоздает', updatedAt: stamp }
     ],
-    clients: {
-      '@sokol_marina': { telegram: '@sokol_marina', name: 'Марина Соколова', visitsCount: 1, totalPaid: 1800, clientNotes: 'Любит травяной чай, ходит на квартирники', firstSeen: t, lastSeen: t },
-      '@kuznetsov_alex': { telegram: '@kuznetsov_alex', name: 'Алексей Кузнецов', visitsCount: 0, totalPaid: 900, clientNotes: 'Играет на гитаре, тихие вечера', firstSeen: t, lastSeen: t }
+    clients: [
+      { id: cl1Id, name: 'Марина Соколова', telegram: '@sokol_marina', visitsCount: 1, totalPaid: 1800, clientNotes: 'Любит травяной чай, ходит на квартирники', firstSeen: t, lastSeen: t, updatedAt: stamp },
+      { id: cl2Id, name: 'Алексей Кузнецов', telegram: '@kuznetsov_alex', visitsCount: 0, totalPaid: 900, clientNotes: 'Играет на гитаре, тихие вечера', firstSeen: t, lastSeen: t, updatedAt: stamp }
+    ]
+  };
+}
+
+/**
+ * Безопасная нормализация и автоматическая миграция со словарей и старых схем
+ */
+function normalizeAndMigrateDB(raw) {
+  const d = (raw && typeof raw === 'object') ? raw : {};
+  const stamp = nowTs();
+
+  let formats = Array.isArray(d.formats) ? d.formats : Object.values(d.formats || {});
+  formats = formats.map(f => ({ ...f, updatedAt: f.updatedAt || stamp }));
+
+  let events = Array.isArray(d.events) ? d.events : Object.values(d.events || {});
+  events = events.map(e => ({ ...e, updatedAt: e.updatedAt || stamp }));
+
+  let clientsList = [];
+  if (Array.isArray(d.clients)) {
+    clientsList = d.clients.map(c => ({
+      id: c.id || uid('cl'),
+      name: c.name || 'Гость',
+      telegram: c.telegram || '',
+      visitsCount: Number(c.visitsCount) || 0,
+      totalPaid: Number(c.totalPaid) || 0,
+      clientNotes: c.clientNotes || '',
+      firstSeen: c.firstSeen || TODAY_ISO,
+      lastSeen: c.lastSeen || TODAY_ISO,
+      updatedAt: c.updatedAt || stamp
+    }));
+  } else if (d.clients && typeof d.clients === 'object') {
+    // Миграция старого объекта c ключами-никами или 'name:...'
+    Object.entries(d.clients).forEach(([oldKey, c]) => {
+      const tg = c.telegram || (oldKey.startsWith('@') ? oldKey : '');
+      const name = c.name || (oldKey.startsWith('name:') ? oldKey.slice(5) : 'Гость');
+      clientsList.push({
+        id: uid('cl'),
+        name: name.trim(),
+        telegram: tg.trim(),
+        visitsCount: Number(c.visitsCount) || 0,
+        totalPaid: Number(c.totalPaid) || 0,
+        clientNotes: c.clientNotes || '',
+        firstSeen: c.firstSeen || TODAY_ISO,
+        lastSeen: c.lastSeen || TODAY_ISO,
+        updatedAt: stamp
+      });
+    });
+  }
+
+  let bookings = Array.isArray(d.bookings) ? d.bookings : Object.values(d.bookings || {});
+  bookings = bookings.map(b => {
+    let client = null;
+    if (b.clientId) {
+      client = clientsList.find(c => c.id === b.clientId);
     }
+    if (!client && b.telegram) {
+      client = clientsList.find(c => c.telegram && c.telegram.toLowerCase() === b.telegram.toLowerCase().trim());
+    }
+    if (!client && b.guestName) {
+      client = clientsList.find(c => c.name.toLowerCase() === String(b.guestName).toLowerCase().trim());
+    }
+    if (!client) {
+      const newClId = uid('cl');
+      client = {
+        id: newClId,
+        name: b.guestName || 'Гость',
+        telegram: b.telegram || '',
+        visitsCount: b.isCheckedIn ? (b.ticketsCount || 1) : 0,
+        totalPaid: 0,
+        clientNotes: b.note || '',
+        firstSeen: TODAY_ISO,
+        lastSeen: TODAY_ISO,
+        updatedAt: stamp
+      };
+      clientsList.push(client);
+    }
+    return {
+      id: b.id || uid('bk'),
+      eventId: b.eventId,
+      clientId: client.id,
+      guestName: b.guestName || client.name,
+      telegram: b.telegram !== undefined ? b.telegram : client.telegram,
+      ticketsCount: Number(b.ticketsCount) || 1,
+      isPaid: Boolean(b.isPaid),
+      isCheckedIn: Boolean(b.isCheckedIn),
+      isWaitlist: Boolean(b.isWaitlist),
+      note: b.note || '',
+      updatedAt: b.updatedAt || stamp
+    };
+  });
+
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    updatedAt: d.updatedAt || stamp,
+    formats,
+    events,
+    bookings,
+    clients: clientsList
   };
 }
 
@@ -408,41 +514,124 @@ function normalizeFirebaseUrl(u) {
   u = (u || '').trim();
   return !u ? '' : !u.endsWith('.json') ? (u.endsWith('/') ? u + 'data.json' : u + '/data.json') : u;
 }
+
+function saveAutoSnapshot() {
+  try {
+    localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify(db));
+  } catch(e) {}
+}
+
+function saveDatabase(sync = true) {
+  db.updatedAt = nowTs();
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(db));
+  } catch (e) {
+    console.error('LocalStorage error:', e);
+    openQuotaWarningModal();
+    return;
+  }
+  if (sync && ui.firebaseUrl) {
+    clearTimeout(cloudTimer);
+    cloudTimer = setTimeout(pushToFirebase, 200);
+  }
+}
+
 function loadDatabase() {
   ui.firebaseUrl = normalizeFirebaseUrl(localStorage.getItem(FIREBASE_URL_KEY) || '');
   try {
     const s = localStorage.getItem(STORE_KEY);
-    db = normalizeDB(s ? JSON.parse(s) : seedDatabase());
-    if(!s) saveDatabase(false);
-  } catch(e) { db = normalizeDB(seedDatabase()); }
-}
-function saveDatabase(sync = true) {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch(e){}
-  if (sync && ui.firebaseUrl) {
-    clearTimeout(cloudTimer);
-    cloudTimer = setTimeout(pushToFirebase, 160);
+    db = normalizeAndMigrateDB(s ? JSON.parse(s) : seedDatabase());
+    if (!s) saveDatabase(false);
+  } catch(e) {
+    db = normalizeAndMigrateDB(seedDatabase());
   }
 }
+
+function openQuotaWarningModal() {
+  openModal(`
+    <div class="modal-head flex items-start justify-between gap-3">
+      <div class="flex items-center gap-2 text-must">
+        ${ic('alert')}
+        <div class="modal-title">Память браузера переполнена!</div>
+      </div>
+      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+    </div>
+    <div class="modal-body">
+      <p class="text-base text-ink" style="margin-bottom:12px">
+        Браузер не смог сохранить последние изменения в локальное хранилище (LocalStorage Quota Exceeded).
+      </p>
+      <div class="modal-triplet-card" style="background:#FDEDE9;border-color:#F8C8C2;color:#C63D31">
+        Пожалуйста, скачайте резервную копию прямо сейчас, чтобы не потерять текущую сессию!
+      </div>
+    </div>
+    <div class="modal-foot flex gap-2 justify-end">
+      <button class="btn btn-primary" onclick="exportBackup()">${ic('download')} Скачать резервную копию (.json)</button>
+      <button class="btn btn-soft" onclick="closeModal()">Понятно</button>
+    </div>
+  `);
+}
+
+/**
+ * Умное двухстороннее слияние записей по полю updatedAt (защита от потери параллельных изменений)
+ */
+function mergeDatabases(local, remote) {
+  const normRemote = normalizeAndMigrateDB(remote);
+  const mergeList = (localArr, remoteArr) => {
+    const map = new Map();
+    localArr.forEach(item => map.set(item.id, item));
+    remoteArr.forEach(item => {
+      if (!map.has(item.id)) {
+        map.set(item.id, item);
+      } else {
+        const loc = map.get(item.id);
+        if ((item.updatedAt || 0) > (loc.updatedAt || 0)) {
+          map.set(item.id, item);
+        }
+      }
+    });
+    return Array.from(map.values());
+  };
+
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    updatedAt: Math.max(local.updatedAt || 0, normRemote.updatedAt || 0),
+    formats: mergeList(local.formats, normRemote.formats),
+    events: mergeList(local.events, normRemote.events),
+    bookings: mergeList(local.bookings, normRemote.bookings),
+    clients: mergeList(local.clients, normRemote.clients)
+  };
+}
+
 async function pushToFirebase() {
   if(!ui.firebaseUrl) return;
-  isLocalPushing = true; lastPushedStr = stableStringify(db);
+  isLocalPushing = true;
+  lastPushedStr = stableStringify(db);
   try {
-    const res = await fetch(ui.firebaseUrl, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(db) });
+    const res = await fetch(ui.firebaseUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(db)
+    });
     ui.cloudStatus = res.ok ? 'connected' : 'disconnected';
-  } catch(e) { ui.cloudStatus = 'disconnected'; }
-  setTimeout(() => { isLocalPushing = false; }, 350);
+  } catch(e) {
+    ui.cloudStatus = 'disconnected';
+  }
+  setTimeout(() => { isLocalPushing = false; }, 400);
   renderSettingsBtn();
 }
+
 async function pullFromFirebase(manual = false) {
   if(!ui.firebaseUrl) { if(manual) toast('Укажите URL базы данных'); return; }
   try {
     const res = await fetch(ui.firebaseUrl);
     if(res.ok) {
       const data = await res.json();
-      if(data && (data.events || data.formats)) {
-        const norm = normalizeDB(data), ns = stableStringify(norm);
-        if(ns !== stableStringify(db) && ns !== lastPushedStr && !isLocalPushing) {
-          db = norm; localStorage.setItem(STORE_KEY, JSON.stringify(db));
+      if(data && (data.events || data.formats || data.clients)) {
+        const merged = mergeDatabases(db, data);
+        const ns = stableStringify(merged);
+        if(ns !== stableStringify(db) && !isLocalPushing) {
+          db = merged;
+          localStorage.setItem(STORE_KEY, JSON.stringify(db));
           if (!isUserInteractingWithModal()) {
             render();
             if(ui.modal?.type === 'event') openEventDetailsModal(ui.modal.id);
@@ -451,10 +640,17 @@ async function pullFromFirebase(manual = false) {
         if(manual) toast('Синхронизировано с облаком');
       }
       ui.cloudStatus = 'connected';
-    } else { ui.cloudStatus = 'disconnected'; if(manual) toast('Ошибка подключения'); }
-  } catch(e) { ui.cloudStatus = 'disconnected'; if(manual) toast('Сбой связи с базой'); }
+    } else {
+      ui.cloudStatus = 'disconnected';
+      if(manual) toast('Ошибка подключения');
+    }
+  } catch(e) {
+    ui.cloudStatus = 'disconnected';
+    if(manual) toast('Сбой связи с базой');
+  }
   renderSettingsBtn();
 }
+
 function setupFirebaseRealtime() {
   if(fbEventSource) { fbEventSource.close(); fbEventSource = null; }
   clearInterval(pollTimer);
@@ -465,9 +661,10 @@ function setupFirebaseRealtime() {
       try {
         const p = JSON.parse(e.data);
         if(p?.path === '/' && p.data && !isLocalPushing) {
-          const norm = normalizeDB(p.data);
-          if(stableStringify(norm) !== stableStringify(db)) {
-            db = norm; localStorage.setItem(STORE_KEY, JSON.stringify(db));
+          const merged = mergeDatabases(db, p.data);
+          if(stableStringify(merged) !== stableStringify(db)) {
+            db = merged;
+            localStorage.setItem(STORE_KEY, JSON.stringify(db));
             if (!isUserInteractingWithModal()) {
               render();
               if(ui.modal?.type === 'event') openEventDetailsModal(ui.modal.id);
@@ -483,6 +680,7 @@ function setupFirebaseRealtime() {
     pollTimer = setInterval(() => { if(!isLocalPushing) pullFromFirebase(false); }, 10000);
   }
 }
+
 function getEventStats(eventId, price = 0) {
   const bk = db.bookings.filter(b => b.eventId === eventId && !b.isWaitlist);
   const booked = bk.reduce((s, b) => s + (b.ticketsCount || 1), 0);
@@ -565,6 +763,7 @@ function updateNotifButton() {
   btn.innerHTML = `${ic('bell')}${count > 0 ? `<span class="notif-badge">${count}</span>` : ''}`;
   btn.title = count > 0 ? `Напоминаний: ${count}` : 'Напоминаний нет';
 }
+
 function openNotificationsModal() {
   const warns = getActivePrompts();
   openModal(`
@@ -814,35 +1013,44 @@ function renderFormatsView() {
   `;
 }
 
-function buildClientList() {
-  const map = {};
+function calculateClientsDirectory() {
+  const map = new Map();
+  db.clients.forEach(c => {
+    map.set(c.id, {
+      id: c.id,
+      name: c.name || 'Гость',
+      telegram: c.telegram || '',
+      visits: c.visitsCount || 0,
+      total: c.totalPaid || 0,
+      lastSeen: c.lastSeen || null,
+      notes: c.clientNotes || ''
+    });
+  });
+
+  // Пересчет фактической истории из бронирований
   db.bookings.forEach(b => {
-    const k = (b.telegram ? b.telegram.toLowerCase() : 'name:' + String(b.guestName||'').toLowerCase()).trim();
-    if(!map[k]) map[k] = { key: k, name: b.guestName, telegram: b.telegram, visits: 0, total: 0, lastSeen: null, notes: '' };
-    const it = map[k], ev = db.events.find(e => e.id === b.eventId);
-    if(b.isCheckedIn) it.visits += (b.ticketsCount || 1);
-    if(b.isPaid && ev) it.total += (b.ticketsCount || 1) * (ev.price || 0);
-    if(ev && (!it.lastSeen || ev.date > it.lastSeen)) it.lastSeen = ev.date;
-  });
-  Object.values(db.clients || {}).forEach(c => {
-    const k = (c.telegram ? c.telegram.toLowerCase() : 'name:' + String(c.name||'').toLowerCase()).trim();
-    if(!map[k]) map[k] = { key: k, name: c.name, telegram: c.telegram, visits: c.visitsCount||0, total: c.totalPaid||0, lastSeen: c.lastSeen, notes: c.clientNotes||'' };
-    else {
-      if(c.clientNotes) map[k].notes = c.clientNotes;
-      if((c.visitsCount||0) > map[k].visits) map[k].visits = c.visitsCount;
-      if((c.totalPaid||0) > map[k].total) map[k].total = c.totalPaid;
+    let entry = map.get(b.clientId);
+    if (!entry) {
+      entry = { id: b.clientId || uid('cl'), name: b.guestName, telegram: b.telegram, visits: 0, total: 0, lastSeen: null, notes: '' };
+      map.set(entry.id, entry);
     }
+    const ev = db.events.find(e => e.id === b.eventId);
+    if (b.isCheckedIn) entry.visits += (b.ticketsCount || 1);
+    if (b.isPaid && ev) entry.total += (b.ticketsCount || 1) * (ev.price || 0);
+    if (ev && (!entry.lastSeen || ev.date > entry.lastSeen)) entry.lastSeen = ev.date;
   });
-  return Object.values(map);
+
+  return Array.from(map.values());
 }
 
 function renderClientsView() {
-  let clients = buildClientList();
-  if(ui.search) {
+  let clients = calculateClientsDirectory();
+  if (ui.search) {
     const q = ui.search.toLowerCase().trim();
     clients = clients.filter(c => (c.name||'').toLowerCase().includes(q) || (c.telegram||'').toLowerCase().includes(q));
   }
   clients.sort((a,b) => b.visits - a.visits || b.total - a.total);
+
   return `
     <div class="page-head flex items-center justify-between gap-3 flex-wrap">
       <div>
@@ -854,25 +1062,36 @@ function renderClientsView() {
         <button class="btn btn-soft btn-sm" onclick="openTextImportModal('clients')">${ic('upload')} Импорт</button>
       </div>
     </div>
-    <div class="search flex items-center gap-2">${ic('search')}<input placeholder="Поиск по имени или @нику..." value="${esc(ui.search)}" oninput="ui.search=this.value;document.getElementById('cList').innerHTML=renderClientsRows(buildClientList().filter(c=>(c.name||'').toLowerCase().includes(ui.search.toLowerCase())||(c.telegram||'').toLowerCase().includes(ui.search.toLowerCase())))"></div>
+    <div class="search flex items-center gap-2">
+      ${ic('search')}
+      <input placeholder="Поиск по имени или @нику..." value="${esc(ui.search)}" oninput="ui.search=this.value; document.getElementById('cList').innerHTML=renderClientsRows(calculateClientsDirectory().filter(c=>(c.name||'').toLowerCase().includes(ui.search.toLowerCase())||(c.telegram||'').toLowerCase().includes(ui.search.toLowerCase())))">
+    </div>
     <div class="list-card" id="cList">${renderClientsRows(clients)}</div>
   `;
 }
+
 function renderClientsRows(list) {
   if(!list.length) return `<div class="text-center text-muted" style="padding:24px">Гости не найдены</div>`;
   return list.map(c => `
-    <div class="row row-click flex items-center justify-between gap-3" onclick="openClientCardModal('${esc(c.key)}')">
+    <div class="row row-click flex items-center justify-between gap-3" onclick="openClientCardModal('${c.id}')">
       <div class="flex-1">
         <div class="row-title flex items-center gap-2">${esc(c.name)} ${c.telegram ? `<span class="pill">${esc(c.telegram)}</span>` : ''}</div>
         <div class="row-sub">${c.visits} ${plural(c.visits,'визит','визита','визитов')} · ${money(c.total)}${c.lastSeen ? ' · крайний ' + fmtDateRu(c.lastSeen) : ''}</div>
         ${c.notes ? `<div class="row-sub" style="font-style:italic;color:#A88F5E">${esc(c.notes)}</div>` : ''}
       </div>
       <div class="flex items-center gap-2 flex-none" onclick="event.stopPropagation()">
-        ${c.telegram ? `<a href="${getTgLink(c.telegram)}" target="_blank" class="icon-btn sm" style="color:#2AABEE" title="Написать в Telegram">${ic('send')}</a>` : ''}
-        <button class="icon-btn sm" onclick="confirmAction('Удалить гостя?','Удалить профиль гостя и его бронирования?','Удалить',()=>{ delete db.clients['${esc(c.key)}']; db.bookings=db.bookings.filter(b=>(b.telegram?b.telegram.toLowerCase():'name:'+String(b.guestName).toLowerCase().trim())!=='${esc(c.key)}'); saveDatabase(); render(); })" title="Удалить">${ic('trash')}</button>
+        ${c.telegram && getTgLink(c.telegram) ? `<a href="${getTgLink(c.telegram)}" target="_blank" rel="noopener noreferrer" class="icon-btn sm" style="color:#2AABEE" title="Написать в Telegram">${ic('send')}</a>` : ''}
+        <button class="icon-btn sm" onclick="confirmAction('Удалить гостя?','Удалить профиль гостя и историю его записей?','Удалить',()=>{ deleteClient('${c.id}'); })" title="Удалить">${ic('trash')}</button>
       </div>
     </div>
   `).join('');
+}
+
+function deleteClient(clientId) {
+  db.clients = db.clients.filter(c => c.id !== clientId);
+  db.bookings = db.bookings.filter(b => b.clientId !== clientId);
+  saveDatabase();
+  render();
 }
 
 function renderAnalyticsView() {
@@ -883,15 +1102,20 @@ function renderAnalyticsView() {
     const d = parseYmd(e.date); return d.getFullYear() === curY && d.getMonth() === curM;
   });
   const evIds = new Set(evs.map(e => e.id));
+
+  // Корректный расчет: учитываются ТОЛЬКО оплаченные бронирования (без задваивания аренды)
   let rev = 0, checkins = 0;
   db.bookings.forEach(b => {
     if(evIds.has(b.eventId) && !b.isWaitlist) {
       const e = db.events.find(x => x.id === b.eventId);
-      if(e && b.isPaid) rev += (b.ticketsCount||1) * (e.price||0);
-      if(b.isCheckedIn) checkins += (b.ticketsCount||1);
+      if(e && b.isPaid) {
+        rev += (b.ticketsCount || 1) * (e.price || 0);
+      }
+      if(b.isCheckedIn) {
+        checkins += (b.ticketsCount || 1);
+      }
     }
   });
-  evs.forEach(e => { if(e.presenceType === 'rent' && e.price > 0) rev += e.price; });
 
   const fmtMap = {};
   db.formats.forEach(f => { fmtMap[f.id] = { title: f.title, rev: 0, count: 0, guests: 0 }; });
@@ -900,11 +1124,12 @@ function renderAnalyticsView() {
     if(evIds.has(b.eventId) && !b.isWaitlist) {
       const e = db.events.find(x => x.id === b.eventId);
       if(e?.formatId && fmtMap[e.formatId]) {
-        if(b.isPaid) fmtMap[e.formatId].rev += (b.ticketsCount||1) * (e.price||0);
-        fmtMap[e.formatId].guests += (b.ticketsCount||1);
+        if(b.isPaid) fmtMap[e.formatId].rev += (b.ticketsCount || 1) * (e.price || 0);
+        fmtMap[e.formatId].guests += (b.ticketsCount || 1);
       }
     }
   });
+
   const sorted = Object.values(fmtMap).sort((a,b)=>b.rev - a.rev), maxRev = Math.max(1, ...sorted.map(x=>x.rev));
   const years = [curY-1, curY, curY+1];
 
@@ -924,7 +1149,7 @@ function renderAnalyticsView() {
             <button class="icon-btn sm" onclick="changeMonth(1)">${ic('chevRight')}</button>
             <button class="btn btn-ghost btn-sm" style="height:32px;min-height:32px" onclick="ui.year=new Date().getFullYear();ui.month=new Date().getMonth();render()">Текущий</button>
           </div>
-        ` : `<div class="text-sm text-muted" style="margin-top:3px">За всё время работы</div>`}
+        ` : `<div class="text-sm text-muted" style="margin-top:3px">За всё время работы (только оплаченные)</div>`}
       </div>
       <div class="chips" style="margin:0">
         <button class="chip ${isM?'on':''}" onclick="ui.analyticsPeriod='month';render()">Выбранный месяц</button>
@@ -935,9 +1160,9 @@ function renderAnalyticsView() {
       <div class="stat"><div class="stat-label">${ic('wallet')} Выручка</div><div class="stat-val font-bold">${money(rev)}</div></div>
       <div class="stat"><div class="stat-label">${ic('check')} Чекинов</div><div class="stat-val font-bold">${checkins} чел.</div></div>
       <div class="stat"><div class="stat-label">${ic('calendar')} Событий</div><div class="stat-val font-bold">${evs.length}</div></div>
-      <div class="stat"><div class="stat-label">${ic('users')} База гостей</div><div class="stat-val font-bold">${Object.keys(db.clients||{}).length}</div></div>
+      <div class="stat"><div class="stat-label">${ic('users')} База гостей</div><div class="stat-val font-bold">${db.clients.length}</div></div>
     </div>
-    <div class="section-title">Финансовая отдача форматов</div>
+    <div class="section-title">Финансовая отдача форматов (по оплаченным местам)</div>
     <div class="list-card">
       ${sorted.map(f => `
         <div class="row flex items-center gap-3">
@@ -993,8 +1218,8 @@ function openEventDetailsModal(id) {
               <input class="inp" id="bkName" required placeholder="Имя гостя *" list="dlNames" oninput="autoFillTg(this.value)" onchange="autoFillTg(this.value)">
               <input class="inp" id="bkTg" placeholder="@telegram" list="dlTgs" oninput="autoFillName(this.value)" onchange="autoFillName(this.value)">
             </div>
-            <datalist id="dlNames">${Object.values(db.clients||{}).map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist>
-            <datalist id="dlTgs">${Object.values(db.clients||{}).filter(c=>c.telegram).map(c=>`<option value="${esc(c.telegram)}">`).join('')}</datalist>
+            <datalist id="dlNames">${db.clients.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist>
+            <datalist id="dlTgs">${db.clients.filter(c=>c.telegram).map(c=>`<option value="${esc(c.telegram)}">`).join('')}</datalist>
             <div class="flex gap-3 items-center" style="margin-bottom:8px">
               <label class="check"><input type="number" id="bkCount" min="1" value="1" style="width:50px" class="inp"> мест</label>
               <label class="check"><input type="checkbox" id="bkPaid"> Оплачено</label>
@@ -1058,7 +1283,7 @@ function openEventDetailsModal(id) {
       ` : ''}
     </div>
     <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить событие?','Удалить событие и все бронирования?','Удалить',()=>{ db.events=db.events.filter(x=>x.id!=='${ev.id}'); db.bookings=db.bookings.filter(x=>x.eventId!=='${ev.id}'); saveDatabase(); closeModal(); render(); })">${ic('trash')} Удалить</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить событие?','Удалить событие и все привязанные бронирования?','Удалить',()=>{ db.events=db.events.filter(x=>x.id!=='${ev.id}'); db.bookings=db.bookings.filter(x=>x.eventId!=='${ev.id}'); saveDatabase(); closeModal(); render(); })">${ic('trash')} Удалить</button>
       <div class="flex-1"></div>
       <button class="btn btn-soft btn-sm" onclick="openAddEventModal('','','','${ev.id}')">${ic('edit')} Править</button>
       <button class="btn btn-primary btn-sm" onclick="closeModal()">Готово</button>
@@ -1068,7 +1293,7 @@ function openEventDetailsModal(id) {
 
 function autoFillTg(val) {
   if(!val) return;
-  const c = Object.values(db.clients||{}).find(x => x.name.toLowerCase() === val.toLowerCase().trim());
+  const c = db.clients.find(x => x.name.toLowerCase() === val.toLowerCase().trim());
   const tgInp = document.getElementById('bkTg');
   if(c && c.telegram && tgInp && !tgInp.value) tgInp.value = c.telegram;
 }
@@ -1076,17 +1301,20 @@ function autoFillName(val) {
   if(!val) return;
   let q = val.trim().toLowerCase();
   if(!q.startsWith('@') && !q.startsWith('http')) q = '@' + q;
-  const c = Object.values(db.clients||{}).find(x => (x.telegram||'').toLowerCase() === q);
+  const c = db.clients.find(x => (x.telegram||'').toLowerCase() === q);
   const nameInp = document.getElementById('bkName');
   if(c && c.name && nameInp && !nameInp.value) nameInp.value = c.name;
 }
+
 function openTgReminder(bookingId) {
   const b = db.bookings.find(x => x.id === bookingId); if(!b || !b.telegram) return;
   const ev = db.events.find(x => x.id === b.eventId);
-  const nick = b.telegram.replace('@', '');
+  const nick = b.telegram.replace('@', '').replace(/[^a-zA-Z0-9_]/g, '');
+  if (!nick) return;
   const text = `Привет! Напоминаю о встрече на «${ev ? ev.title : 'событии'}» в пространстве «Пятница»: ${ev ? fmtDateRu(ev.date) : ''} в ${ev ? ev.time : ''}. Ждем в гости!`;
-  window.open(`https://t.me/${nick}?text=${encodeURIComponent(text)}`, '_blank');
+  window.open(`https://t.me/${nick}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 }
+
 function handleQuickBooking(e, evId) {
   e.preventDefault();
   const name = document.getElementById('bkName').value.trim();
@@ -1097,43 +1325,78 @@ function handleQuickBooking(e, evId) {
   const isWait = document.getElementById('bkWait').checked;
   const note = document.getElementById('bkNote').value.trim();
   const ev = db.events.find(x => x.id === evId);
-  const cost = (ev ? ev.price : 0) * count;
 
-  db.bookings.push({ id: uid('bk'), eventId: evId, guestName: name, telegram: tg, ticketsCount: count, isPaid, isCheckedIn: false, isWaitlist: isWait, note });
-  const key = tg ? tg.toLowerCase() : 'name:' + name.toLowerCase();
-  if(!db.clients[key]) {
-    db.clients[key] = { telegram: tg, name, visitsCount: 0, totalPaid: isPaid ? cost : 0, clientNotes: note, firstSeen: TODAY_ISO, lastSeen: ev ? ev.date : TODAY_ISO };
-  } else if(isPaid) {
-    db.clients[key].totalPaid = (db.clients[key].totalPaid || 0) + cost;
+  // Поиск существующего профиля или создание нового с уникальным clientId
+  let client = null;
+  if (tg) {
+    client = db.clients.find(c => c.telegram && c.telegram.toLowerCase() === tg.toLowerCase());
   }
-  saveDatabase(); toast(isWait ? 'Добавлено в резерв' : 'Гость успешно записан'); openEventDetailsModal(evId); render();
+  if (!client) {
+    client = db.clients.find(c => c.name.toLowerCase() === name.toLowerCase());
+  }
+
+  const stamp = nowTs();
+  if (!client) {
+    client = {
+      id: uid('cl'),
+      name,
+      telegram: tg,
+      visitsCount: 0,
+      totalPaid: 0,
+      clientNotes: note,
+      firstSeen: TODAY_ISO,
+      lastSeen: ev ? ev.date : TODAY_ISO,
+      updatedAt: stamp
+    };
+    db.clients.push(client);
+  } else {
+    if (tg && !client.telegram) client.telegram = tg;
+    client.lastSeen = ev ? ev.date : TODAY_ISO;
+    client.updatedAt = stamp;
+  }
+
+  db.bookings.push({
+    id: uid('bk'),
+    eventId: evId,
+    clientId: client.id,
+    guestName: name,
+    telegram: tg,
+    ticketsCount: count,
+    isPaid,
+    isCheckedIn: false,
+    isWaitlist: isWait,
+    note,
+    updatedAt: stamp
+  });
+
+  saveDatabase();
+  toast(isWait ? 'Добавлено в резерв' : 'Гость успешно записан');
+  openEventDetailsModal(evId);
+  render();
 }
 
 function toggleCheckin(id) {
   const b = db.bookings.find(x => x.id === id); if(!b) return;
   b.isCheckedIn = !b.isCheckedIn;
-  const key = b.telegram ? b.telegram.toLowerCase() : 'name:' + String(b.guestName).toLowerCase().trim();
-  if(db.clients[key]) {
-    db.clients[key].visitsCount = Math.max(0, (db.clients[key].visitsCount || 0) + (b.isCheckedIn ? 1 : -1));
-  }
-  saveDatabase(); if(ui.modal?.type==='event') openEventDetailsModal(b.eventId); render();
+  b.updatedAt = nowTs();
+  saveDatabase();
+  if(ui.modal?.type==='event') openEventDetailsModal(b.eventId);
+  render();
 }
+
 function togglePayment(id) {
   const b = db.bookings.find(x => x.id === id); if(!b) return;
   b.isPaid = !b.isPaid;
-  const ev = db.events.find(x => x.id === b.eventId);
-  const cost = (b.ticketsCount || 1) * (ev ? ev.price : 0);
-  const key = b.telegram ? b.telegram.toLowerCase() : 'name:' + String(b.guestName).toLowerCase().trim();
-  if(db.clients[key]) {
-    db.clients[key].totalPaid = Math.max(0, (db.clients[key].totalPaid || 0) + (b.isPaid ? cost : -cost));
-  }
-  saveDatabase(); if(ui.modal?.type==='event') openEventDetailsModal(b.eventId); render();
+  b.updatedAt = nowTs();
+  saveDatabase();
+  if(ui.modal?.type==='event') openEventDetailsModal(b.eventId);
+  render();
 }
 
 function transferFromWaitlist(id) {
-  const b = db.bookings.find(x => x.id === id);
-  if(!b) return;
+  const b = db.bookings.find(x => x.id === id); if(!b) return;
   b.isWaitlist = false;
+  b.updatedAt = nowTs();
   saveDatabase();
   toast('Переведен в основной состав');
   if(ui.modal?.type === 'event') openEventDetailsModal(b.eventId);
@@ -1234,13 +1497,15 @@ function handleSaveEvent(e, editId) {
   });
 
   const performSave = () => {
+    const stamp = nowTs();
     const payload = {
       title, formatId, date, time, endTime,
       price: parseFloat(document.getElementById('evP').value) || 0,
       capacity: parseInt(document.getElementById('evC').value) || 0,
       presenceType: document.getElementById('evPresence').value,
       contactPerson: 'Лена',
-      note: document.getElementById('evN').value.trim()
+      note: document.getElementById('evN').value.trim(),
+      updatedAt: stamp
     };
     if(editId) {
       const idx = db.events.findIndex(x => x.id === editId);
@@ -1295,13 +1560,15 @@ function openFormatFormModal(editId = null) {
 
 function handleSaveFormat(e, editId) {
   e.preventDefault();
+  const stamp = nowTs();
   const payload = {
     title: document.getElementById('fT').value.trim(),
     shortDescription: document.getElementById('fD').value.trim(),
     defaultPrice: parseFloat(document.getElementById('fP').value) || 0,
     defaultCapacity: parseInt(document.getElementById('fC').value) || 0,
     frequencyDays: parseInt(document.getElementById('fF').value) || 0,
-    defaultPresence: document.getElementById('fPresence').value
+    defaultPresence: document.getElementById('fPresence').value,
+    updatedAt: stamp
   };
   if(editId) {
     const idx = db.formats.findIndex(x => x.id === editId);
@@ -1343,44 +1610,52 @@ function handleCreateClient(e) {
   const visits = parseInt(document.getElementById('clVisits').value) || 0;
   const total = parseFloat(document.getElementById('clTotal').value) || 0;
   const notes = document.getElementById('clNotes').value.trim();
-  const key = tg ? tg.toLowerCase() : 'name:' + name.toLowerCase();
 
-  db.clients[key] = {
-    telegram: tg, name, visitsCount: visits, totalPaid: total,
-    clientNotes: notes, firstSeen: TODAY_ISO, lastSeen: TODAY_ISO
-  };
+  // Всегда создаем отдельную сущность с уникальным ID (без схлопывания однофамильцев)
+  db.clients.push({
+    id: uid('cl'),
+    telegram: tg,
+    name,
+    visitsCount: visits,
+    totalPaid: total,
+    clientNotes: notes,
+    firstSeen: TODAY_ISO,
+    lastSeen: TODAY_ISO,
+    updatedAt: nowTs()
+  });
+
   saveDatabase(); closeModal(); render(); toast(`Гость «${name}» добавлен`);
 }
 
-function openClientCardModal(key) {
-  const c = buildClientList().find(x => x.key === key); if(!c) return;
+function openClientCardModal(clientId) {
+  const c = db.clients.find(x => x.id === clientId); if(!c) return;
   const visitedEvs = db.bookings
-    .filter(b => (b.telegram && b.telegram.toLowerCase() === key) || ('name:' + String(b.guestName).toLowerCase().trim() === key))
+    .filter(b => b.clientId === clientId)
     .map(b => ({ bk: b, ev: db.events.find(e => e.id === b.eventId) }))
     .filter(x => !!x.ev);
 
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
-      <div><div class="modal-title">${esc(c.name)}</div><div class="modal-sub">${c.telegram ? esc(c.telegram) : 'Без Telegram'} · ${c.visits} визитов · ${money(c.total)}</div></div>
+      <div><div class="modal-title">${esc(c.name)}</div><div class="modal-sub">${c.telegram ? esc(c.telegram) : 'Без Telegram'} · ${c.visitsCount||0} визитов · ${money(c.totalPaid||0)}</div></div>
       <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
     </div>
     <div class="modal-body">
       <div class="stats" style="grid-template-columns:1fr 1fr;margin-bottom:14px">
-        <div class="stat" style="padding:14px"><div class="stat-label">Визиты</div><div class="stat-val text-xl font-bold">${c.visits}</div></div>
-        <div class="stat" style="padding:14px"><div class="stat-label">Оплаты</div><div class="stat-val text-xl font-bold">${money(c.total)}</div></div>
+        <div class="stat" style="padding:14px"><div class="stat-label">Визиты</div><div class="stat-val text-xl font-bold">${c.visitsCount||0}</div></div>
+        <div class="stat" style="padding:14px"><div class="stat-label">Оплаты</div><div class="stat-val text-xl font-bold">${money(c.totalPaid||0)}</div></div>
       </div>
-      <form onsubmit="handleSaveClientCard(event, '${esc(key)}')">
+      <form onsubmit="handleSaveClientCard(event, '${c.id}')">
         <div class="grid2">
           <div class="field"><label>Имя гостя</label><input class="inp" id="clName" value="${esc(c.name)}" required></div>
           <div class="field">
             <label class="flex justify-between">
               <span>Telegram (@ник)</span>
-              ${c.telegram ? `<a href="${getTgLink(c.telegram)}" target="_blank" style="color:#2AABEE;font-size:11.5px;font-weight:600">Написать</a>` : ''}
+              ${c.telegram && getTgLink(c.telegram) ? `<a href="${getTgLink(c.telegram)}" target="_blank" rel="noopener noreferrer" style="color:#2AABEE;font-size:11.5px;font-weight:600">Написать</a>` : ''}
             </label>
             <input class="inp" id="clTg" value="${esc(c.telegram||'')}">
           </div>
         </div>
-        <div class="field"><label>Вкусовые предпочтения и заметки</label><textarea class="inp" id="cNt">${esc(c.notes)}</textarea></div>
+        <div class="field"><label>Вкусовые предпочтения и заметки</label><textarea class="inp" id="cNt">${esc(c.clientNotes||'')}</textarea></div>
         <button type="submit" class="btn btn-primary btn-sm w-full">${ic('check')} Сохранить профиль</button>
       </form>
       <div class="section-title">История визитов и записей</div>
@@ -1397,29 +1672,38 @@ function openClientCardModal(key) {
       </div>
     </div>
     <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-danger btn-sm" onclick="closeModal(); confirmAction('Удалить гостя?','Удалить профиль гостя и все его записи?','Удалить',()=>{ delete db.clients['${esc(key)}']; db.bookings=db.bookings.filter(b=>(b.telegram?b.telegram.toLowerCase():'name:'+String(b.guestName).toLowerCase().trim())!=='${esc(key)}'); saveDatabase(); render(); })">${ic('trash')} Удалить</button>
+      <button class="btn btn-danger btn-sm" onclick="closeModal(); confirmAction('Удалить гостя?','Удалить профиль гостя и все его записи?','Удалить',()=>{ deleteClient('${c.id}'); })">${ic('trash')} Удалить</button>
       <div class="flex-1"></div>
       <button class="btn btn-soft btn-sm" onclick="closeModal()">Закрыть</button>
     </div>
   `, { wide: true });
 }
 
-function handleSaveClientCard(e, origKey) {
+function handleSaveClientCard(e, clientId) {
   e.preventDefault();
   const name = document.getElementById('clName').value.trim();
   let tg = document.getElementById('clTg').value.trim();
   if(tg && !tg.startsWith('@') && !tg.startsWith('http')) tg = '@' + tg;
   const notes = document.getElementById('cNt').value.trim();
 
-  const prev = db.clients[origKey] || {};
-  if(origKey && db.clients[origKey]) delete db.clients[origKey];
-  const newKey = tg ? tg.toLowerCase() : 'name:' + name.toLowerCase();
+  const c = db.clients.find(x => x.id === clientId);
+  if (!c) return;
 
-  db.clients[newKey] = { ...prev, telegram: tg, name, clientNotes: notes };
+  const stamp = nowTs();
+  c.name = name;
+  c.telegram = tg;
+  c.clientNotes = notes;
+  c.updatedAt = stamp;
+
+  // Обновляем строковый снапшот в связанных бронях
   db.bookings.forEach(b => {
-    const bKey = b.telegram ? b.telegram.toLowerCase() : 'name:' + String(b.guestName).toLowerCase().trim();
-    if(bKey === origKey) { b.guestName = name; b.telegram = tg; }
+    if (b.clientId === clientId) {
+      b.guestName = name;
+      b.telegram = tg;
+      b.updatedAt = stamp;
+    }
   });
+
   saveDatabase(); toast('Профиль обновлен'); closeModal(); render();
 }
 
@@ -1465,7 +1749,7 @@ function openTelegramPostModal() {
       <div class="text-xs text-muted" style="margin-top:6px" id="tgCnt">Символов: ${text.length}</div>
     </div>
     <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-primary" onclick="copySafe(document.getElementById('tgT').textContent); toast('Скопировано в буфер!')">${ic('copy')} Скопировать</button>
+      <button class="btn btn-primary" onclick="copySafe(document.getElementById('tgT').textContent).then(()=>{ toast('Скопировано в буфер!'); })">${ic('copy')} Скопировать</button>
     </div>
   `, { wide: true });
 }
@@ -1502,7 +1786,7 @@ function openTextImportModal(t = 'events') {
           </label>
           <label class="bg-surface flex gap-2 items-start" style="border:1.5px solid var(--line2);border-radius:12px;padding:10px;cursor:pointer">
             <input type="radio" name="impMode" value="replace" ${importMode==='replace'?'checked':''} onchange="importMode=this.value">
-            <div><b class="text-base text-must">Заменить</b><div class="text-xs text-muted">Очистить текущие перед импортом</div></div>
+            <div><b class="text-base text-must">Заменить</b><div class="text-xs text-muted">Очистить с авто-бэкапом</div></div>
           </label>
         </div>
       </div>
@@ -1513,7 +1797,7 @@ function openTextImportModal(t = 'events') {
         </div>
         <textarea class="inp" id="impTxt" style="min-height:160px;font-family:monospace" placeholder="${importType==='events'?'10.08.2026\t19:00\tКвартирник при свечах\t800₽':'Иван Иванов\t@ivan\tЛюбит зеленый чай'}"></textarea>
       </div>
-      <div class="text-xs text-muted" style="line-height:1.4">Поддерживаются строки с Tab, точкой с запятой, пробелами и ценами (например: «19:00-21:30 Квартирник орг взнос 800р»).</div>
+      <div class="text-xs text-muted" style="line-height:1.4">При режиме «Заменить» приложение автоматически сохранит резервную копию перед очисткой.</div>
     </div>
     <div class="modal-foot flex gap-2 justify-end">
       <button class="btn btn-primary" onclick="executeImport()">${ic('check')} Выполнить импорт</button>
@@ -1585,23 +1869,38 @@ function executeImport() {
   if(importType === 'clients' && !clients.length) { toast('Не удалось распознать гостей'); return; }
 
   const run = () => {
+    const stamp = nowTs();
+    if(importMode === 'replace') {
+      saveAutoSnapshot(); // Защитный снимок перед деструктивной перезаписью
+      exportBackup();     // Авто-выгрузка файла в загрузки
+    }
+
     if(importType === 'events') {
       if(importMode === 'replace') { db.events = []; db.bookings = []; }
       evs.forEach(it => {
         let fmt = db.formats.find(x => x.title.toLowerCase() === it.title.toLowerCase());
         if(!fmt) {
-          fmt = { id: uid('fmt'), title: it.title, shortDescription: it.note, defaultPrice: it.price, defaultCapacity: 20, frequencyDays: 21, defaultPresence: 'must' };
+          fmt = { id: uid('fmt'), title: it.title, shortDescription: it.note, defaultPrice: it.price, defaultCapacity: 20, frequencyDays: 21, defaultPresence: 'must', updatedAt: stamp };
           db.formats.push(fmt);
         }
-        db.events.push({ id: uid('ev'), formatId: fmt.id, title: it.title, date: it.date, time: it.time, endTime: it.endTime, price: it.price, capacity: 20, presenceType: 'must', note: it.note });
+        db.events.push({ id: uid('ev'), formatId: fmt.id, title: it.title, date: it.date, time: it.time, endTime: it.endTime, price: it.price, capacity: 20, presenceType: 'must', note: it.note, updatedAt: stamp });
       });
       const first = parseYmd(evs[0].date);
       ui.year = first.getFullYear(); ui.month = first.getMonth(); ui.dayDate = evs[0].date; ui.view = 'month';
     } else {
-      if(importMode === 'replace') db.clients = {};
+      if(importMode === 'replace') db.clients = [];
       clients.forEach(c => {
-        const key = c.telegram ? c.telegram.toLowerCase() : 'name:' + c.name.toLowerCase();
-        db.clients[key] = { telegram: c.telegram, name: c.name, visitsCount: 0, totalPaid: 0, clientNotes: c.notes, firstSeen: TODAY_ISO, lastSeen: TODAY_ISO };
+        db.clients.push({
+          id: uid('cl'),
+          telegram: c.telegram,
+          name: c.name,
+          visitsCount: 0,
+          totalPaid: 0,
+          clientNotes: c.notes,
+          firstSeen: TODAY_ISO,
+          lastSeen: TODAY_ISO,
+          updatedAt: stamp
+        });
       });
       ui.view = 'clients';
     }
@@ -1609,7 +1908,7 @@ function executeImport() {
   };
 
   if(importMode === 'replace') {
-    confirmAction('Заменить все данные?', 'Текущие записи выбранного типа будут удалены перед импортом. Продолжить?', 'Да, заменить', run);
+    confirmAction('Заменить все данные?', 'Текущие записи будут удалены перед импортом. Автоматический бэкап будет сохранен в файл. Продолжить?', 'Да, сохранить и заменить', run);
   } else run();
 }
 
@@ -1626,7 +1925,7 @@ function openSyncModal() {
         </div>
       </div>
       <div class="field">
-        <label>URL базы Firebase Realtime Database</label>
+        <label>URL базы Firebase Realtime Database (ваш секретный ключ)</label>
         <div class="flex gap-2">
           <input class="inp flex-1" id="fbU" value="${esc(ui.firebaseUrl)}" placeholder="https://....firebasedatabase.app/data.json">
           <button class="btn btn-primary btn-sm flex-none" onclick="ui.firebaseUrl=normalizeFirebaseUrl(document.getElementById('fbU').value);localStorage.setItem(FIREBASE_URL_KEY,ui.firebaseUrl);pullFromFirebase(true);setupFirebaseRealtime();toast('URL сохранен')">${ic('check')} Подключить</button>
@@ -1651,8 +1950,8 @@ function openSyncModal() {
           <span style="font-size:10px;opacity:.7">▾</span>
         </summary>
         <div class="flex gap-2 flex-wrap" style="padding:10px 0 4px">
-          <button class="btn btn-soft btn-sm" onclick="confirmAction('Сбросить до демо?','Заменить данные демо-набором «Пятницы»?','Сбросить',()=>{ db=normalizeDB(seedDatabase()); saveDatabase(); render(); toast('Демо-данные восстановлены'); })">Вернуть демо-данные</button>
-          <button class="btn btn-ghost btn-sm text-must" onclick="confirmAction('Очистить всё?','Безвозвратно стереть все события, шаблоны и контакты?','Очистить',()=>{ db={formats:[],events:[],bookings:[],clients:{}}; saveDatabase(); render(); toast('База очищена'); })">Полная очистка</button>
+          <button class="btn btn-soft btn-sm" onclick="confirmAction('Сбросить до демо?','Заменить данные демо-набором «Пятницы»?','Сбросить',()=>{ exportBackup(); db=normalizeAndMigrateDB(seedDatabase()); saveDatabase(); render(); toast('Демо-данные восстановлены'); })">Вернуть демо-данные</button>
+          <button class="btn btn-ghost btn-sm text-must" onclick="confirmAction('Очистить всё?','Безвозвратно стереть все события, шаблоны и контакты? Перед очисткой бэкап будет скачан.','Очистить',()=>{ exportBackup(); db={schemaVersion:SCHEMA_VERSION,updatedAt:nowTs(),formats:[],events:[],bookings:[],clients:[]}; saveDatabase(); render(); toast('База очищена'); })">Полная очистка</button>
         </div>
       </details>
     </div>
@@ -1661,13 +1960,16 @@ function openSyncModal() {
 
 function exportBackup() {
   const blob = new Blob([JSON.stringify(db, null, 2)], { type:'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup_${TODAY_ISO}.json`;
-  a.click(); URL.revokeObjectURL(a.href); toast('Бэкап сохранен');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup_pyatnitsa_${TODAY_ISO}.json`;
+  a.click(); URL.revokeObjectURL(a.href); toast('Бэкап сохранен в файл');
 }
 function importBackup(e) {
   const file = e.target.files?.[0]; if(!file) return;
   const r = new FileReader(); r.onload = () => {
-    try { db = normalizeDB(JSON.parse(r.result)); saveDatabase(true); render(); toast('Данные восстановлены'); } catch(err){ toast('Ошибка файла'); }
+    try {
+      db = normalizeAndMigrateDB(JSON.parse(r.result));
+      saveDatabase(true); render(); toast('Данные восстановлены');
+    } catch(err){ toast('Ошибка чтения файла'); }
   };
   r.readAsText(file);
 }
@@ -1702,12 +2004,14 @@ function confirmAction(title, msg, btnText, onConfirm) {
 }
 
 function navTo(v) { ui.view = v; ui.search = ''; render(); window.scrollTo(0,0); }
+
 function renderSettingsBtn() {
   const btn = document.getElementById('settingsBtn'); if(!btn) return;
   const isConn = ui.cloudStatus === 'connected';
   btn.className = `icon-btn cloud-status-btn ${isConn?'synced':'not-synced'}`;
   btn.innerHTML = `${isConn ? ic('cloudOk') : ic('cloudWarn')}<span class="conn-dot" style="background:${isConn?'#3E946E':'#DE6254'}"></span>`;
 }
+
 function render() {
   const top = document.getElementById('topNav'), bot = document.getElementById('bottomNav'), view = document.getElementById('view');
   top.innerHTML = NAV.map(n => `<button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">${ic(n.icon)} ${n.label}</button>`).join('');
