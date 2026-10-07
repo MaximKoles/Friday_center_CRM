@@ -39,7 +39,6 @@ body {
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; border: none; background: none; }
 
-/* Micro-utility system */
 .flex { display: flex; }
 .inline-flex { display: inline-flex; }
 .flex-col { display: flex; flex-direction: column; }
@@ -269,7 +268,6 @@ textarea.inp { resize: vertical; min-height: 70px; }
   </defs>
 </svg>
 
-<!-- Header & Mount points -->
 <header class="app-head">
   <div class="wrap head-inner flex items-center justify-between gap-4">
     <div class="brand flex items-center gap-3" onclick="navTo('month')" title="На главную сетку месяца">
@@ -292,7 +290,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 <div style="position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none" id="toastRoot"></div>
 
 <script>
-const STORE_KEY = 'pyatnitsa_hub_db_v3', AUTO_BACKUP_KEY = 'pyatnitsa_hub_auto_backup', FIREBASE_URL_KEY = 'pyatnitsa_firebase_url';
+const STORE_KEY = 'pyatnitsa_hub_db_v4', STORE_BACKUP_KEY = 'pyatnitsa_hub_db_backup_auto', FIREBASE_URL_KEY = 'pyatnitsa_firebase_url';
 const SCHEMA_VERSION = 4;
 const H_START = 8, H_END = 23, HOUR_H = 28, MIN_DURATION_MIN = 110;
 const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -311,11 +309,9 @@ const NAV = [
   { id:'analytics', label:'Аналитика', icon:'chart' }
 ];
 
-/* Sanitization, helpers and utilities */
 const ic = n => `<svg class="ic"><use href="#ic-${n}"/></svg>`;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid = p => `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
-const nowTs = () => Date.now();
 const toMin = t => { const [h,m] = String(t||'00:00').split(':').map(Number); return (h||0)*60 + (m||0); };
 const money = n => `${new Intl.NumberFormat('ru-RU').format(Math.round(n||0))} ₽`;
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -324,16 +320,24 @@ const fmtDateRu = s => { const d = parseYmd(s); return `${d.getDate()} ${MONTHS_
 const fmtDateFull = s => { const d = parseYmd(s); return `${DOW[(d.getDay()+6)%7]}, ${d.getDate()} ${MONTHS_GEN[d.getMonth()]}`; };
 const daysBetween = (a,b) => Math.floor((b-a)/86400000);
 const plural = (n, one, few, many) => { const m10 = n%10, m100 = n%100; return (m10===1 && m100!==11) ? one : (m10>=2 && m10<=4 && (m100<10 || m100>=20)) ? few : many; };
+const nowTs = () => Date.now();
+
+function getEventInterval(ev) {
+  const start = toMin(ev.time);
+  let end = toMin(ev.endTime);
+  if (!ev.endTime || end <= start) {
+    end = Math.min(start + 120, 23 * 60 + 59);
+  }
+  return { start, end };
+}
 
 function getTgLink(tg) {
   if (!tg) return '';
-  const c = tg.trim();
-  if (c.startsWith('https://t.me/')) return c;
-  if (c.startsWith('http://') || c.startsWith('https://')) {
-    return c.startsWith('https://t.me/') ? c : '';
-  }
-  const clean = c.replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '');
-  return clean ? `https://t.me/${clean}` : '';
+  const clean = tg.trim();
+  if (clean.startsWith('https://t.me/')) return clean;
+  if (clean.startsWith('t.me/')) return 'https://' + clean;
+  const username = clean.replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '');
+  return username ? `https://t.me/${username}` : '';
 }
 
 function stableStringify(o) {
@@ -343,12 +347,6 @@ function stableStringify(o) {
 }
 
 function copySafe(text) {
-  if (navigator.clipboard && window.isSecureContext) {
-    return navigator.clipboard.writeText(text).then(() => true).catch(() => fallbackCopy(text));
-  }
-  return Promise.resolve(fallbackCopy(text));
-}
-function fallbackCopy(text) {
   const ta = document.createElement('textarea');
   ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px';
   document.body.appendChild(ta); ta.select();
@@ -363,14 +361,9 @@ function toast(msg) {
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 260); }, 2200);
 }
 
-function isUserInteractingWithModal() {
-  const root = document.getElementById('modalRoot');
-  if (!root || !root.classList.contains('open')) return false;
-  if (root.contains(document.activeElement) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return true;
-  for (const el of root.querySelectorAll('input, textarea')) {
-    if (el.value && el.value.trim() !== '') return true;
-  }
-  return false;
+function isUserActivelyTyping() {
+  const active = document.activeElement;
+  return active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName);
 }
 
 const TODAY_ISO = ymd(new Date());
@@ -384,11 +377,13 @@ let ui = {
 };
 
 function seedDatabase() {
-  const t = TODAY_ISO, stamp = nowTs();
+  const t = TODAY_ISO, stamp = 1700000000000;
   const cl1Id = 'cl-seed-1', cl2Id = 'cl-seed-2';
   return {
     schemaVersion: SCHEMA_VERSION,
+    isInitialSeed: true,
     updatedAt: stamp,
+    deletedIds: {},
     formats: [
       { id: 'fmt-1', title: 'Квартирник при свечах', shortDescription: 'Акустический вечер авторской песни, живой диалог и травяной чай при свечах.', defaultPrice: 900, defaultCapacity: 25, frequencyDays: 28, defaultPresence: 'must', updatedAt: stamp },
       { id: 'fmt-2', title: 'Книжный клуб', shortDescription: 'Обсуждение классики и нон-фикшн за круглым столом.', defaultPrice: 500, defaultCapacity: 14, frequencyDays: 21, defaultPresence: 'team', updatedAt: stamp },
@@ -401,19 +396,99 @@ function seedDatabase() {
       { id: 'ev-202', formatId: 'fmt-1', title: 'Осенний Квартирник при свечах', date: t, time: '19:00', endTime: '21:30', price: 900, capacity: 25, presenceType: 'must', isPublic: true, contactPerson: 'Лена', note: 'Зажечь свечи', updatedAt: stamp }
     ],
     bookings: [
-      { id: 'bk-1', eventId: 'ev-202', clientId: cl1Id, guestName: 'Марина Соколова', telegram: '@sokol_marina', ticketsCount: 2, isPaid: true, isCheckedIn: true, isWaitlist: false, note: 'У камина', updatedAt: stamp },
-      { id: 'bk-2', eventId: 'ev-202', clientId: cl2Id, guestName: 'Алексей Кузнецов', telegram: '@kuznetsov_alex', ticketsCount: 1, isPaid: true, isCheckedIn: false, isWaitlist: false, note: 'Опоздает', updatedAt: stamp }
+      { id: 'bk-1', eventId: 'ev-202', clientId: cl1Id, guestName: 'Марина Соколова', telegram: '@sokol_marina', ticketsCount: 2, isPaid: true, isCheckedIn: true, isWaitlist: false, note: 'У камина', eventTitle: 'Осенний Квартирник при свечах', eventDate: t, eventTime: '19:00', eventPrice: 900, updatedAt: stamp },
+      { id: 'bk-2', eventId: 'ev-202', clientId: cl2Id, guestName: 'Алексей Кузнецов', telegram: '@kuznetsov_alex', ticketsCount: 1, isPaid: true, isCheckedIn: false, isWaitlist: false, note: 'Опоздает', eventTitle: 'Осенний Квартирник при свечах', eventDate: t, eventTime: '19:00', eventPrice: 900, updatedAt: stamp }
     ],
     clients: [
-      { id: cl1Id, name: 'Марина Соколова', telegram: '@sokol_marina', visitsCount: 1, totalPaid: 1800, clientNotes: 'Любит травяной чай, ходит на квартирники', firstSeen: t, lastSeen: t, updatedAt: stamp },
-      { id: cl2Id, name: 'Алексей Кузнецов', telegram: '@kuznetsov_alex', visitsCount: 0, totalPaid: 900, clientNotes: 'Играет на гитаре, тихие вечера', firstSeen: t, lastSeen: t, updatedAt: stamp }
+      { id: cl1Id, name: 'Марина Соколова', telegram: '@sokol_marina', visitsCount: 2, totalPaid: 1800, initialVisits: 0, initialPaid: 0, clientNotes: 'Любит травяной чай, ходит на квартирники', firstSeen: t, lastSeen: t, updatedAt: stamp },
+      { id: cl2Id, name: 'Алексей Кузнецов', telegram: '@kuznetsov_alex', visitsCount: 0, totalPaid: 900, initialVisits: 0, initialPaid: 0, clientNotes: 'Играет на гитаре, тихие вечера', firstSeen: t, lastSeen: null, updatedAt: stamp }
     ]
   };
 }
 
-/**
- * Безопасная нормализация и автоматическая миграция со словарей и старых схем
- */
+function getStableClientId(tg, name) {
+  if (tg) {
+    const cleanTg = tg.toLowerCase().trim().replace(/^@/, '').replace(/[^a-z0-9_]/g, '');
+    if (cleanTg) return `cl-tg-${cleanTg}`;
+  }
+  const cleanName = (name || 'guest').toLowerCase().trim().replace(/[^a-z0-9а-яё]/gi, '_');
+  return `cl-nm-${cleanName}`;
+}
+
+function cleanupClientDuplicates(d) {
+  if (!d || !Array.isArray(d.clients)) return d;
+  const canonicalMap = new Map();
+  const idRemap = new Map();
+
+  d.clients.forEach(c => {
+    if (!c) return;
+    const tgKey = c.telegram ? c.telegram.toLowerCase().trim().replace(/^@/, '') : '';
+    const nameKey = (c.name || '').toLowerCase().trim();
+    const matchKey = tgKey ? `tg:${tgKey}` : `name:${nameKey}`;
+
+    if (!canonicalMap.has(matchKey)) {
+      const canonicalClient = { ...c, id: c.id || getStableClientId(c.telegram, c.name) };
+      canonicalMap.set(matchKey, canonicalClient);
+      idRemap.set(c.id, canonicalClient.id);
+    } else {
+      const existing = canonicalMap.get(matchKey);
+      idRemap.set(c.id, existing.id);
+      existing.initialVisits = Math.max(Number(existing.initialVisits) || 0, Number(c.initialVisits) || 0);
+      existing.initialPaid = Math.max(Number(existing.initialPaid) || 0, Number(c.initialPaid) || 0);
+      if (!existing.telegram && c.telegram) existing.telegram = c.telegram;
+      if (c.clientNotes && !existing.clientNotes.includes(c.clientNotes)) {
+        existing.clientNotes = existing.clientNotes ? `${existing.clientNotes} · ${c.clientNotes}` : c.clientNotes;
+      }
+      existing.updatedAt = Math.max(existing.updatedAt || 0, c.updatedAt || 0);
+    }
+  });
+
+  d.clients = Array.from(canonicalMap.values());
+
+  if (Array.isArray(d.bookings)) {
+    d.bookings.forEach(b => {
+      if (b.clientId && idRemap.has(b.clientId)) {
+        b.clientId = idRemap.get(b.clientId);
+      } else if (!b.clientId) {
+        const tgKey = b.telegram ? `tg:${b.telegram.toLowerCase().trim().replace(/^@/, '')}` : '';
+        const nameKey = `name:${(b.guestName || '').toLowerCase().trim()}`;
+        const match = (tgKey && canonicalMap.get(tgKey)) || canonicalMap.get(nameKey);
+        if (match) b.clientId = match.id;
+      }
+    });
+  }
+
+  d.clients.forEach(c => {
+    const checkedInBookings = (d.bookings || []).filter(b => b.clientId === c.id && b.isCheckedIn);
+    const paidBookings = (d.bookings || []).filter(b => b.clientId === c.id && b.isPaid);
+    const calcVisits = checkedInBookings.reduce((s, b) => s + (b.ticketsCount || 1), 0);
+    const calcPaid = paidBookings.reduce((s, b) => {
+      const ev = (d.events || []).find(e => e.id === b.eventId);
+      return s + (b.ticketsCount || 1) * (ev?.price ?? (b.eventPrice || 0));
+    }, 0);
+
+    const rawVisits = Number(c.visitsCount) || 0;
+    const rawPaid = Number(c.totalPaid) || 0;
+    c.initialVisits = c.initialVisits !== undefined ? Number(c.initialVisits) : Math.max(0, rawVisits - calcVisits);
+    c.initialPaid = c.initialPaid !== undefined ? Number(c.initialPaid) : Math.max(0, rawPaid - calcPaid);
+    c.visitsCount = c.initialVisits + calcVisits;
+    c.totalPaid = c.initialPaid + calcPaid;
+
+    let latestVisitDate = null;
+    checkedInBookings.forEach(b => {
+      const ev = (d.events || []).find(e => e.id === b.eventId);
+      const dDate = ev?.date || b.eventDate;
+      if (dDate && (!latestVisitDate || dDate > latestVisitDate)) {
+        latestVisitDate = dDate;
+      }
+    });
+
+    c.lastSeen = c.visitsCount > 0 ? (latestVisitDate || c.initialLastSeen || c.lastSeen || null) : null;
+  });
+
+  return d;
+}
+
 function normalizeAndMigrateDB(raw) {
   const d = (raw && typeof raw === 'object') ? raw : {};
   const stamp = nowTs();
@@ -426,31 +501,40 @@ function normalizeAndMigrateDB(raw) {
 
   let clientsList = [];
   if (Array.isArray(d.clients)) {
-    clientsList = d.clients.map(c => ({
-      id: c.id || uid('cl'),
-      name: c.name || 'Гость',
-      telegram: c.telegram || '',
-      visitsCount: Number(c.visitsCount) || 0,
-      totalPaid: Number(c.totalPaid) || 0,
-      clientNotes: c.clientNotes || '',
-      firstSeen: c.firstSeen || TODAY_ISO,
-      lastSeen: c.lastSeen || TODAY_ISO,
-      updatedAt: c.updatedAt || stamp
-    }));
+    clientsList = d.clients.map(c => {
+      const visits = Number(c.visitsCount) || 0;
+      return {
+        id: c.id || getStableClientId(c.telegram, c.name),
+        name: c.name || 'Гость',
+        telegram: c.telegram || '',
+        visitsCount: visits,
+        totalPaid: Number(c.totalPaid) || 0,
+        initialVisits: c.initialVisits !== undefined ? Number(c.initialVisits) : visits,
+        initialPaid: c.initialPaid !== undefined ? Number(c.initialPaid) : (Number(c.totalPaid) || 0),
+        clientNotes: c.clientNotes || '',
+        firstSeen: c.firstSeen || TODAY_ISO,
+        lastSeen: visits > 0 ? (c.lastSeen || null) : null,
+        initialLastSeen: c.initialLastSeen || null,
+        updatedAt: c.updatedAt || stamp
+      };
+    });
   } else if (d.clients && typeof d.clients === 'object') {
-    // Миграция старого объекта c ключами-никами или 'name:...'
     Object.entries(d.clients).forEach(([oldKey, c]) => {
       const tg = c.telegram || (oldKey.startsWith('@') ? oldKey : '');
       const name = c.name || (oldKey.startsWith('name:') ? oldKey.slice(5) : 'Гость');
+      const visits = Number(c.visitsCount) || 0;
       clientsList.push({
-        id: uid('cl'),
+        id: c.id || getStableClientId(tg, name),
         name: name.trim(),
         telegram: tg.trim(),
-        visitsCount: Number(c.visitsCount) || 0,
+        visitsCount: visits,
         totalPaid: Number(c.totalPaid) || 0,
+        initialVisits: visits,
+        initialPaid: Number(c.totalPaid) || 0,
         clientNotes: c.clientNotes || '',
         firstSeen: c.firstSeen || TODAY_ISO,
-        lastSeen: c.lastSeen || TODAY_ISO,
+        lastSeen: visits > 0 ? (c.lastSeen || null) : null,
+        initialLastSeen: null,
         updatedAt: stamp
       });
     });
@@ -463,26 +547,34 @@ function normalizeAndMigrateDB(raw) {
       client = clientsList.find(c => c.id === b.clientId);
     }
     if (!client && b.telegram) {
-      client = clientsList.find(c => c.telegram && c.telegram.toLowerCase() === b.telegram.toLowerCase().trim());
+      const cleanTg = b.telegram.toLowerCase().trim();
+      client = clientsList.find(c => c.telegram && c.telegram.toLowerCase().trim() === cleanTg);
     }
     if (!client && b.guestName) {
-      client = clientsList.find(c => c.name.toLowerCase() === String(b.guestName).toLowerCase().trim());
+      const cleanName = String(b.guestName).toLowerCase().trim();
+      client = clientsList.find(c => c.name.toLowerCase().trim() === cleanName);
     }
     if (!client) {
-      const newClId = uid('cl');
+      const newClId = getStableClientId(b.telegram, b.guestName);
+      const isCheck = Boolean(b.isCheckedIn);
+      const ev = events.find(e => e.id === b.eventId);
       client = {
         id: newClId,
         name: b.guestName || 'Гость',
         telegram: b.telegram || '',
-        visitsCount: b.isCheckedIn ? (b.ticketsCount || 1) : 0,
+        visitsCount: isCheck ? (b.ticketsCount || 1) : 0,
         totalPaid: 0,
+        initialVisits: 0,
+        initialPaid: 0,
         clientNotes: b.note || '',
         firstSeen: TODAY_ISO,
-        lastSeen: TODAY_ISO,
+        lastSeen: isCheck && (ev?.date || b.eventDate) ? (ev?.date || b.eventDate) : null,
+        initialLastSeen: null,
         updatedAt: stamp
       };
       clientsList.push(client);
     }
+    const ev = events.find(e => e.id === b.eventId);
     return {
       id: b.id || uid('bk'),
       eventId: b.eventId,
@@ -494,18 +586,28 @@ function normalizeAndMigrateDB(raw) {
       isCheckedIn: Boolean(b.isCheckedIn),
       isWaitlist: Boolean(b.isWaitlist),
       note: b.note || '',
+      eventTitle: b.eventTitle || ev?.title || 'Событие',
+      eventDate: b.eventDate || ev?.date || TODAY_ISO,
+      eventTime: b.eventTime || ev?.time || '19:00',
+      eventPrice: b.eventPrice !== undefined ? Number(b.eventPrice) : (ev?.price || 0),
       updatedAt: b.updatedAt || stamp
     };
   });
 
-  return {
+  const deletedIds = (d.deletedIds && typeof d.deletedIds === 'object') ? d.deletedIds : {};
+
+  const normalized = {
     schemaVersion: SCHEMA_VERSION,
+    isInitialSeed: Boolean(d.isInitialSeed),
     updatedAt: d.updatedAt || stamp,
+    deletedIds,
     formats,
     events,
     bookings,
     clients: clientsList
   };
+
+  return cleanupClientDuplicates(normalized);
 }
 
 let cloudTimer = null, isLocalPushing = false, lastPushedStr = '', fbEventSource = null, pollTimer = null;
@@ -515,33 +617,13 @@ function normalizeFirebaseUrl(u) {
   return !u ? '' : !u.endsWith('.json') ? (u.endsWith('/') ? u + 'data.json' : u + '/data.json') : u;
 }
 
-function saveAutoSnapshot() {
-  try {
-    localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify(db));
-  } catch(e) {}
-}
-
-function saveDatabase(sync = true) {
-  db.updatedAt = nowTs();
-  try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(db));
-  } catch (e) {
-    console.error('LocalStorage error:', e);
-    openQuotaWarningModal();
-    return;
-  }
-  if (sync && ui.firebaseUrl) {
-    clearTimeout(cloudTimer);
-    cloudTimer = setTimeout(pushToFirebase, 200);
-  }
-}
-
 function loadDatabase() {
   ui.firebaseUrl = normalizeFirebaseUrl(localStorage.getItem(FIREBASE_URL_KEY) || '');
   try {
-    const s = localStorage.getItem(STORE_KEY);
+    const s = localStorage.getItem(STORE_KEY) || localStorage.getItem('pyatnitsa_hub_db_v3');
     db = normalizeAndMigrateDB(s ? JSON.parse(s) : seedDatabase());
-    if (!s) saveDatabase(false);
+    db = cleanupClientDuplicates(db);
+    saveDatabase(false);
   } catch(e) {
     db = normalizeAndMigrateDB(seedDatabase());
   }
@@ -556,26 +638,56 @@ function openQuotaWarningModal() {
       </div>
       <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
     </div>
-    <div class="modal-body">
-      <p class="text-base text-ink" style="margin-bottom:12px">
-        Браузер не смог сохранить последние изменения в локальное хранилище (LocalStorage Quota Exceeded).
-      </p>
-      <div class="modal-triplet-card" style="background:#FDEDE9;border-color:#F8C8C2;color:#C63D31">
-        Пожалуйста, скачайте резервную копию прямо сейчас, чтобы не потерять текущую сессию!
-      </div>
+    <div class="modal-body text-base text-ink2" style="line-height:1.5">
+      Локальное хранилище браузера (LocalStorage) исчерпало лимит. Чтобы не потерять ваши данные, немедленно сохраните файл резервной копии.
     </div>
     <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-primary" onclick="exportBackup()">${ic('download')} Скачать резервную копию (.json)</button>
-      <button class="btn btn-soft" onclick="closeModal()">Понятно</button>
+      <button class="btn btn-primary" onclick="exportBackup()">${ic('download')} Сохранить резервную копию</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Закрыть</button>
     </div>
   `);
 }
 
-/**
- * Умное двухстороннее слияние записей по полю updatedAt (защита от потери параллельных изменений)
- */
+function saveDatabase(sync = true) {
+  if (!db) return;
+  db.updatedAt = nowTs();
+  db.isInitialSeed = false;
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(db));
+  } catch(e) {
+    if (e.name === 'QuotaExceededError' || e.code === 22) {
+      openQuotaWarningModal();
+    }
+  }
+  if (sync && ui.firebaseUrl) {
+    clearTimeout(cloudTimer);
+    cloudTimer = setTimeout(pushToFirebase, 150);
+  }
+}
+
+function markAsDeleted(id) {
+  if (!db) return;
+  if (!db.deletedIds) db.deletedIds = {};
+  db.deletedIds[id] = nowTs();
+}
+
 function mergeDatabases(local, remote) {
   const normRemote = normalizeAndMigrateDB(remote);
+  
+  if (local.isInitialSeed && !normRemote.isInitialSeed) {
+    return normRemote;
+  }
+  if (!local.isInitialSeed && normRemote.isInitialSeed) {
+    return local;
+  }
+
+  const mergedDeletedIds = { ...(local.deletedIds || {}) };
+  if (normRemote.deletedIds) {
+    Object.entries(normRemote.deletedIds).forEach(([id, stamp]) => {
+      mergedDeletedIds[id] = Math.max(mergedDeletedIds[id] || 0, Number(stamp) || 0);
+    });
+  }
+
   const mergeList = (localArr, remoteArr) => {
     const map = new Map();
     localArr.forEach(item => map.set(item.id, item));
@@ -584,26 +696,39 @@ function mergeDatabases(local, remote) {
         map.set(item.id, item);
       } else {
         const loc = map.get(item.id);
-        if ((item.updatedAt || 0) > (loc.updatedAt || 0)) {
+        if ((item.updatedAt || 0) >= (loc.updatedAt || 0)) {
           map.set(item.id, item);
         }
       }
     });
-    return Array.from(map.values());
+
+    const result = [];
+    map.forEach((item, id) => {
+      const delStamp = mergedDeletedIds[id];
+      if (delStamp && delStamp >= (item.updatedAt || 0)) {
+        return;
+      }
+      result.push(item);
+    });
+    return result;
   };
 
-  return {
+  const merged = {
     schemaVersion: SCHEMA_VERSION,
+    isInitialSeed: false,
     updatedAt: Math.max(local.updatedAt || 0, normRemote.updatedAt || 0),
-    formats: mergeList(local.formats, normRemote.formats),
-    events: mergeList(local.events, normRemote.events),
-    bookings: mergeList(local.bookings, normRemote.bookings),
-    clients: mergeList(local.clients, normRemote.clients)
+    deletedIds: mergedDeletedIds,
+    formats: mergeList(local.formats || [], normRemote.formats || []),
+    events: mergeList(local.events || [], normRemote.events || []),
+    bookings: mergeList(local.bookings || [], normRemote.bookings || []),
+    clients: mergeList(local.clients || [], normRemote.clients || [])
   };
+
+  return cleanupClientDuplicates(merged);
 }
 
 async function pushToFirebase() {
-  if(!ui.firebaseUrl) return;
+  if (!ui.firebaseUrl) return;
   isLocalPushing = true;
   lastPushedStr = stableStringify(db);
   try {
@@ -615,69 +740,113 @@ async function pushToFirebase() {
     ui.cloudStatus = res.ok ? 'connected' : 'disconnected';
   } catch(e) {
     ui.cloudStatus = 'disconnected';
+  } finally {
+    setTimeout(() => { isLocalPushing = false; }, 100);
   }
-  setTimeout(() => { isLocalPushing = false; }, 400);
   renderSettingsBtn();
 }
 
 async function pullFromFirebase(manual = false) {
-  if(!ui.firebaseUrl) { if(manual) toast('Укажите URL базы данных'); return; }
+  if (!ui.firebaseUrl) { if(manual) toast('Укажите URL базы данных'); return; }
   try {
     const res = await fetch(ui.firebaseUrl);
-    if(res.ok) {
+    if (res.ok) {
       const data = await res.json();
-      if(data && (data.events || data.formats || data.clients)) {
+      if (!data) {
+        if (db && !db.isInitialSeed) {
+          pushToFirebase();
+        }
+      } else if (data && (data.events || data.formats || data.clients || data.deletedIds)) {
         const merged = mergeDatabases(db, data);
         const ns = stableStringify(merged);
-        if(ns !== stableStringify(db) && !isLocalPushing) {
+        if (ns !== stableStringify(db) && !isLocalPushing) {
           db = merged;
           localStorage.setItem(STORE_KEY, JSON.stringify(db));
-          if (!isUserInteractingWithModal()) {
+          if (!isUserActivelyTyping()) {
             render();
-            if(ui.modal?.type === 'event') openEventDetailsModal(ui.modal.id);
+            if (ui.modal?.type === 'event') openEventDetailsModal(ui.modal.id);
+            else if (ui.modal?.type === 'client') openClientCardModal(ui.modal.id);
           }
         }
-        if(manual) toast('Синхронизировано с облаком');
+        if (manual) toast('Синхронизировано с облаком');
       }
       ui.cloudStatus = 'connected';
     } else {
       ui.cloudStatus = 'disconnected';
-      if(manual) toast('Ошибка подключения');
+      if (manual) toast('Ошибка подключения к базе');
     }
   } catch(e) {
     ui.cloudStatus = 'disconnected';
-    if(manual) toast('Сбой связи с базой');
+    if (manual) toast('Сбой связи с базой данных');
   }
   renderSettingsBtn();
 }
 
+function handleRemoteDataUpdate(remoteData) {
+  if (!remoteData || typeof remoteData !== 'object' || isLocalPushing) return;
+  const merged = mergeDatabases(db, remoteData);
+  const curStr = stableStringify(db);
+  const newStr = stableStringify(merged);
+  if (curStr !== newStr) {
+    db = merged;
+    localStorage.setItem(STORE_KEY, JSON.stringify(db));
+    if (!isUserActivelyTyping()) {
+      render();
+      if (ui.modal?.type === 'event') openEventDetailsModal(ui.modal.id);
+      else if (ui.modal?.type === 'client') openClientCardModal(ui.modal.id);
+    }
+  }
+}
+
 function setupFirebaseRealtime() {
-  if(fbEventSource) { fbEventSource.close(); fbEventSource = null; }
+  if (fbEventSource) {
+    try { fbEventSource.close(); } catch(e){}
+    fbEventSource = null;
+  }
   clearInterval(pollTimer);
-  if(!ui.firebaseUrl) return;
+  if (!ui.firebaseUrl) return;
+
   try {
     fbEventSource = new EventSource(ui.firebaseUrl);
     fbEventSource.addEventListener('put', e => {
       try {
         const p = JSON.parse(e.data);
-        if(p?.path === '/' && p.data && !isLocalPushing) {
-          const merged = mergeDatabases(db, p.data);
-          if(stableStringify(merged) !== stableStringify(db)) {
-            db = merged;
-            localStorage.setItem(STORE_KEY, JSON.stringify(db));
-            if (!isUserInteractingWithModal()) {
-              render();
-              if(ui.modal?.type === 'event') openEventDetailsModal(ui.modal.id);
-            }
-          }
+        if (p?.path === '/' && p.data) {
+          handleRemoteDataUpdate(p.data);
+        } else if (p?.path && p.path !== '/') {
+          pullFromFirebase(false);
         }
       } catch(err){}
     });
+
+    fbEventSource.addEventListener('patch', () => {
+      pullFromFirebase(false);
+    });
+
     fbEventSource.onerror = () => {
-      if(!pollTimer) pollTimer = setInterval(() => { if(!isLocalPushing) pullFromFirebase(false); }, 10000);
+      ui.cloudStatus = 'disconnected';
+      renderSettingsBtn();
+      if (!pollTimer) {
+        pollTimer = setInterval(() => { if (!isLocalPushing) pullFromFirebase(false); }, 7000);
+      }
     };
-  } catch(e){
-    pollTimer = setInterval(() => { if(!isLocalPushing) pullFromFirebase(false); }, 10000);
+
+    fbEventSource.onopen = () => {
+      ui.cloudStatus = 'connected';
+      renderSettingsBtn();
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    };
+  } catch(e) {
+    pollTimer = setInterval(() => { if (!isLocalPushing) pullFromFirebase(false); }, 7000);
+  }
+}
+
+function handleAppResume() {
+  if (ui.firebaseUrl) {
+    pullFromFirebase(false);
+    if (!fbEventSource || fbEventSource.readyState === EventSource.CLOSED) {
+      setupFirebaseRealtime();
+    }
   }
 }
 
@@ -687,6 +856,47 @@ function getEventStats(eventId, price = 0) {
   const checked = bk.filter(b => b.isCheckedIn).reduce((s, b) => s + (b.ticketsCount || 1), 0);
   const paidSum = bk.filter(b => b.isPaid).reduce((s, b) => s + (b.ticketsCount || 1) * price, 0);
   return { booked, checked, paidSum, list: bk };
+}
+
+function getClientStats(clientId) {
+  const c = db.clients.find(x => x.id === clientId);
+  if (!c) return { visits: 0, total: 0, lastSeen: null, history: [] };
+
+  const history = db.bookings
+    .filter(b => b.clientId === clientId)
+    .map(b => {
+      const ev = db.events.find(e => e.id === b.eventId);
+      return {
+        bk: b,
+        ev: ev,
+        title: ev?.title || b.eventTitle || 'Событие',
+        date: ev?.date || b.eventDate || '',
+        time: ev?.time || b.eventTime || '',
+        price: (ev?.price !== undefined) ? ev.price : (b.eventPrice || 0),
+        isArchived: !ev
+      };
+    })
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  const checkedIn = history.filter(x => x.bk.isCheckedIn);
+  const paid = history.filter(x => x.bk.isPaid);
+
+  const bookingVisits = checkedIn.reduce((s, x) => s + (x.bk.ticketsCount || 1), 0);
+  const totalVisits = (Number(c.initialVisits) || 0) + bookingVisits;
+
+  const bookingPaid = paid.reduce((s, x) => s + (x.bk.ticketsCount || 1) * x.price, 0);
+  const totalPaid = (Number(c.initialPaid) || 0) + bookingPaid;
+
+  let latestVisitDate = null;
+  checkedIn.forEach(x => {
+    if (x.date && (!latestVisitDate || x.date > latestVisitDate)) {
+      latestVisitDate = x.date;
+    }
+  });
+
+  const lastSeen = totalVisits > 0 ? (latestVisitDate || c.initialLastSeen || (c.lastSeen && totalVisits > 0 ? c.lastSeen : null)) : null;
+
+  return { visits: totalVisits, total: totalPaid, lastSeen, history };
 }
 
 function getMonthWeeks(y, m) {
@@ -751,58 +961,19 @@ function getActivePrompts() {
   });
   return warns;
 }
+
 function snoozePrompt(fmtId) {
   const d = new Date(), diff = ((8 - d.getDay()) % 7) || 7;
   d.setDate(d.getDate() + diff);
   const snoozed = getSnoozed(); snoozed[fmtId] = ymd(d); saveSnoozed(snoozed);
   updateNotifButton();
 }
+
 function updateNotifButton() {
   const btn = document.getElementById('notifBtn'); if (!btn) return;
   const count = getActivePrompts().length;
   btn.innerHTML = `${ic('bell')}${count > 0 ? `<span class="notif-badge">${count}</span>` : ''}`;
   btn.title = count > 0 ? `Напоминаний: ${count}` : 'Напоминаний нет';
-}
-
-function openNotificationsModal() {
-  const warns = getActivePrompts();
-  openModal(`
-    <div class="modal-head flex items-start justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <div class="text-rent">${ic('bell')}</div>
-        <div>
-          <div class="modal-title">Напоминания о событиях</div>
-          <div class="modal-sub">${warns.length ? `Подошел срок (${warns.length}):` : 'Все события в графике'}</div>
-        </div>
-      </div>
-      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
-    </div>
-    <div class="modal-body">
-      ${!warns.length ? `<div class="text-center text-muted" style="padding:24px">Все регулярные события запланированы вовремя!</div>` : `
-        <div class="list-card">
-          ${warns.map(w => `
-            <div class="row flex items-center justify-between gap-3">
-              <div class="flex-1">
-                <div class="font-bold text-base">${esc(w.format.title)}</div>
-                <div class="text-sm text-muted" style="margin-top:2px">
-                  <span class="tag" style="background:#FDEDE9;color:#DE6254">${w.daysSince === 999 ? 'Еще не проводилось' : `Пауза ${w.daysSince} дн.`}</span>
-                  раз в ${w.target} дн.
-                </div>
-              </div>
-              <div class="flex items-center gap-2 flex-none">
-                <button class="btn btn-primary btn-sm" onclick="closeModal(); openAddEventModal('${w.format.id}')">${ic('plus')} В график</button>
-                <button class="icon-btn sm" onclick="snoozePrompt('${w.format.id}'); openNotificationsModal(); toast('Отложено на неделю')">${ic('x')}</button>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `}
-    </div>
-    <div class="modal-foot flex gap-2 justify-end">
-      ${warns.length > 1 ? `<button class="btn btn-ghost btn-sm" onclick="getActivePrompts().forEach(w=>snoozePrompt(w.format.id)); closeModal(); toast('Все напоминания отложены')">Отложить все</button>` : ''}
-      <button class="btn btn-soft btn-sm" onclick="closeModal()">Закрыть</button>
-    </div>
-  `);
 }
 
 function renderFilterChips() {
@@ -827,6 +998,16 @@ function renderFilterChips() {
 }
 function setFilter(f) { ui.filter = f; render(); }
 
+function changeMonth(d) { ui.month += d; if(ui.month>11){ui.month=0;ui.year++;} else if(ui.month<0){ui.month=11;ui.year--;} render(); }
+function navTo(v) { ui.view = v; ui.search = ''; render(); window.scrollTo(0,0); }
+
+function renderSettingsBtn() {
+  const btn = document.getElementById('settingsBtn'); if(!btn) return;
+  const isConn = ui.cloudStatus === 'connected';
+  btn.className = `icon-btn cloud-status-btn ${isConn?'synced':'not-synced'}`;
+  btn.innerHTML = `${isConn ? ic('cloudOk') : ic('cloudWarn')}<span class="conn-dot" style="background:${isConn?'#3E946E':'#DE6254'}"></span>`;
+}
+
 function renderMonthView() {
   const { year, month } = ui, weeks = getMonthWeeks(year, month);
   const evs = db.events.filter(e => ui.filter === 'all' || e.presenceType === ui.filter);
@@ -850,9 +1031,8 @@ function renderMonthView() {
   weeks.forEach((w, wIdx) => {
     html += `
       <div class="tt-week-card">
-        <div class="tt-week-bar flex items-center justify-between">
+        <div class="tt-week-bar">
           <span>Неделя ${wIdx+1}: ${w.monday.getDate()} ${MONTHS_GEN[w.monday.getMonth()]} — ${w.sunday.getDate()} ${MONTHS_GEN[w.sunday.getMonth()]}</span>
-          <span class="text-muted font-medium">08:00 – 23:00</span>
         </div>
         <div class="tt-scroll" style="border-radius:0;box-shadow:none;margin-bottom:0">
           <div style="min-width:860px;width:100%">
@@ -899,8 +1079,6 @@ function renderMonthView() {
   });
   return html;
 }
-
-function changeMonth(d) { ui.month += d; if(ui.month>11){ui.month=0;ui.year++;} else if(ui.month<0){ui.month=11;ui.year--;} render(); }
 
 function renderDayView() {
   const d = parseYmd(ui.dayDate), dayOfWeek = (d.getDay()+6)%7;
@@ -1005,7 +1183,7 @@ function renderFormatsView() {
           <div class="flex items-center gap-2 flex-none">
             <button class="btn btn-soft btn-sm" onclick="openAddEventModal('${f.id}')">+ В график</button>
             <button class="icon-btn sm" onclick="openFormatFormModal('${f.id}')" title="Редактировать">${ic('edit')}</button>
-            <button class="icon-btn sm" onclick="confirmAction('Удалить шаблон?','Удалить шаблон из реестра? Ранее созданные события сохранятся.','Удалить', ()=>{ db.formats=db.formats.filter(x=>x.id!=='${f.id}'); saveDatabase(); render(); })" title="Удалить">${ic('trash')}</button>
+            <button class="icon-btn sm" onclick="deleteFormat('${f.id}')" title="Удалить">${ic('trash')}</button>
           </div>
         </div>
       `).join('')}
@@ -1013,44 +1191,45 @@ function renderFormatsView() {
   `;
 }
 
-function calculateClientsDirectory() {
-  const map = new Map();
-  db.clients.forEach(c => {
-    map.set(c.id, {
+function buildClientList() {
+  return db.clients.map(c => {
+    const s = getClientStats(c.id);
+    return {
       id: c.id,
-      name: c.name || 'Гость',
-      telegram: c.telegram || '',
-      visits: c.visitsCount || 0,
-      total: c.totalPaid || 0,
-      lastSeen: c.lastSeen || null,
+      name: c.name,
+      telegram: c.telegram,
+      visits: s.visits,
+      total: s.total,
+      lastSeen: s.lastSeen,
       notes: c.clientNotes || ''
-    });
+    };
   });
+}
 
-  // Пересчет фактической истории из бронирований
-  db.bookings.forEach(b => {
-    let entry = map.get(b.clientId);
-    if (!entry) {
-      entry = { id: b.clientId || uid('cl'), name: b.guestName, telegram: b.telegram, visits: 0, total: 0, lastSeen: null, notes: '' };
-      map.set(entry.id, entry);
-    }
-    const ev = db.events.find(e => e.id === b.eventId);
-    if (b.isCheckedIn) entry.visits += (b.ticketsCount || 1);
-    if (b.isPaid && ev) entry.total += (b.ticketsCount || 1) * (ev.price || 0);
-    if (ev && (!entry.lastSeen || ev.date > entry.lastSeen)) entry.lastSeen = ev.date;
-  });
-
-  return Array.from(map.values());
+function renderClientsRows(list) {
+  if(!list.length) return `<div class="text-center text-muted" style="padding:24px">Гости не найдены</div>`;
+  return list.map(c => `
+    <div class="row row-click flex items-center justify-between gap-3" onclick="openClientCardModal('${esc(c.id)}')">
+      <div class="flex-1">
+        <div class="row-title flex items-center gap-2">${esc(c.name)} ${c.telegram ? `<span class="pill">${esc(c.telegram)}</span>` : ''}</div>
+        <div class="row-sub">${c.visits} ${plural(c.visits,'визит','визита','визитов')} · ${money(c.total)}${c.visits > 0 && c.lastSeen ? ' · крайний ' + fmtDateRu(c.lastSeen) : ''}</div>
+        ${c.notes ? `<div class="row-sub" style="font-style:italic;color:#A88F5E">${esc(c.notes)}</div>` : ''}
+      </div>
+      <div class="flex items-center gap-2 flex-none" onclick="event.stopPropagation()">
+        ${c.telegram ? `<a href="${getTgLink(c.telegram)}" target="_blank" rel="noopener noreferrer" class="icon-btn sm" style="color:#2AABEE" title="Написать в Telegram">${ic('send')}</a>` : ''}
+        <button class="icon-btn sm" onclick="confirmAction('Удалить гостя?','Удалить профиль гостя и его бронирования?','Удалить',()=>{ deleteClient('${esc(c.id)}') })" title="Удалить">${ic('trash')}</button>
+      </div>
+    </div>
+  `).join('');
 }
 
 function renderClientsView() {
-  let clients = calculateClientsDirectory();
-  if (ui.search) {
+  let clients = buildClientList();
+  if(ui.search) {
     const q = ui.search.toLowerCase().trim();
     clients = clients.filter(c => (c.name||'').toLowerCase().includes(q) || (c.telegram||'').toLowerCase().includes(q));
   }
   clients.sort((a,b) => b.visits - a.visits || b.total - a.total);
-
   return `
     <div class="page-head flex items-center justify-between gap-3 flex-wrap">
       <div>
@@ -1062,36 +1241,9 @@ function renderClientsView() {
         <button class="btn btn-soft btn-sm" onclick="openTextImportModal('clients')">${ic('upload')} Импорт</button>
       </div>
     </div>
-    <div class="search flex items-center gap-2">
-      ${ic('search')}
-      <input placeholder="Поиск по имени или @нику..." value="${esc(ui.search)}" oninput="ui.search=this.value; document.getElementById('cList').innerHTML=renderClientsRows(calculateClientsDirectory().filter(c=>(c.name||'').toLowerCase().includes(ui.search.toLowerCase())||(c.telegram||'').toLowerCase().includes(ui.search.toLowerCase())))">
-    </div>
+    <div class="search flex items-center gap-2">${ic('search')}<input placeholder="Поиск по имени или @нику..." value="${esc(ui.search)}" oninput="ui.search=this.value;document.getElementById('cList').innerHTML=renderClientsRows(buildClientList().filter(c=>(c.name||'').toLowerCase().includes(ui.search.toLowerCase())||(c.telegram||'').toLowerCase().includes(ui.search.toLowerCase())))"></div>
     <div class="list-card" id="cList">${renderClientsRows(clients)}</div>
   `;
-}
-
-function renderClientsRows(list) {
-  if(!list.length) return `<div class="text-center text-muted" style="padding:24px">Гости не найдены</div>`;
-  return list.map(c => `
-    <div class="row row-click flex items-center justify-between gap-3" onclick="openClientCardModal('${c.id}')">
-      <div class="flex-1">
-        <div class="row-title flex items-center gap-2">${esc(c.name)} ${c.telegram ? `<span class="pill">${esc(c.telegram)}</span>` : ''}</div>
-        <div class="row-sub">${c.visits} ${plural(c.visits,'визит','визита','визитов')} · ${money(c.total)}${c.lastSeen ? ' · крайний ' + fmtDateRu(c.lastSeen) : ''}</div>
-        ${c.notes ? `<div class="row-sub" style="font-style:italic;color:#A88F5E">${esc(c.notes)}</div>` : ''}
-      </div>
-      <div class="flex items-center gap-2 flex-none" onclick="event.stopPropagation()">
-        ${c.telegram && getTgLink(c.telegram) ? `<a href="${getTgLink(c.telegram)}" target="_blank" rel="noopener noreferrer" class="icon-btn sm" style="color:#2AABEE" title="Написать в Telegram">${ic('send')}</a>` : ''}
-        <button class="icon-btn sm" onclick="confirmAction('Удалить гостя?','Удалить профиль гостя и историю его записей?','Удалить',()=>{ deleteClient('${c.id}'); })" title="Удалить">${ic('trash')}</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function deleteClient(clientId) {
-  db.clients = db.clients.filter(c => c.id !== clientId);
-  db.bookings = db.bookings.filter(b => b.clientId !== clientId);
-  saveDatabase();
-  render();
 }
 
 function renderAnalyticsView() {
@@ -1102,18 +1254,15 @@ function renderAnalyticsView() {
     const d = parseYmd(e.date); return d.getFullYear() === curY && d.getMonth() === curM;
   });
   const evIds = new Set(evs.map(e => e.id));
-
-  // Корректный расчет: учитываются ТОЛЬКО оплаченные бронирования (без задваивания аренды)
   let rev = 0, checkins = 0;
+
   db.bookings.forEach(b => {
     if(evIds.has(b.eventId) && !b.isWaitlist) {
       const e = db.events.find(x => x.id === b.eventId);
       if(e && b.isPaid) {
         rev += (b.ticketsCount || 1) * (e.price || 0);
       }
-      if(b.isCheckedIn) {
-        checkins += (b.ticketsCount || 1);
-      }
+      if(b.isCheckedIn) checkins += (b.ticketsCount || 1);
     }
   });
 
@@ -1129,7 +1278,6 @@ function renderAnalyticsView() {
       }
     }
   });
-
   const sorted = Object.values(fmtMap).sort((a,b)=>b.rev - a.rev), maxRev = Math.max(1, ...sorted.map(x=>x.rev));
   const years = [curY-1, curY, curY+1];
 
@@ -1149,7 +1297,7 @@ function renderAnalyticsView() {
             <button class="icon-btn sm" onclick="changeMonth(1)">${ic('chevRight')}</button>
             <button class="btn btn-ghost btn-sm" style="height:32px;min-height:32px" onclick="ui.year=new Date().getFullYear();ui.month=new Date().getMonth();render()">Текущий</button>
           </div>
-        ` : `<div class="text-sm text-muted" style="margin-top:3px">За всё время работы (только оплаченные)</div>`}
+        ` : `<div class="text-sm text-muted" style="margin-top:3px">За всё время работы (по оплаченным броням)</div>`}
       </div>
       <div class="chips" style="margin:0">
         <button class="chip ${isM?'on':''}" onclick="ui.analyticsPeriod='month';render()">Выбранный месяц</button>
@@ -1162,7 +1310,7 @@ function renderAnalyticsView() {
       <div class="stat"><div class="stat-label">${ic('calendar')} Событий</div><div class="stat-val font-bold">${evs.length}</div></div>
       <div class="stat"><div class="stat-label">${ic('users')} База гостей</div><div class="stat-val font-bold">${db.clients.length}</div></div>
     </div>
-    <div class="section-title">Финансовая отдача форматов (по оплаченным местам)</div>
+    <div class="section-title">Финансовая отдача форматов (факт оплат)</div>
     <div class="list-card">
       ${sorted.map(f => `
         <div class="row flex items-center gap-3">
@@ -1173,6 +1321,59 @@ function renderAnalyticsView() {
       `).join('')}
     </div>
   `;
+}
+
+function render() {
+  const top = document.getElementById('topNav'), bot = document.getElementById('bottomNav'), view = document.getElementById('view');
+  if (top) top.innerHTML = NAV.map(n => `<button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">${ic(n.icon)} ${n.label}</button>`).join('');
+  if (bot) bot.innerHTML = NAV.map(n => `<button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">${ic(n.icon)}<span>${n.label}</span></button>`).join('');
+  renderSettingsBtn();
+  updateNotifButton();
+  if (view) {
+    if(ui.view === 'month') view.innerHTML = renderMonthView();
+    else if(ui.view === 'day') view.innerHTML = renderDayView();
+    else if(ui.view === 'events') view.innerHTML = renderFormatsView();
+    else if(ui.view === 'clients') view.innerHTML = renderClientsView();
+    else if(ui.view === 'analytics') view.innerHTML = renderAnalyticsView();
+  }
+}
+
+const MODAL_ROOT = document.getElementById('modalRoot');
+function openModal(html, opts = {}) {
+  MODAL_ROOT.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal ${opts.wide?'modal-wide':''}">${html}</div></div>`;
+  MODAL_ROOT.classList.add('open'); document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  MODAL_ROOT.classList.remove('open'); MODAL_ROOT.innerHTML = '';
+  document.body.style.overflow = ''; ui.modal = null; ui.guestListSearch = ''; ui.guestListFilter = 'all';
+  render();
+}
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+function confirmAction(title, msg, btnText, onConfirm, onCancel = null) {
+  openModal(`
+    <div class="modal-head flex items-start justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <div class="text-must">${ic('alert')}</div>
+        <div class="modal-title">${esc(title)}</div>
+      </div>
+      <button class="icon-btn sm" id="cClose">${ic('x')}</button>
+    </div>
+    <div class="modal-body text-base text-ink2" style="line-height:1.5">${msg}</div>
+    <div class="modal-foot flex gap-2 justify-end">
+      <button class="btn btn-ghost" id="cCancel">Отмена</button>
+      <button class="btn btn-danger" id="cAct">${esc(btnText)}</button>
+    </div>
+  `);
+
+  const handleCancel = () => {
+    closeModal();
+    if (typeof onCancel === 'function') onCancel();
+  };
+
+  document.getElementById('cClose').onclick = handleCancel;
+  document.getElementById('cCancel').onclick = handleCancel;
+  document.getElementById('cAct').onclick = () => { closeModal(); onConfirm(); };
 }
 
 function openEventDetailsModal(id) {
@@ -1283,7 +1484,7 @@ function openEventDetailsModal(id) {
       ` : ''}
     </div>
     <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить событие?','Удалить событие и все привязанные бронирования?','Удалить',()=>{ db.events=db.events.filter(x=>x.id!=='${ev.id}'); db.bookings=db.bookings.filter(x=>x.eventId!=='${ev.id}'); saveDatabase(); closeModal(); render(); })">${ic('trash')} Удалить</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить событие из графика?','Удалить событие «${esc(ev.title)}» из календаря?<br><br><b>История посещений и оплаты гостей сохранятся в их карточках.</b>','Удалить из графика',()=>{ deleteEvent('${ev.id}'); })">${ic('trash')} Удалить из графика</button>
       <div class="flex-1"></div>
       <button class="btn btn-soft btn-sm" onclick="openAddEventModal('','','','${ev.id}')">${ic('edit')} Править</button>
       <button class="btn btn-primary btn-sm" onclick="closeModal()">Готово</button>
@@ -1293,15 +1494,16 @@ function openEventDetailsModal(id) {
 
 function autoFillTg(val) {
   if(!val) return;
-  const c = db.clients.find(x => x.name.toLowerCase() === val.toLowerCase().trim());
+  const clean = val.toLowerCase().trim();
+  const c = db.clients.find(x => x.name.toLowerCase() === clean);
   const tgInp = document.getElementById('bkTg');
   if(c && c.telegram && tgInp && !tgInp.value) tgInp.value = c.telegram;
 }
+
 function autoFillName(val) {
   if(!val) return;
-  let q = val.trim().toLowerCase();
-  if(!q.startsWith('@') && !q.startsWith('http')) q = '@' + q;
-  const c = db.clients.find(x => (x.telegram||'').toLowerCase() === q);
+  const raw = val.trim().toLowerCase().replace(/^@/, '');
+  const c = db.clients.find(x => (x.telegram || '').toLowerCase().replace(/^@/, '') === raw);
   const nameInp = document.getElementById('bkName');
   if(c && c.name && nameInp && !nameInp.value) nameInp.value = c.name;
 }
@@ -1309,8 +1511,7 @@ function autoFillName(val) {
 function openTgReminder(bookingId) {
   const b = db.bookings.find(x => x.id === bookingId); if(!b || !b.telegram) return;
   const ev = db.events.find(x => x.id === b.eventId);
-  const nick = b.telegram.replace('@', '').replace(/[^a-zA-Z0-9_]/g, '');
-  if (!nick) return;
+  const nick = b.telegram.replace(/^@/, '');
   const text = `Привет! Напоминаю о встрече на «${ev ? ev.title : 'событии'}» в пространстве «Пятница»: ${ev ? fmtDateRu(ev.date) : ''} в ${ev ? ev.time : ''}. Ждем в гости!`;
   window.open(`https://t.me/${nick}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 }
@@ -1325,34 +1526,28 @@ function handleQuickBooking(e, evId) {
   const isWait = document.getElementById('bkWait').checked;
   const note = document.getElementById('bkNote').value.trim();
   const ev = db.events.find(x => x.id === evId);
-
-  // Поиск существующего профиля или создание нового с уникальным clientId
-  let client = null;
-  if (tg) {
-    client = db.clients.find(c => c.telegram && c.telegram.toLowerCase() === tg.toLowerCase());
-  }
-  if (!client) {
-    client = db.clients.find(c => c.name.toLowerCase() === name.toLowerCase());
-  }
-
   const stamp = nowTs();
+
+  let client = null;
+  if (tg) client = db.clients.find(c => c.telegram && c.telegram.toLowerCase() === tg.toLowerCase());
+  if (!client) client = db.clients.find(c => c.name.toLowerCase() === name.toLowerCase());
+
   if (!client) {
     client = {
-      id: uid('cl'),
-      name,
+      id: getStableClientId(tg, name),
       telegram: tg,
+      name,
       visitsCount: 0,
       totalPaid: 0,
+      initialVisits: 0,
+      initialPaid: 0,
       clientNotes: note,
       firstSeen: TODAY_ISO,
-      lastSeen: ev ? ev.date : TODAY_ISO,
+      lastSeen: null,
+      initialLastSeen: null,
       updatedAt: stamp
     };
     db.clients.push(client);
-  } else {
-    if (tg && !client.telegram) client.telegram = tg;
-    client.lastSeen = ev ? ev.date : TODAY_ISO;
-    client.updatedAt = stamp;
   }
 
   db.bookings.push({
@@ -1366,35 +1561,55 @@ function handleQuickBooking(e, evId) {
     isCheckedIn: false,
     isWaitlist: isWait,
     note,
+    eventTitle: ev?.title || 'Событие',
+    eventDate: ev?.date || TODAY_ISO,
+    eventTime: ev?.time || '19:00',
+    eventPrice: ev?.price || 0,
     updatedAt: stamp
   });
 
-  saveDatabase();
-  toast(isWait ? 'Добавлено в резерв' : 'Гость успешно записан');
-  openEventDetailsModal(evId);
-  render();
+  const stats = getClientStats(client.id);
+  client.visitsCount = stats.visits;
+  client.totalPaid = stats.total;
+  client.lastSeen = stats.lastSeen;
+  client.updatedAt = stamp;
+
+  saveDatabase(); toast(isWait ? 'Добавлено в резерв' : 'Гость успешно записан'); openEventDetailsModal(evId); render();
 }
 
 function toggleCheckin(id) {
   const b = db.bookings.find(x => x.id === id); if(!b) return;
   b.isCheckedIn = !b.isCheckedIn;
   b.updatedAt = nowTs();
-  saveDatabase();
-  if(ui.modal?.type==='event') openEventDetailsModal(b.eventId);
-  render();
+  const stats = getClientStats(b.clientId);
+  const c = db.clients.find(x => x.id === b.clientId);
+  if(c) {
+    c.visitsCount = stats.visits;
+    c.totalPaid = stats.total;
+    c.lastSeen = stats.lastSeen;
+    c.updatedAt = b.updatedAt;
+  }
+  saveDatabase(); if(ui.modal?.type==='event') openEventDetailsModal(b.eventId); render();
 }
 
 function togglePayment(id) {
   const b = db.bookings.find(x => x.id === id); if(!b) return;
   b.isPaid = !b.isPaid;
   b.updatedAt = nowTs();
-  saveDatabase();
-  if(ui.modal?.type==='event') openEventDetailsModal(b.eventId);
-  render();
+  const stats = getClientStats(b.clientId);
+  const c = db.clients.find(x => x.id === b.clientId);
+  if(c) {
+    c.visitsCount = stats.visits;
+    c.totalPaid = stats.total;
+    c.lastSeen = stats.lastSeen;
+    c.updatedAt = b.updatedAt;
+  }
+  saveDatabase(); if(ui.modal?.type==='event') openEventDetailsModal(b.eventId); render();
 }
 
 function transferFromWaitlist(id) {
-  const b = db.bookings.find(x => x.id === id); if(!b) return;
+  const b = db.bookings.find(x => x.id === id);
+  if(!b) return;
   b.isWaitlist = false;
   b.updatedAt = nowTs();
   saveDatabase();
@@ -1403,19 +1618,67 @@ function transferFromWaitlist(id) {
   render();
 }
 
+function deleteFormat(id) {
+  confirmAction('Удалить шаблон?','Удалить шаблон из реестра? Ранее созданные события сохранятся.','Удалить', () => {
+    markAsDeleted(id);
+    db.formats = db.formats.filter(x => x.id !== id);
+    saveDatabase(true);
+    render();
+    toast('Шаблон удален');
+  });
+}
+
+function deleteEvent(id) {
+  markAsDeleted(id);
+  db.events = db.events.filter(x => x.id !== id);
+  saveDatabase(true);
+  closeModal();
+  render();
+  toast('Событие удалено из графика');
+}
+
 function deleteBooking(id, evId) {
-  confirmAction('Удалить запись?', 'Удалить бронь гостя?', 'Удалить', () => {
+  confirmAction('Удалить запись?', 'Удалить бронь гостя из истории?', 'Удалить', () => {
+    const b = db.bookings.find(x => x.id === id);
+    const clientId = b?.clientId;
+    markAsDeleted(id);
     db.bookings = db.bookings.filter(x => x.id !== id);
-    saveDatabase();
+    if (clientId) {
+      const stats = getClientStats(clientId);
+      const c = db.clients.find(x => x.id === clientId);
+      if (c) {
+        c.visitsCount = stats.visits;
+        c.totalPaid = stats.total;
+        c.lastSeen = stats.lastSeen;
+        c.updatedAt = nowTs();
+      }
+    }
+    saveDatabase(true);
     if(evId && ui.modal?.type === 'event') openEventDetailsModal(evId);
+    else if(ui.modal?.type === 'client') openClientCardModal(clientId);
     render();
   });
 }
 
-function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null) {
+function deleteClient(clientId) {
+  markAsDeleted(clientId);
+  db.bookings.forEach(b => {
+    if (b.clientId === clientId) {
+      markAsDeleted(b.id);
+    }
+  });
+
+  db.clients = db.clients.filter(x => x.id !== clientId);
+  db.bookings = db.bookings.filter(b => b.clientId !== clientId);
+  saveDatabase(true);
+  render();
+  toast('Гость удален');
+}
+
+function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null, draft = null) {
   const ex = editId ? db.events.find(e => e.id === editId) : null;
   const fmt = fmtId ? db.formats.find(f => f.id === fmtId) : null;
-  const initial = ex || {
+  const initial = draft || ex || {
     title: fmt?.title || '', formatId: fmtId, date: preDate || ui.dayDate || TODAY_ISO,
     time: preTime || '19:00', endTime: '21:00', price: fmt?.defaultPrice || 0,
     capacity: fmt?.defaultCapacity || 20, presenceType: fmt?.defaultPresence || 'must', note: '',
@@ -1483,44 +1746,74 @@ function handleSaveEvent(e, editId) {
   let endTime = document.getElementById('evEnd').value;
   const title = document.getElementById('evT').value.trim();
   const formatId = document.getElementById('evFmtSel').value;
+  const price = parseFloat(document.getElementById('evP').value) || 0;
+  const capacity = parseInt(document.getElementById('evC').value) || 0;
+  const presenceType = document.getElementById('evPresence').value;
+  const note = document.getElementById('evN').value.trim();
 
-  const startMin = toMin(time), endMin = toMin(endTime);
-  if(endMin <= startMin) {
+  let startMin = toMin(time), endMin = toMin(endTime);
+  if (endMin <= startMin) {
     const adj = Math.min(startMin + 120, 23 * 60 + 59);
     endTime = `${String(Math.floor(adj/60)).padStart(2,'0')}:${String(adj%60).padStart(2,'0')}`;
+    endMin = toMin(endTime);
   }
 
+  const payload = {
+    title, formatId, date, time, endTime,
+    price, capacity, presenceType,
+    contactPerson: 'Лена',
+    note,
+    updatedAt: nowTs()
+  };
+
   const conflicts = db.events.filter(ev => {
-    if(editId && ev.id === editId) return false;
-    if(ev.date !== date) return false;
-    return (startMin < toMin(ev.endTime || ev.time) && toMin(endTime) > toMin(ev.time));
+    if (editId && ev.id === editId) return false;
+    if (ev.date !== date) return false;
+    const existing = getEventInterval(ev);
+    return (startMin < existing.end && endMin > existing.start);
   });
 
-  const performSave = () => {
-    const stamp = nowTs();
-    const payload = {
-      title, formatId, date, time, endTime,
-      price: parseFloat(document.getElementById('evP').value) || 0,
-      capacity: parseInt(document.getElementById('evC').value) || 0,
-      presenceType: document.getElementById('evPresence').value,
-      contactPerson: 'Лена',
-      note: document.getElementById('evN').value.trim(),
-      updatedAt: stamp
-    };
-    if(editId) {
+  const commitSave = () => {
+    if (editId) {
       const idx = db.events.findIndex(x => x.id === editId);
-      if(idx !== -1) db.events[idx] = { ...db.events[idx], ...payload };
+      if (idx !== -1) {
+        db.events[idx] = { ...db.events[idx], ...payload };
+        db.bookings.forEach(b => {
+          if (b.eventId === editId) {
+            b.eventTitle = payload.title;
+            b.eventDate = payload.date;
+            b.eventTime = payload.time;
+            b.eventPrice = payload.price;
+            b.updatedAt = nowTs();
+          }
+        });
+      }
     } else {
       db.events.push({ id: uid('ev'), ...payload });
     }
-    saveDatabase(); closeModal(); render(); toast('Событие сохранено');
+    saveDatabase();
+    closeModal();
+    render();
+    toast('Событие сохранено');
   };
 
-  if(conflicts.length > 0) {
-    confirmAction('Пересечение по времени', `В этот интервал уже запланировано: «${conflicts[0].title}» (${conflicts[0].time}–${conflicts[0].endTime}). Сохранить оба?`, 'Сохранить оба', performSave);
+  if (conflicts.length > 0) {
+    const conflictList = conflicts
+      .map(c => `• «${esc(c.title)}» (${c.time}–${c.endTime || '?'}, ${PRESENCE[c.presenceType]?.label || ''})`)
+      .join('<br>');
+    const msg = `В этот временной интервал (${time}–${endTime}) уже запланировано:<br><br>${conflictList}<br><br>Сохранить оба события?`;
+
+    confirmAction(
+      'Пересечение по времени',
+      msg,
+      'Всё равно сохранить',
+      commitSave,
+      () => openAddEventModal(formatId, date, time, editId, payload)
+    );
     return;
   }
-  performSave();
+
+  commitSave();
 }
 
 function openFormatFormModal(editId = null) {
@@ -1588,10 +1881,6 @@ function openAddClientModal() {
           <div class="field"><label>Имя и фамилия *</label><input class="inp" id="clN" required placeholder="Дарья Морозова"></div>
           <div class="field"><label>Telegram (@username)</label><input class="inp" id="clTg" placeholder="@daria_m"></div>
         </div>
-        <div class="grid2">
-          <div class="field"><label>Посещений (визитов)</label><input class="inp" type="number" id="clVisits" min="0" value="0"></div>
-          <div class="field"><label>Всего оплачено, ₽</label><input class="inp" type="number" id="clTotal" min="0" value="0"></div>
-        </div>
         <div class="field"><label>Предпочтения, хобби и заметки</label><textarea class="inp" id="clNotes" placeholder="Любит травяной чай, ходит на квартирники..."></textarea></div>
       </div>
       <div class="modal-foot flex gap-2 justify-end">
@@ -1607,42 +1896,71 @@ function handleCreateClient(e) {
   const name = document.getElementById('clN').value.trim();
   let tg = document.getElementById('clTg').value.trim();
   if(tg && !tg.startsWith('@') && !tg.startsWith('http')) tg = '@' + tg;
-  const visits = parseInt(document.getElementById('clVisits').value) || 0;
-  const total = parseFloat(document.getElementById('clTotal').value) || 0;
   const notes = document.getElementById('clNotes').value.trim();
 
-  // Всегда создаем отдельную сущность с уникальным ID (без схлопывания однофамильцев)
-  db.clients.push({
-    id: uid('cl'),
-    telegram: tg,
-    name,
-    visitsCount: visits,
-    totalPaid: total,
-    clientNotes: notes,
-    firstSeen: TODAY_ISO,
-    lastSeen: TODAY_ISO,
-    updatedAt: nowTs()
-  });
+  let existing = null;
+  if (tg) existing = db.clients.find(c => c.telegram && c.telegram.toLowerCase() === tg.toLowerCase());
+  if (!existing) existing = db.clients.find(c => c.name.toLowerCase() === name.toLowerCase());
 
-  saveDatabase(); closeModal(); render(); toast(`Гость «${name}» добавлен`);
+  const stamp = nowTs();
+  if (existing) {
+    existing.name = name;
+    if (tg) existing.telegram = tg;
+    if (notes) existing.clientNotes = existing.clientNotes ? `${existing.clientNotes} · ${notes}` : notes;
+    const stats = getClientStats(existing.id);
+    existing.visitsCount = stats.visits;
+    existing.totalPaid = stats.total;
+    existing.lastSeen = stats.lastSeen;
+    existing.updatedAt = stamp;
+    toast(`Данные гостя «${name}» обновлены`);
+  } else {
+    const newId = getStableClientId(tg, name);
+    if (db.deletedIds && db.deletedIds[newId]) {
+      delete db.deletedIds[newId];
+    }
+    const newClient = {
+      id: newId,
+      telegram: tg,
+      name,
+      visitsCount: 0,
+      totalPaid: 0,
+      initialVisits: 0,
+      initialPaid: 0,
+      clientNotes: notes,
+      firstSeen: TODAY_ISO,
+      lastSeen: null,
+      initialLastSeen: null,
+      updatedAt: stamp
+    };
+    db.clients.push(newClient);
+    const stats = getClientStats(newId);
+    newClient.visitsCount = stats.visits;
+    newClient.totalPaid = stats.total;
+    newClient.lastSeen = stats.lastSeen;
+    toast(`Гость «${name}» добавлен`);
+  }
+
+  saveDatabase(true); closeModal(); render();
 }
 
 function openClientCardModal(clientId) {
   const c = db.clients.find(x => x.id === clientId); if(!c) return;
-  const visitedEvs = db.bookings
-    .filter(b => b.clientId === clientId)
-    .map(b => ({ bk: b, ev: db.events.find(e => e.id === b.eventId) }))
-    .filter(x => !!x.ev);
+  ui.modal = { type: 'client', id: clientId };
+  const s = getClientStats(clientId);
+  const displayVisits = s.visits;
+  const displayPaid = s.total;
+  const displayLastSeen = s.lastSeen;
+  const visitedEvs = s.history;
 
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
-      <div><div class="modal-title">${esc(c.name)}</div><div class="modal-sub">${c.telegram ? esc(c.telegram) : 'Без Telegram'} · ${c.visitsCount||0} визитов · ${money(c.totalPaid||0)}</div></div>
+      <div><div class="modal-title">${esc(c.name)}</div><div class="modal-sub">${c.telegram ? esc(c.telegram) : 'Без Telegram'} · ${displayVisits} ${plural(displayVisits, 'визит', 'визита', 'визитов')} · ${money(displayPaid)}${displayLastSeen ? ' · крайний ' + fmtDateRu(displayLastSeen) : ''}</div></div>
       <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
     </div>
     <div class="modal-body">
       <div class="stats" style="grid-template-columns:1fr 1fr;margin-bottom:14px">
-        <div class="stat" style="padding:14px"><div class="stat-label">Визиты</div><div class="stat-val text-xl font-bold">${c.visitsCount||0}</div></div>
-        <div class="stat" style="padding:14px"><div class="stat-label">Оплаты</div><div class="stat-val text-xl font-bold">${money(c.totalPaid||0)}</div></div>
+        <div class="stat" style="padding:14px"><div class="stat-label">Визиты</div><div class="stat-val text-xl font-bold">${displayVisits}</div></div>
+        <div class="stat" style="padding:14px"><div class="stat-label">Оплаты</div><div class="stat-val text-xl font-bold">${money(displayPaid)}</div></div>
       </div>
       <form onsubmit="handleSaveClientCard(event, '${c.id}')">
         <div class="grid2">
@@ -1650,29 +1968,40 @@ function openClientCardModal(clientId) {
           <div class="field">
             <label class="flex justify-between">
               <span>Telegram (@ник)</span>
-              ${c.telegram && getTgLink(c.telegram) ? `<a href="${getTgLink(c.telegram)}" target="_blank" rel="noopener noreferrer" style="color:#2AABEE;font-size:11.5px;font-weight:600">Написать</a>` : ''}
+              ${c.telegram ? `<a href="${getTgLink(c.telegram)}" target="_blank" rel="noopener noreferrer" style="color:#2AABEE;font-size:11.5px;font-weight:600">Написать</a>` : ''}
             </label>
             <input class="inp" id="clTg" value="${esc(c.telegram||'')}">
           </div>
         </div>
-        <div class="field"><label>Вкусовые предпочтения и заметки</label><textarea class="inp" id="cNt">${esc(c.clientNotes||'')}</textarea></div>
+        <div class="field"><label>Вкусовые предпочтения и заметки</label><textarea class="inp" id="cNt">${esc(c.clientNotes || '')}</textarea></div>
         <button type="submit" class="btn btn-primary btn-sm w-full">${ic('check')} Сохранить профиль</button>
       </form>
-      <div class="section-title">История визитов и записей</div>
+      <div class="section-title">История визитов и записей (${visitedEvs.length})</div>
       <div class="list-card bg-subtle" style="box-shadow:none">
-        ${!visitedEvs.length ? `<div class="text-center text-muted" style="padding:16px">Записей пока нет</div>` : visitedEvs.map(({ bk, ev }) => `
+        ${!visitedEvs.length ? `<div class="text-center text-muted" style="padding:16px">Записей пока нет</div>` : visitedEvs.map(item => `
           <div class="row flex items-center justify-between gap-3" style="padding:9px 14px">
             <div class="flex-1">
-              <div class="font-semibold text-base">${esc(ev.title)}</div>
-              <div class="text-xs text-muted">${fmtDateRu(ev.date)} · ${bk.ticketsCount} мест</div>
+              <div class="font-semibold text-base flex items-center gap-2">
+                ${esc(item.title)}
+                ${item.isArchived ? '<span class="pill text-xs" style="color:var(--muted);font-weight:normal" title="Событие удалено из календаря, но сохранено в истории">снято с графика</span>' : ''}
+              </div>
+              <div class="text-xs text-muted">${item.date ? fmtDateRu(item.date) : ''} · ${item.bk.ticketsCount} мест · ${money((item.bk.ticketsCount || 1) * item.price)}</div>
             </div>
-            <span class="tag flex-none" style="${bk.isCheckedIn?'background:#E7F5EE;color:#3E946E':'background:var(--subtle);color:var(--muted)'}">${bk.isCheckedIn?'Был':'Записан'}</span>
+            <div class="flex items-center gap-2 flex-none">
+              <span class="tag" style="${item.bk.isCheckedIn ? 'background:#E7F5EE;color:#3E946E' : 'background:var(--subtle);color:var(--muted)'}">
+                ${item.bk.isCheckedIn ? 'Был' : 'Записан'}
+              </span>
+              <span class="tag" style="${item.bk.isPaid ? 'background:#E7F5EE;color:#3E946E' : 'background:#FCF3DE;color:#B37D14'}">
+                ${item.bk.isPaid ? 'Оплачено' : 'На входе'}
+              </span>
+              <button class="icon-btn sm" onclick="deleteBooking('${item.bk.id}')" title="Удалить эту запись">${ic('trash')}</button>
+            </div>
           </div>
         `).join('')}
       </div>
     </div>
     <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-danger btn-sm" onclick="closeModal(); confirmAction('Удалить гостя?','Удалить профиль гостя и все его записи?','Удалить',()=>{ deleteClient('${c.id}'); })">${ic('trash')} Удалить</button>
+      <button class="btn btn-danger btn-sm" onclick="closeModal(); confirmAction('Удалить гостя?','Удалить профиль гостя и все его записи?','Удалить',()=>{ deleteClient('${c.id}') })">${ic('trash')} Удалить</button>
       <div class="flex-1"></div>
       <button class="btn btn-soft btn-sm" onclick="closeModal()">Закрыть</button>
     </div>
@@ -1687,24 +2016,20 @@ function handleSaveClientCard(e, clientId) {
   const notes = document.getElementById('cNt').value.trim();
 
   const c = db.clients.find(x => x.id === clientId);
-  if (!c) return;
-
-  const stamp = nowTs();
-  c.name = name;
-  c.telegram = tg;
-  c.clientNotes = notes;
-  c.updatedAt = stamp;
-
-  // Обновляем строковый снапшот в связанных бронях
-  db.bookings.forEach(b => {
-    if (b.clientId === clientId) {
-      b.guestName = name;
-      b.telegram = tg;
-      b.updatedAt = stamp;
-    }
-  });
-
-  saveDatabase(); toast('Профиль обновлен'); closeModal(); render();
+  if (c) {
+    c.name = name;
+    c.telegram = tg;
+    c.clientNotes = notes;
+    c.updatedAt = nowTs();
+    db.bookings.forEach(b => {
+      if (b.clientId === clientId) {
+        b.guestName = name;
+        b.telegram = tg;
+        b.updatedAt = c.updatedAt;
+      }
+    });
+    saveDatabase(true); toast('Профиль обновлен'); closeModal(); render();
+  }
 }
 
 function generateTgText() {
@@ -1749,7 +2074,7 @@ function openTelegramPostModal() {
       <div class="text-xs text-muted" style="margin-top:6px" id="tgCnt">Символов: ${text.length}</div>
     </div>
     <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-primary" onclick="copySafe(document.getElementById('tgT').textContent).then(()=>{ toast('Скопировано в буфер!'); })">${ic('copy')} Скопировать</button>
+      <button class="btn btn-primary" onclick="copySafe(document.getElementById('tgT').textContent); toast('Скопировано в буфер!')">${ic('copy')} Скопировать</button>
     </div>
   `, { wide: true });
 }
@@ -1786,7 +2111,7 @@ function openTextImportModal(t = 'events') {
           </label>
           <label class="bg-surface flex gap-2 items-start" style="border:1.5px solid var(--line2);border-radius:12px;padding:10px;cursor:pointer">
             <input type="radio" name="impMode" value="replace" ${importMode==='replace'?'checked':''} onchange="importMode=this.value">
-            <div><b class="text-base text-must">Заменить</b><div class="text-xs text-muted">Очистить с авто-бэкапом</div></div>
+            <div><b class="text-base text-must">Заменить</b><div class="text-xs text-muted">Создаст авто-бэкап перед заменой</div></div>
           </label>
         </div>
       </div>
@@ -1797,7 +2122,7 @@ function openTextImportModal(t = 'events') {
         </div>
         <textarea class="inp" id="impTxt" style="min-height:160px;font-family:monospace" placeholder="${importType==='events'?'10.08.2026\t19:00\tКвартирник при свечах\t800₽':'Иван Иванов\t@ivan\tЛюбит зеленый чай'}"></textarea>
       </div>
-      <div class="text-xs text-muted" style="line-height:1.4">При режиме «Заменить» приложение автоматически сохранит резервную копию перед очисткой.</div>
+      <div class="text-xs text-muted" style="line-height:1.4">Поддерживаются строки с Tab, точкой с запятой, пробелами и ценами.</div>
     </div>
     <div class="modal-foot flex gap-2 justify-end">
       <button class="btn btn-primary" onclick="executeImport()">${ic('check')} Выполнить импорт</button>
@@ -1871,8 +2196,7 @@ function executeImport() {
   const run = () => {
     const stamp = nowTs();
     if(importMode === 'replace') {
-      saveAutoSnapshot(); // Защитный снимок перед деструктивной перезаписью
-      exportBackup();     // Авто-выгрузка файла в загрузки
+      try { localStorage.setItem(STORE_BACKUP_KEY, JSON.stringify(db)); } catch(e){}
     }
 
     if(importType === 'events') {
@@ -1890,25 +2214,35 @@ function executeImport() {
     } else {
       if(importMode === 'replace') db.clients = [];
       clients.forEach(c => {
-        db.clients.push({
-          id: uid('cl'),
-          telegram: c.telegram,
-          name: c.name,
-          visitsCount: 0,
-          totalPaid: 0,
-          clientNotes: c.notes,
-          firstSeen: TODAY_ISO,
-          lastSeen: TODAY_ISO,
-          updatedAt: stamp
-        });
+        let existing = null;
+        if (c.telegram) existing = db.clients.find(x => x.telegram && x.telegram.toLowerCase() === c.telegram.toLowerCase());
+        if (!existing) existing = db.clients.find(x => x.name.toLowerCase() === c.name.toLowerCase());
+
+        if (existing) {
+          if (c.notes) existing.clientNotes = existing.clientNotes ? `${existing.clientNotes} · ${c.notes}` : c.notes;
+          existing.updatedAt = stamp;
+        } else {
+          db.clients.push({
+            id: getStableClientId(c.telegram, c.name),
+            telegram: c.telegram,
+            name: c.name,
+            visitsCount: 0,
+            totalPaid: 0,
+            clientNotes: c.notes,
+            firstSeen: TODAY_ISO,
+            lastSeen: null,
+            updatedAt: stamp
+          });
+        }
       });
+      cleanupClientDuplicates(db);
       ui.view = 'clients';
     }
     saveDatabase(); closeModal(); render(); toast(`Импортировано: ${importType==='events'?evs.length:clients.length}`);
   };
 
   if(importMode === 'replace') {
-    confirmAction('Заменить все данные?', 'Текущие записи будут удалены перед импортом. Автоматический бэкап будет сохранен в файл. Продолжить?', 'Да, сохранить и заменить', run);
+    confirmAction('Заменить все данные?', 'Будет создан авто-бэкап. Текущие записи выбранного типа будут заменены новыми. Продолжить?', 'Да, заменить', run);
   } else run();
 }
 
@@ -1921,11 +2255,11 @@ function openSyncModal() {
         <div style="color:${isConn?'#2E7D56':'#DE6254'}">${isConn?ic('cloudOk'):ic('cloudWarn')}</div>
         <div>
           <div class="font-bold text-base" style="color:${isConn?'#2E7D56':'#C63D31'}">${isConn?'Синхронизация активна':'Связь с базой не установлена'}</div>
-          <div class="text-sm text-ink2">${isConn?'Изменения сохраняются и транслируются в реальном времени.':'Укажите URL базы Firebase Realtime Database для работы на всех устройствах.'}</div>
+          <div class="text-sm text-ink2">${isConn?'Изменения сохраняются и объединяются по времени.':'Укажите URL базы Firebase Realtime Database для работы на всех устройствах.'}</div>
         </div>
       </div>
       <div class="field">
-        <label>URL базы Firebase Realtime Database (ваш секретный ключ)</label>
+        <label>URL базы Firebase Realtime Database</label>
         <div class="flex gap-2">
           <input class="inp flex-1" id="fbU" value="${esc(ui.firebaseUrl)}" placeholder="https://....firebasedatabase.app/data.json">
           <button class="btn btn-primary btn-sm flex-none" onclick="ui.firebaseUrl=normalizeFirebaseUrl(document.getElementById('fbU').value);localStorage.setItem(FIREBASE_URL_KEY,ui.firebaseUrl);pullFromFirebase(true);setupFirebaseRealtime();toast('URL сохранен')">${ic('check')} Подключить</button>
@@ -1950,8 +2284,8 @@ function openSyncModal() {
           <span style="font-size:10px;opacity:.7">▾</span>
         </summary>
         <div class="flex gap-2 flex-wrap" style="padding:10px 0 4px">
-          <button class="btn btn-soft btn-sm" onclick="confirmAction('Сбросить до демо?','Заменить данные демо-набором «Пятницы»?','Сбросить',()=>{ exportBackup(); db=normalizeAndMigrateDB(seedDatabase()); saveDatabase(); render(); toast('Демо-данные восстановлены'); })">Вернуть демо-данные</button>
-          <button class="btn btn-ghost btn-sm text-must" onclick="confirmAction('Очистить всё?','Безвозвратно стереть все события, шаблоны и контакты? Перед очисткой бэкап будет скачан.','Очистить',()=>{ exportBackup(); db={schemaVersion:SCHEMA_VERSION,updatedAt:nowTs(),formats:[],events:[],bookings:[],clients:[]}; saveDatabase(); render(); toast('База очищена'); })">Полная очистка</button>
+          <button class="btn btn-soft btn-sm" onclick="confirmAction('Сбросить до демо?','Заменить данные демо-набором «Пятницы»? Будет сохранен резервный файл.','Сбросить',()=>{ exportBackup(); db=normalizeAndMigrateDB(seedDatabase()); saveDatabase(); render(); toast('Демо-данные восстановлены'); })">Вернуть демо-данные</button>
+          <button class="btn btn-ghost btn-sm text-must" onclick="confirmAction('Очистить всё?','Безвозвратно стереть все события, шаблоны и контакты? Будет сохранен резервный файл.','Очистить',()=>{ exportBackup(); db={schemaVersion:SCHEMA_VERSION,updatedAt:nowTs(),deletedIds:{},formats:[],events:[],bookings:[],clients:[]}; saveDatabase(); render(); toast('База очищена'); })">Полная очистка</button>
         </div>
       </details>
     </div>
@@ -1961,75 +2295,77 @@ function openSyncModal() {
 function exportBackup() {
   const blob = new Blob([JSON.stringify(db, null, 2)], { type:'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup_pyatnitsa_${TODAY_ISO}.json`;
-  a.click(); URL.revokeObjectURL(a.href); toast('Бэкап сохранен в файл');
+  a.click(); URL.revokeObjectURL(a.href); toast('Бэкап сохранен');
 }
+
 function importBackup(e) {
   const file = e.target.files?.[0]; if(!file) return;
   const r = new FileReader(); r.onload = () => {
     try {
-      db = normalizeAndMigrateDB(JSON.parse(r.result));
-      saveDatabase(true); render(); toast('Данные восстановлены');
-    } catch(err){ toast('Ошибка чтения файла'); }
+      db = cleanupClientDuplicates(normalizeAndMigrateDB(JSON.parse(r.result)));
+      saveDatabase(true); render(); toast('Данные успешно восстановлены');
+    } catch(err){ toast('Ошибка чтения файла бэкапа'); }
   };
   r.readAsText(file);
 }
 
-const MODAL_ROOT = document.getElementById('modalRoot');
-function openModal(html, opts = {}) {
-  MODAL_ROOT.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal ${opts.wide?'modal-wide':''}">${html}</div></div>`;
-  MODAL_ROOT.classList.add('open'); document.body.style.overflow = 'hidden';
-}
-function closeModal() {
-  MODAL_ROOT.classList.remove('open'); MODAL_ROOT.innerHTML = '';
-  document.body.style.overflow = ''; ui.modal = null; ui.guestListSearch = ''; ui.guestListFilter = 'all';
-}
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
-
-function confirmAction(title, msg, btnText, onConfirm) {
+function openNotificationsModal() {
+  const warns = getActivePrompts();
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
       <div class="flex items-center gap-2">
-        <div class="text-must">${ic('alert')}</div>
-        <div class="modal-title">${esc(title)}</div>
+        <div class="text-rent">${ic('bell')}</div>
+        <div>
+          <div class="modal-title">Напоминания о событиях</div>
+          <div class="modal-sub">${warns.length ? `Подошел срок (${warns.length}):` : 'Все события в графике'}</div>
+        </div>
       </div>
       <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
     </div>
-    <div class="modal-body text-base text-ink2" style="line-height:1.5">${esc(msg)}</div>
+    <div class="modal-body">
+      ${!warns.length ? `<div class="text-center text-muted" style="padding:24px">Все регулярные события запланированы вовремя!</div>` : `
+        <div class="list-card">
+          ${warns.map(w => `
+            <div class="row flex items-center justify-between gap-3">
+              <div class="flex-1">
+                <div class="font-bold text-base">${esc(w.format.title)}</div>
+                <div class="text-sm text-muted" style="margin-top:2px">
+                  <span class="tag" style="background:#FDEDE9;color:#DE6254">${w.daysSince === 999 ? 'Еще не проводилось' : `Пауза ${w.daysSince} дн.`}</span>
+                  раз в ${w.target} дн.
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-none">
+                <button class="btn btn-primary btn-sm" onclick="closeModal(); openAddEventModal('${w.format.id}')">${ic('plus')} В график</button>
+                <button class="icon-btn sm" onclick="snoozePrompt('${w.format.id}'); openNotificationsModal(); toast('Отложено на неделю')">${ic('x')}</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </div>
     <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
-      <button class="btn btn-danger" id="cAct">${esc(btnText)}</button>
+      ${warns.length > 1 ? `<button class="btn btn-ghost btn-sm" onclick="getActivePrompts().forEach(w=>snoozePrompt(w.format.id)); closeModal(); toast('Все напоминания отложены')">Отложить все</button>` : ''}
+      <button class="btn btn-soft btn-sm" onclick="closeModal()">Закрыть</button>
     </div>
   `);
-  document.getElementById('cAct').onclick = () => { closeModal(); onConfirm(); };
-}
-
-function navTo(v) { ui.view = v; ui.search = ''; render(); window.scrollTo(0,0); }
-
-function renderSettingsBtn() {
-  const btn = document.getElementById('settingsBtn'); if(!btn) return;
-  const isConn = ui.cloudStatus === 'connected';
-  btn.className = `icon-btn cloud-status-btn ${isConn?'synced':'not-synced'}`;
-  btn.innerHTML = `${isConn ? ic('cloudOk') : ic('cloudWarn')}<span class="conn-dot" style="background:${isConn?'#3E946E':'#DE6254'}"></span>`;
-}
-
-function render() {
-  const top = document.getElementById('topNav'), bot = document.getElementById('bottomNav'), view = document.getElementById('view');
-  top.innerHTML = NAV.map(n => `<button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">${ic(n.icon)} ${n.label}</button>`).join('');
-  bot.innerHTML = NAV.map(n => `<button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">${ic(n.icon)}<span>${n.label}</span></button>`).join('');
-  renderSettingsBtn(); updateNotifButton();
-  if(ui.view === 'month') view.innerHTML = renderMonthView();
-  else if(ui.view === 'day') view.innerHTML = renderDayView();
-  else if(ui.view === 'events') view.innerHTML = renderFormatsView();
-  else if(ui.view === 'clients') view.innerHTML = renderClientsView();
-  else if(ui.view === 'analytics') view.innerHTML = renderAnalyticsView();
 }
 
 (function init() {
   loadDatabase();
   if(window.innerWidth <= 900) ui.view = 'day';
-  render(); updateNotifButton();
-  if(ui.firebaseUrl) { pullFromFirebase(false); setupFirebaseRealtime(); }
-  window.addEventListener('focus', () => { if(ui.firebaseUrl && !isLocalPushing && !isUserInteractingWithModal()) pullFromFirebase(false); });
+  render();
+  updateNotifButton();
+  if(ui.firebaseUrl) {
+    pullFromFirebase(false);
+    setupFirebaseRealtime();
+  }
+  
+  window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') handleAppResume();
+  });
+  window.addEventListener('focus', handleAppResume);
+  window.addEventListener('online', handleAppResume);
+  window.addEventListener('beforeunload', () => { saveDatabase(false); });
 })();
 </script>
 </body>
