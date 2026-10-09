@@ -412,7 +412,6 @@ const FormGuard = {
     const fields = Array.from(this.activeRoot.querySelectorAll('input:not([data-no-dirty]), textarea:not([data-no-dirty]), select:not([data-no-dirty])'));
     if (!fields.length) return null;
     return fields.map(el => {
-      // Игнорируем строки быстрого поиска внутри списков
       if (el.closest('.search') || el.type === 'search') return '';
       if (el.type === 'checkbox' || el.type === 'radio') return `${el.id || el.name || el.type}:${el.checked ? 1 : 0}`;
       return `${el.id || el.name || 'field'}:${el.value.trim()}`;
@@ -441,7 +440,6 @@ function openModal(html, opts = {}) {
   MODAL_ROOT.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)requestCloseModal()"><div class="modal ${opts.wide?'modal-wide':''}">${html}</div></div>`;
   MODAL_ROOT.classList.add('open');
   document.body.style.overflow = 'hidden';
-  // Автоматический снимок состояния полей ввода
   setTimeout(() => { FormGuard.watch(); }, 25);
 }
 
@@ -457,7 +455,6 @@ function closeDialog() {
   DIALOG_ROOT.innerHTML = '';
 }
 
-// Запрос на закрытие: проверяет наличие несохраненных данных
 function requestCloseModal(onDiscard = null) {
   if (FormGuard.isDirty()) {
     showDiscardConfirmation(onDiscard);
@@ -467,7 +464,6 @@ function requestCloseModal(onDiscard = null) {
   if (typeof onDiscard === 'function') onDiscard();
 }
 
-// Принудительное закрытие (после успешного сохранения или подтвержденного сброса)
 function forceCloseModal() {
   FormGuard.reset();
   closeDialog();
@@ -480,10 +476,8 @@ function forceCloseModal() {
   render();
 }
 
-// Алиас для обратной совместимости в шаблонах
 const closeModal = requestCloseModal;
 
-// Кастомный оверлей «Есть несохраненные изменения» в стиле Пятницы
 function showDiscardConfirmation(onDiscard = null) {
   openDialog(`
     <div class="dialog-box">
@@ -509,7 +503,6 @@ function showDiscardConfirmation(onDiscard = null) {
   };
 }
 
-// Модальное окно подтверждения деструктивных действий (поверх любого экрана)
 function confirmAction(title, msg, btnText, onConfirm, onCancel = null) {
   openDialog(`
     <div class="dialog-box">
@@ -535,7 +528,6 @@ function confirmAction(title, msg, btnText, onConfirm, onCancel = null) {
   };
 }
 
-// Защита от случайного закрытия по Escape
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (DIALOG_ROOT && DIALOG_ROOT.classList.contains('open')) {
@@ -548,7 +540,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// Защита от случайного двойного клика (двойная отправка)
 function lockSubmitBtn(e) {
   const btn = e.target.querySelector('button[type="submit"]');
   if (btn) {
@@ -614,8 +605,29 @@ function getStableClientId(tg, name) {
 
 function cleanupClientDuplicates(d) {
   if (!d || !Array.isArray(d.clients)) return d;
+  const deletedIds = d.deletedIds || {};
   const canonicalMap = new Map();
   const idRemap = new Map();
+
+  // Исключаем клиентов, помеченных как удаленные
+  d.clients = d.clients.filter(c => {
+    if (!c || !c.id) return false;
+    const delStamp = deletedIds[c.id];
+    return !(delStamp && delStamp >= (c.updatedAt || 0));
+  });
+
+  // Очищаем бронирования, помеченные как удаленные либо принадлежащие удаленному клиенту
+  if (Array.isArray(d.bookings)) {
+    d.bookings = d.bookings.filter(b => {
+      if (!b || !b.id) return false;
+      const bDelStamp = deletedIds[b.id];
+      if (bDelStamp && bDelStamp >= (b.updatedAt || 0)) return false;
+      if (b.clientId && deletedIds[b.clientId] && deletedIds[b.clientId] >= (b.updatedAt || 0)) {
+        return false;
+      }
+      return true;
+    });
+  }
 
   d.clients.forEach(c => {
     if (!c) return;
@@ -689,12 +701,19 @@ function cleanupClientDuplicates(d) {
 function normalizeAndMigrateDB(raw) {
   const d = (raw && typeof raw === 'object') ? raw : {};
   const stamp = nowTs();
+  const deletedIds = (d.deletedIds && typeof d.deletedIds === 'object') ? d.deletedIds : {};
 
   let formats = Array.isArray(d.formats) ? d.formats : Object.values(d.formats || {});
-  formats = formats.map(f => ({ ...f, updatedAt: f.updatedAt || stamp }));
+  formats = formats
+    .map(f => ({ ...f, updatedAt: f.updatedAt || stamp }))
+    .filter(f => !deletedIds[f.id] || deletedIds[f.id] < (f.updatedAt || 0));
 
   let events = Array.isArray(d.events) ? d.events : Object.values(d.events || {});
-  events = events.map(e => ({ ...e, updatedAt: e.updatedAt || stamp }));
+  events = events.map(e => ({
+    ...e,
+    isPaid: Boolean(e.isPaid),
+    updatedAt: e.updatedAt || stamp
+  }));
 
   let clientsList = [];
   if (Array.isArray(d.clients)) {
@@ -737,61 +756,66 @@ function normalizeAndMigrateDB(raw) {
     });
   }
 
-  let bookings = Array.isArray(d.bookings) ? d.bookings : Object.values(d.bookings || {});
-  bookings = bookings.map(b => {
-    let client = null;
-    if (b.clientId) {
-      client = clientsList.find(c => c.id === b.clientId);
-    }
-    if (!client && b.telegram) {
-      const cleanTg = b.telegram.toLowerCase().trim();
-      client = clientsList.find(c => c.telegram && c.telegram.toLowerCase().trim() === cleanTg);
-    }
-    if (!client && b.guestName) {
-      const cleanName = String(b.guestName).toLowerCase().trim();
-      client = clientsList.find(c => c.name.toLowerCase().trim() === cleanName);
-    }
-    if (!client) {
-      const newClId = getStableClientId(b.telegram, b.guestName);
-      const isCheck = Boolean(b.isCheckedIn);
-      const ev = events.find(e => e.id === b.eventId);
-      client = {
-        id: newClId,
-        name: b.guestName || 'Гость',
-        telegram: b.telegram || '',
-        visitsCount: isCheck ? (b.ticketsCount || 1) : 0,
-        totalPaid: 0,
-        initialVisits: 0,
-        initialPaid: 0,
-        clientNotes: b.note || '',
-        firstSeen: TODAY_ISO,
-        lastSeen: isCheck && (ev?.date || b.eventDate) ? (ev?.date || b.eventDate) : null,
-        initialLastSeen: null,
-        updatedAt: stamp
-      };
-      clientsList.push(client);
-    }
-    const ev = events.find(e => e.id === b.eventId);
-    return {
-      id: b.id || uid('bk'),
-      eventId: b.eventId,
-      clientId: client.id,
-      guestName: b.guestName || client.name,
-      telegram: b.telegram !== undefined ? b.telegram : client.telegram,
-      ticketsCount: Math.max(1, Number(b.ticketsCount) || 1),
-      isPaid: Boolean(b.isPaid),
-      isCheckedIn: Boolean(b.isCheckedIn),
-      isWaitlist: Boolean(b.isWaitlist),
-      note: b.note || '',
-      eventTitle: b.eventTitle || ev?.title || 'Событие',
-      eventDate: b.eventDate || ev?.date || TODAY_ISO,
-      eventTime: b.eventTime || ev?.time || '19:00',
-      eventPrice: b.eventPrice !== undefined ? Math.max(0, Number(b.eventPrice)) : (ev?.price || 0),
-      updatedAt: b.updatedAt || stamp
-    };
-  });
+  // Фильтруем удаленных гостей сразу
+  clientsList = clientsList.filter(c => !deletedIds[c.id] || deletedIds[c.id] < (c.updatedAt || 0));
 
-  const deletedIds = (d.deletedIds && typeof d.deletedIds === 'object') ? d.deletedIds : {};
+  let bookings = Array.isArray(d.bookings) ? d.bookings : Object.values(d.bookings || {});
+  bookings = bookings
+    .filter(b => !deletedIds[b.id] || deletedIds[b.id] < (b.updatedAt || 0))
+    .filter(b => !b.clientId || !deletedIds[b.clientId] || deletedIds[b.clientId] < (b.updatedAt || 0))
+    .map(b => {
+      let client = null;
+      if (b.clientId) {
+        client = clientsList.find(c => c.id === b.clientId);
+      }
+      if (!client && b.telegram) {
+        const cleanTg = b.telegram.toLowerCase().trim();
+        client = clientsList.find(c => c.telegram && c.telegram.toLowerCase().trim() === cleanTg);
+      }
+      if (!client && b.guestName) {
+        const cleanName = String(b.guestName).toLowerCase().trim();
+        client = clientsList.find(c => c.name.toLowerCase().trim() === cleanName);
+      }
+      // Не воскрешаем клиента, если он был удален
+      const candId = getStableClientId(b.telegram, b.guestName);
+      if (!client && (!deletedIds[candId] || deletedIds[candId] < (b.updatedAt || 0))) {
+        const isCheck = Boolean(b.isCheckedIn);
+        const ev = events.find(e => e.id === b.eventId);
+        client = {
+          id: candId,
+          name: b.guestName || 'Гость',
+          telegram: b.telegram || '',
+          visitsCount: isCheck ? (b.ticketsCount || 1) : 0,
+          totalPaid: 0,
+          initialVisits: 0,
+          initialPaid: 0,
+          clientNotes: b.note || '',
+          firstSeen: TODAY_ISO,
+          lastSeen: isCheck && (ev?.date || b.eventDate) ? (ev?.date || b.eventDate) : null,
+          initialLastSeen: null,
+          updatedAt: stamp
+        };
+        clientsList.push(client);
+      }
+      const ev = events.find(e => e.id === b.eventId);
+      return {
+        id: b.id || uid('bk'),
+        eventId: b.eventId,
+        clientId: client ? client.id : (b.clientId || candId),
+        guestName: b.guestName || (client ? client.name : 'Гость'),
+        telegram: b.telegram !== undefined ? b.telegram : (client ? client.telegram : ''),
+        ticketsCount: Math.max(1, Number(b.ticketsCount) || 1),
+        isPaid: Boolean(b.isPaid),
+        isCheckedIn: Boolean(b.isCheckedIn),
+        isWaitlist: Boolean(b.isWaitlist),
+        note: b.note || '',
+        eventTitle: b.eventTitle || ev?.title || 'Событие',
+        eventDate: b.eventDate || ev?.date || TODAY_ISO,
+        eventTime: b.eventTime || ev?.time || '19:00',
+        eventPrice: b.eventPrice !== undefined ? Math.max(0, Number(b.eventPrice)) : (ev?.price || 0),
+        updatedAt: b.updatedAt || stamp
+      };
+    });
 
   const normalized = {
     schemaVersion: SCHEMA_VERSION,
@@ -910,6 +934,14 @@ function mergeDatabases(local, remote) {
     return result;
   };
 
+  const mergedClients = mergeList(local.clients || [], normRemote.clients || []);
+  const mergedBookings = mergeList(local.bookings || [], normRemote.bookings || []).filter(b => {
+    if (b.clientId && mergedDeletedIds[b.clientId] && mergedDeletedIds[b.clientId] >= (b.updatedAt || 0)) {
+      return false;
+    }
+    return true;
+  });
+
   const merged = {
     schemaVersion: SCHEMA_VERSION,
     isInitialSeed: false,
@@ -917,8 +949,8 @@ function mergeDatabases(local, remote) {
     deletedIds: mergedDeletedIds,
     formats: mergeList(local.formats || [], normRemote.formats || []),
     events: mergeList(local.events || [], normRemote.events || []),
-    bookings: mergeList(local.bookings || [], normRemote.bookings || []),
-    clients: mergeList(local.clients || [], normRemote.clients || [])
+    bookings: mergedBookings,
+    clients: mergedClients
   };
 
   return cleanupClientDuplicates(merged);
@@ -959,7 +991,6 @@ async function pullFromFirebase(manual = false) {
         if (ns !== stableStringify(db) && !isLocalPushing) {
           db = merged;
           localStorage.setItem(STORE_KEY, JSON.stringify(db));
-          // Не перерисовываем экран, если пользователь сейчас заполняет форму!
           if (!isUserActivelyTyping() && !FormGuard.isDirty()) {
             render();
             if (ui.modal?.type === 'event') openEventDetailsModal(ui.modal.id);
@@ -1255,13 +1286,23 @@ function renderMonthView() {
                       const p = PRESENCE[ev.presenceType] || PRESENCE.team;
                       const { booked, checked } = getEventStats(ev.id);
                       const wPct = 100 / it.totalCols, lPct = it.colIndex * wPct;
+                      const isRent = ev.presenceType === 'rent';
+                      const isTrip = ev.presenceType === 'trip';
                       return `
                         <div class="tt-event" onclick="event.stopPropagation();openEventDetailsModal('${ev.id}')"
                              style="top:${top}px;height:${h-3}px;left:calc(${lPct}% + 1px);width:calc(${wPct}% - 2px);--c:${p.color};--cbg:${p.bg}">
                           <div class="tt-ev-title">${esc(ev.title)}</div>
                           <div class="tt-ev-footer flex items-center justify-between gap-1">
                             <span>${ev.time}</span>
-                            <div class="badge-triplet"><span class="badge-bubble bubble-checked">${checked}</span><span class="badge-bubble bubble-booked">${booked}</span><span class="badge-bubble bubble-limit">${ev.capacity||'∞'}</span></div>
+                            ${isTrip ? `
+                              <span class="pill text-xs" style="padding:1px 5px;font-size:9.5px;background:rgba(0,0,0,0.06)">Отлучка</span>
+                            ` : isRent ? `
+                              <span class="tag" style="padding:1px 6px;font-size:9.5px;${ev.isPaid ? 'background:#E7F5EE;color:#3E946E' : 'background:#FCF3DE;color:#B37D14'}">
+                                ${ev.isPaid ? '✓ Оплачено' : '⏳ Ждет оплаты'}
+                              </span>
+                            ` : `
+                              <div class="badge-triplet"><span class="badge-bubble bubble-checked">${checked}</span><span class="badge-bubble bubble-booked">${booked}</span><span class="badge-bubble bubble-limit">${ev.capacity||'∞'}</span></div>
+                            `}
                           </div>
                         </div>
                       `;
@@ -1304,7 +1345,45 @@ function renderDayView() {
         </div>
       ` : dayEvs.map(ev => {
         const p = PRESENCE[ev.presenceType] || PRESENCE.team;
+        const isRent = ev.presenceType === 'rent';
+        const isTrip = ev.presenceType === 'trip';
         const { booked, checked, list: bookings } = getEventStats(ev.id);
+
+        if (isTrip) {
+          return `
+            <div class="list-card" style="padding:16px 20px;border-left:5px solid ${p.color}">
+              <div class="flex justify-between items-start gap-3">
+                <div>
+                  <div class="font-bold text-lg">${esc(ev.title)}</div>
+                  <div class="text-sm text-muted" style="margin-top:2px">${ev.time}–${ev.endTime} · Период отсутствия</div>
+                  ${ev.note ? `<div class="text-xs text-ink2" style="margin-top:6px">${esc(ev.note)}</div>` : ''}
+                </div>
+                <button class="btn btn-soft btn-sm" onclick="openEventDetailsModal('${ev.id}')">Подробнее</button>
+              </div>
+            </div>
+          `;
+        }
+
+        if (isRent) {
+          return `
+            <div class="list-card" style="padding:16px 20px;border-left:5px solid ${p.color}">
+              <div class="flex justify-between items-start gap-3 flex-wrap">
+                <div>
+                  <div class="font-bold text-lg">${esc(ev.title)}</div>
+                  <div class="text-sm text-muted" style="margin-top:2px">${ev.time}–${ev.endTime} · Стоимость: <b>${money(ev.price)}</b></div>
+                  ${ev.note ? `<div class="text-xs text-ink2" style="margin-top:6px">${esc(ev.note)}</div>` : ''}
+                </div>
+                <div class="flex items-center gap-2">
+                  <button class="pay-toggle ${ev.isPaid ? 'paid' : 'unpaid'}" style="padding:6px 12px;font-size:12px" onclick="toggleRentPayment('${ev.id}')">
+                    ${ev.isPaid ? '✓ Аренда оплачена' : '⏳ Отметить оплату'}
+                  </button>
+                  <button class="btn btn-soft btn-sm" onclick="openEventDetailsModal('${ev.id}')">Подробнее</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
         return `
           <div class="list-card" style="padding:16px 20px;border-left:5px solid ${p.color}">
             <div class="flex justify-between items-start gap-3">
@@ -1464,6 +1543,13 @@ function renderAnalyticsView() {
     }
   });
 
+  // Учитываем оплаченные аренды в аналитике доходов
+  evs.forEach(e => {
+    if (e.presenceType === 'rent' && e.isPaid) {
+      rev += (Number(e.price) || 0);
+    }
+  });
+
   const fmtMap = {};
   db.formats.forEach(f => { fmtMap[f.id] = { title: f.title, rev: 0, count: 0, guests: 0 }; });
   evs.forEach(e => { if(fmtMap[e.formatId]) fmtMap[e.formatId].count++; });
@@ -1476,6 +1562,14 @@ function renderAnalyticsView() {
       }
     }
   });
+
+  // Добавляем доход от аренды к соответствующему шаблону в реестре
+  evs.forEach(e => {
+    if (e.presenceType === 'rent' && e.isPaid && e.formatId && fmtMap[e.formatId]) {
+      fmtMap[e.formatId].rev += (Number(e.price) || 0);
+    }
+  });
+
   const sorted = Object.values(fmtMap).sort((a,b)=>b.rev - a.rev), maxRev = Math.max(1, ...sorted.map(x=>x.rev));
   const years = [curY-1, curY, curY+1];
 
@@ -1539,6 +1633,81 @@ function render() {
 function openEventDetailsModal(id) {
   const ev = db.events.find(e => e.id === id); if(!ev) return;
   ui.modal = { type: 'event', id };
+  const isRent = ev.presenceType === 'rent';
+  const isTrip = ev.presenceType === 'trip';
+
+  if (isTrip) {
+    openModal(`
+      <div class="modal-head flex items-start justify-between gap-3">
+        <div>
+          <div class="modal-title">${esc(ev.title)}</div>
+          <div class="modal-sub">${fmtDateFull(ev.date)} · ${ev.time}–${ev.endTime}</div>
+        </div>
+        <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-triplet-card" style="padding:14px">
+          <div class="font-semibold text-base" style="color:var(--trip)">Период личного отсутствия / поездки</div>
+          <div class="text-sm text-muted" style="margin-top:4px">В это время пространство недоступно для проведения событий.</div>
+        </div>
+        ${ev.note ? `
+          <div class="field" style="margin-top:14px">
+            <label>Заметка / Детали</label>
+            <div class="inp" style="background:var(--subtle);min-height:auto">${esc(ev.note)}</div>
+          </div>
+        ` : ''}
+      </div>
+      <div class="modal-foot flex gap-2 justify-end">
+        <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить отлучку?','Удалить отлучку «${esc(ev.title)}» из календаря?','Удалить',()=>{ deleteEvent('${ev.id}'); })">${ic('trash')} Удалить</button>
+        <div class="flex-1"></div>
+        <button class="btn btn-soft btn-sm" onclick="openAddEventModal('','','','${ev.id}')">${ic('edit')} Править</button>
+        <button class="btn btn-primary btn-sm" onclick="requestCloseModal()">Готово</button>
+      </div>
+    `);
+    return;
+  }
+
+  if (isRent) {
+    openModal(`
+      <div class="modal-head flex items-start justify-between gap-3">
+        <div>
+          <div class="modal-title">${esc(ev.title)}</div>
+          <div class="modal-sub">${fmtDateFull(ev.date)} · ${ev.time}–${ev.endTime}</div>
+        </div>
+        <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-triplet-card flex items-center justify-between gap-3 flex-wrap" style="padding:14px">
+          <div>
+            <div class="text-xs font-semibold text-muted uppercase">Стоимость аренды</div>
+            <div class="font-bold text-2xl" style="margin-top:2px">${money(ev.price)}</div>
+          </div>
+          <button class="btn btn-sm ${ev.isPaid ? 'btn-soft' : 'btn-primary'}" onclick="toggleRentPayment('${ev.id}')">
+            ${ev.isPaid ? '✓ Оплата аренды получена' : '⏳ Отметить получение оплаты'}
+          </button>
+        </div>
+
+        <div class="bg-subtle rounded-xl border-line text-sm text-ink2" style="padding:12px 14px;margin-top:14px;line-height:1.5">
+          ℹ️ <b>Учет гостей отключен:</b> за список и встречу участников отвечает арендатор. Сумма аренды учитывается в выручке аналитики при отметке оплаты.
+        </div>
+
+        ${ev.note ? `
+          <div class="field" style="margin-top:14px">
+            <label>Заметка / Контакты арендатора</label>
+            <div class="inp" style="background:var(--subtle);min-height:auto">${esc(ev.note)}</div>
+          </div>
+        ` : ''}
+      </div>
+      <div class="modal-foot flex gap-2 justify-end">
+        <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить аренду?','Удалить запись об аренде «${esc(ev.title)}» из графика?','Удалить',()=>{ deleteEvent('${ev.id}'); })">${ic('trash')} Удалить</button>
+        <div class="flex-1"></div>
+        <button class="btn btn-soft btn-sm" onclick="openAddEventModal('','','','${ev.id}')">${ic('edit')} Править</button>
+        <button class="btn btn-primary btn-sm" onclick="requestCloseModal()">Готово</button>
+      </div>
+    `);
+    return;
+  }
+
   const all = db.bookings.filter(b => b.eventId === id);
   let main = all.filter(b=>!b.isWaitlist), wait = all.filter(b=>b.isWaitlist);
   const { checked, booked, paidSum } = getEventStats(id, ev.price || 0);
@@ -1652,6 +1821,17 @@ function openEventDetailsModal(id) {
   `, { wide: true });
 }
 
+function toggleRentPayment(id) {
+  const ev = db.events.find(e => e.id === id);
+  if (!ev) return;
+  ev.isPaid = !ev.isPaid;
+  ev.updatedAt = nowTs();
+  saveDatabase(true);
+  if (ui.modal?.type === 'event') openEventDetailsModal(id);
+  render();
+  toast(ev.isPaid ? 'Оплата аренды получена' : 'Отметка оплаты аренды снята');
+}
+
 function autoFillTg(val) {
   if(!val) return;
   const clean = val.toLowerCase().trim();
@@ -1694,8 +1874,12 @@ function handleQuickBooking(e, evId) {
   if (!client) client = db.clients.find(c => c.name.toLowerCase() === name.toLowerCase());
 
   if (!client) {
+    const newId = getStableClientId(tg, name);
+    if (db.deletedIds && db.deletedIds[newId]) {
+      delete db.deletedIds[newId];
+    }
     client = {
-      id: getStableClientId(tg, name),
+      id: newId,
       telegram: tg,
       name,
       visitsCount: 0,
@@ -1711,8 +1895,13 @@ function handleQuickBooking(e, evId) {
     db.clients.push(client);
   }
 
+  const bkId = uid('bk');
+  if (db.deletedIds && db.deletedIds[bkId]) {
+    delete db.deletedIds[bkId];
+  }
+
   db.bookings.push({
-    id: uid('bk'),
+    id: bkId,
     eventId: evId,
     clientId: client.id,
     guestName: name,
@@ -1846,33 +2035,22 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
     title: fmt?.title || '', formatId: fmtId, date: preDate || ui.dayDate || TODAY_ISO,
     time: preTime || '19:00', endTime: '21:00', price: fmt?.defaultPrice || 0,
     capacity: fmt?.defaultCapacity || 20, presenceType: fmt?.defaultPresence || 'must', note: '',
-    contactPerson: 'Лена'
+    contactPerson: 'Лена', isPaid: false
   };
+
+  const existingBookings = editId ? db.bookings.filter(b => b.eventId === editId) : [];
+  const hasBookings = existingBookings.length > 0;
 
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
-      <div class="modal-title">${ex ? 'Редактировать событие' : 'Новое событие в график'}</div>
+      <div>
+        <div class="modal-title">${ex ? 'Редактировать событие' : 'Новое событие в график'}</div>
+        ${hasBookings ? `<div class="modal-sub" style="color:var(--rent)">Записано гостей: ${existingBookings.length} чел.</div>` : ''}
+      </div>
       <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
-    <form onsubmit="handleSaveEvent(event, '${editId||''}')">
+    <form id="eventForm" novalidate onsubmit="handleSaveEvent(event, '${editId||''}')">
       <div class="modal-body">
-        <div class="field">
-          <label>Шаблон из реестра</label>
-          <select class="inp" id="evFmtSel" onchange="const f=db.formats.find(x=>x.id===this.value);if(f){document.getElementById('evT').value=f.title;document.getElementById('evP').value=f.defaultPrice;document.getElementById('evC').value=f.defaultCapacity;setPresencePicker(f.defaultPresence);}">
-            <option value="">— Ручной ввод —</option>
-            ${db.formats.map(f => `<option value="${f.id}" ${f.id===initial.formatId?'selected':''}>${esc(f.title)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="field"><label>Название *</label><input class="inp" id="evT" required value="${esc(initial.title)}"></div>
-        <div class="grid3">
-          <div class="field"><label>Дата</label><input class="inp" type="date" id="evD" required value="${initial.date}"></div>
-          <div class="field"><label>Начало</label><input class="inp" type="time" id="evStart" required value="${initial.time}"></div>
-          <div class="field"><label>Окончание</label><input class="inp" type="time" id="evEnd" required value="${initial.endTime}"></div>
-        </div>
-        <div class="grid2">
-          <div class="field"><label>Цена, ₽</label><input class="inp" type="number" min="0" id="evP" value="${initial.price}"></div>
-          <div class="field"><label>Вместимость</label><input class="inp" type="number" min="1" id="evC" value="${initial.capacity}"></div>
-        </div>
         <div class="field">
           <label>Формат участия</label>
           <input type="hidden" id="evPresence" value="${initial.presenceType}">
@@ -1881,15 +2059,104 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
               <div class="pres-opt ${k===initial.presenceType?'on':''}" style="${k===initial.presenceType?`background:${PRESENCE[k].color}`:''}" onclick="setPresencePicker('${k}')">${PRESENCE[k].label}</div>
             `).join('')}
           </div>
+          <div id="presenceTypeHint" style="margin-top:8px;font-size:12px;line-height:1.45" class="text-ink2"></div>
         </div>
-        <div class="field"><label>Заметка</label><input class="inp" id="evN" value="${esc(initial.note)}"></div>
+
+        <div class="field" id="rowEvFmt">
+          <label>Шаблон из реестра</label>
+          <select class="inp" id="evFmtSel" onchange="const f=db.formats.find(x=>x.id===this.value);if(f){document.getElementById('evT').value=f.title;if(document.getElementById('evP'))document.getElementById('evP').value=f.defaultPrice;if(document.getElementById('evC'))document.getElementById('evC').value=f.defaultCapacity;setPresencePicker(f.defaultPresence);}">
+            <option value="">— Ручной ввод —</option>
+            ${db.formats.map(f => `<option value="${f.id}" ${f.id===initial.formatId?'selected':''}>${esc(f.title)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="field"><label>Название *</label><input class="inp" id="evT" required value="${esc(initial.title)}"></div>
+
+        <div class="grid3">
+          <div class="field"><label>Дата</label><input class="inp" type="date" id="evD" required value="${initial.date}"></div>
+          <div class="field"><label>Начало</label><input class="inp" type="time" id="evStart" required value="${initial.time}"></div>
+          <div class="field"><label>Окончание</label><input class="inp" type="time" id="evEnd" required value="${initial.endTime}"></div>
+        </div>
+
+        <div class="grid2" id="rowEvFinance">
+          <div class="field" id="colEvPrice">
+            <label id="lblEvPrice">Цена билета, ₽</label>
+            <input class="inp" type="number" min="0" id="evP" value="${initial.price ?? 0}">
+          </div>
+          <div class="field" id="colEvCapacity">
+            <label>Вместимость (мест)</label>
+            <input class="inp" type="number" min="1" id="evC" value="${initial.capacity || 20}">
+          </div>
+        </div>
+
+        <div class="field" id="rowEvRentPaid" style="display:none;margin-bottom:12px">
+          <label class="check">
+            <input type="checkbox" id="evRentPaid" ${initial.isPaid ? 'checked' : ''}>
+            <span>Оплата аренды уже получена</span>
+          </label>
+        </div>
+
+        <div class="field"><label>Заметка / детали</label><input class="inp" id="evN" value="${esc(initial.note)}"></div>
       </div>
       <div class="modal-foot flex gap-2 justify-end">
         <button type="button" class="btn btn-ghost" onclick="requestCloseModal()">Отмена</button>
-        <button type="submit" class="btn btn-primary">${ic('check')} Сохранить</button>
+        <button type="submit" class="btn btn-primary" id="evSubmitBtn">${ic('check')} Сохранить</button>
       </div>
     </form>
   `);
+
+  setTimeout(() => updateEventFormVisibility(initial.presenceType), 10);
+}
+
+function updateEventFormVisibility(presenceType) {
+  const rowFmt = document.getElementById('rowEvFmt');
+  const rowFin = document.getElementById('rowEvFinance');
+  const colPrice = document.getElementById('colEvPrice');
+  const colCap = document.getElementById('colEvCapacity');
+  const lblPrice = document.getElementById('lblEvPrice');
+  const rowRentPaid = document.getElementById('rowEvRentPaid');
+  const hintEl = document.getElementById('presenceTypeHint');
+  const evP = document.getElementById('evP');
+  const evC = document.getElementById('evC');
+
+  if (!rowFin) return;
+
+  if (presenceType === 'trip') {
+    if (rowFmt) rowFmt.style.display = 'none';
+    rowFin.style.display = 'none';
+    if (rowRentPaid) rowRentPaid.style.display = 'none';
+    if (evP) evP.disabled = true;
+    if (evC) evC.disabled = true;
+    if (hintEl) {
+      hintEl.innerHTML = `<span class="tag" style="background:var(--trip-bg);color:var(--trip)">Отлучка</span> Время блокируется в расписании. Запись гостей отключена.`;
+    }
+  } else if (presenceType === 'rent') {
+    if (rowFmt) rowFmt.style.display = '';
+    rowFin.style.display = 'grid';
+    if (colPrice) colPrice.style.display = '';
+    if (colCap) colCap.style.display = 'none';
+    if (evP) evP.disabled = false;
+    if (evC) evC.disabled = true;
+    if (lblPrice) lblPrice.textContent = 'Стоимость аренды, ₽';
+    if (rowRentPaid) rowRentPaid.style.display = 'block';
+    if (hintEl) {
+      hintEl.innerHTML = `<span class="tag" style="background:var(--rent-bg);color:var(--rent)">Аренда</span> За гостей отвечает арендатор. Доход учитывается в аналитике.`;
+    }
+  } else {
+    if (rowFmt) rowFmt.style.display = '';
+    rowFin.style.display = 'grid';
+    if (colPrice) {
+      colPrice.style.display = '';
+      if (lblPrice) lblPrice.textContent = 'Цена билета, ₽';
+    }
+    if (colCap) colCap.style.display = '';
+    if (evP) evP.disabled = false;
+    if (evC) evC.disabled = false;
+    if (rowRentPaid) rowRentPaid.style.display = 'none';
+    if (hintEl) {
+      hintEl.innerHTML = `<span class="tag" style="background:${PRESENCE[presenceType]?.bg};color:${PRESENCE[presenceType]?.color}">${PRESENCE[presenceType]?.label}</span> Регулярное мероприятие с записью и чекинами гостей.`;
+    }
+  }
 }
 
 function setPresencePicker(k, inpId = 'evPresence', pickerId = 'presencePicker') {
@@ -1901,21 +2168,42 @@ function setPresencePicker(k, inpId = 'evPresence', pickerId = 'presencePicker')
     el.className = `pres-opt ${isCur?'on':''}`;
     el.style.background = isCur ? PRESENCE[key].color : '';
   });
+
+  if (inpId === 'evPresence') {
+    updateEventFormVisibility(k);
+  }
 }
 
 function handleSaveEvent(e, editId) {
   e.preventDefault();
-  lockSubmitBtn(e);
 
-  const date = document.getElementById('evD').value;
-  const time = document.getElementById('evStart').value;
-  let endTime = document.getElementById('evEnd').value;
-  const title = document.getElementById('evT').value.trim();
-  const formatId = document.getElementById('evFmtSel').value;
-  const price = Math.max(0, parseFloat(document.getElementById('evP').value) || 0);
-  const capacity = Math.max(1, parseInt(document.getElementById('evC').value) || 20);
-  const presenceType = document.getElementById('evPresence').value;
-  const note = document.getElementById('evN').value.trim();
+  const titleInp = document.getElementById('evT');
+  const title = (titleInp ? titleInp.value : '').trim();
+  if (!title) {
+    toast('Укажите название события');
+    if (titleInp) titleInp.focus();
+    return;
+  }
+
+  const date = document.getElementById('evD')?.value || ui.dayDate || TODAY_ISO;
+  const time = document.getElementById('evStart')?.value || '19:00';
+  let endTime = document.getElementById('evEnd')?.value || '21:00';
+  const formatId = document.getElementById('evFmtSel') ? document.getElementById('evFmtSel').value : '';
+  const presenceType = document.getElementById('evPresence')?.value || 'must';
+
+  const priceInp = document.getElementById('evP');
+  const price = (presenceType === 'trip') ? 0 : Math.max(0, parseFloat(priceInp?.value) || 0);
+
+  const capInp = document.getElementById('evC');
+  const capacity = (presenceType === 'trip' || presenceType === 'rent') ? 0 : Math.max(1, parseInt(capInp?.value) || 20);
+
+  const rentPaidInp = document.getElementById('evRentPaid');
+  const existingEv = editId ? db.events.find(x => x.id === editId) : null;
+  const isPaid = (presenceType === 'rent')
+    ? (rentPaidInp ? rentPaidInp.checked : Boolean(existingEv?.isPaid))
+    : false;
+
+  const note = (document.getElementById('evN')?.value || '').trim();
 
   let startMin = toMin(time), endMin = toMin(endTime);
   if (endMin <= startMin) {
@@ -1927,10 +2215,15 @@ function handleSaveEvent(e, editId) {
   const payload = {
     title, formatId, date, time, endTime,
     price, capacity, presenceType,
+    isPaid,
     contactPerson: 'Лена',
     note,
     updatedAt: nowTs()
   };
+
+  // Проверка: есть ли уже записанные гости, если событие меняется на «Отлучку» или «Аренду»
+  const existingBookings = editId ? db.bookings.filter(b => b.eventId === editId) : [];
+  const needsGuestHandling = (presenceType === 'trip' || presenceType === 'rent') && existingBookings.length > 0;
 
   const conflicts = db.events.filter(ev => {
     if (editId && ev.id === editId) return false;
@@ -1939,11 +2232,24 @@ function handleSaveEvent(e, editId) {
     return (startMin < existing.end && endMin > existing.start);
   });
 
-  const commitSave = () => {
+  const commitSave = (clearBookings = false) => {
+    lockSubmitBtn(e);
+
     if (editId) {
       const idx = db.events.findIndex(x => x.id === editId);
       if (idx !== -1) {
         db.events[idx] = { ...db.events[idx], ...payload };
+      }
+      if (clearBookings) {
+        // Открепляем записи от события, сохраняя информацию в истории гостей
+        db.bookings.forEach(b => {
+          if (b.eventId === editId) {
+            b.eventId = ''; // отвязано от календаря
+            b.isWaitlist = false;
+            b.updatedAt = nowTs();
+          }
+        });
+      } else {
         db.bookings.forEach(b => {
           if (b.eventId === editId) {
             b.eventTitle = payload.title;
@@ -1955,31 +2261,91 @@ function handleSaveEvent(e, editId) {
         });
       }
     } else {
-      db.events.push({ id: uid('ev'), ...payload });
+      const newEvId = uid('ev');
+      if (db.deletedIds && db.deletedIds[newEvId]) delete db.deletedIds[newEvId];
+      db.events.push({ id: newEvId, ...payload });
     }
+
     saveDatabase();
     forceCloseModal();
     render();
     toast('Событие сохранено');
   };
 
-  if (conflicts.length > 0) {
-    const conflictList = conflicts
-      .map(c => `• «${esc(c.title)}» (${c.time}–${c.endTime || '?'}, ${PRESENCE[c.presenceType]?.label || ''})`)
-      .join('<br>');
-    const msg = `В этот временной интервал (${time}–${endTime}) уже запланировано:<br><br>${conflictList}<br><br>Сохранить оба события?`;
+  // Сценарий 1: У события были гости, но тип меняется на Аренду или Отлучку
+  if (needsGuestHandling) {
+    const typeLabel = presenceType === 'trip' ? '«Отсутствую»' : '«Аренда»';
+    openDialog(`
+      <div class="dialog-box">
+        <div class="dialog-icon-badge warn">${ic('alert')}</div>
+        <div class="font-bold text-lg text-ink" style="margin-bottom:6px">Смена типа на ${typeLabel}</div>
+        <div class="text-sm text-ink2" style="line-height:1.5;margin-bottom:18px">
+          На это событие уже записано <b>${existingBookings.length} гостей</b>. 
+          В формате ${typeLabel} список гостей пространства не ведётся.<br><br>
+          Что сделать с записанными гостями?
+        </div>
+        <div class="flex flex-col gap-2">
+          <button class="btn btn-primary btn-sm w-full" id="btnKeepGuestsHistory">
+            Сохранить в истории гостей и открепить от события
+          </button>
+          <button class="btn btn-soft btn-sm w-full" id="btnDeleteGuestsBookings">
+            Удалить эти бронирования
+          </button>
+          <button class="btn btn-ghost btn-sm w-full" onclick="closeDialog()">
+            Отмена (остаться в форме)
+          </button>
+        </div>
+      </div>
+    `);
 
-    confirmAction(
-      'Пересечение по времени',
-      msg,
-      'Всё равно сохранить',
-      commitSave,
-      () => { /* Остаемся в текущей форме, данные не теряются */ }
-    );
+    document.getElementById('btnKeepGuestsHistory').onclick = () => {
+      closeDialog();
+      if (conflicts.length > 0) {
+        showConflictConfirmation(conflicts, time, endTime, () => commitSave(true));
+      } else {
+        commitSave(true);
+      }
+    };
+
+    document.getElementById('btnDeleteGuestsBookings').onclick = () => {
+      closeDialog();
+      // Помечаем бронирования как удалённые
+      existingBookings.forEach(b => {
+        markAsDeleted(b.id);
+      });
+      db.bookings = db.bookings.filter(b => b.eventId !== editId);
+      if (conflicts.length > 0) {
+        showConflictConfirmation(conflicts, time, endTime, () => commitSave(false));
+      } else {
+        commitSave(false);
+      }
+    };
+
     return;
   }
 
-  commitSave();
+  // Сценарий 2: Пересечения по времени в расписании
+  if (conflicts.length > 0) {
+    showConflictConfirmation(conflicts, time, endTime, () => commitSave(false));
+    return;
+  }
+
+  commitSave(false);
+}
+
+function showConflictConfirmation(conflicts, time, endTime, onConfirm) {
+  const conflictList = conflicts
+    .map(c => `• «${esc(c.title)}» (${c.time}–${c.endTime || '?'}, ${PRESENCE[c.presenceType]?.label || ''})`)
+    .join('<br>');
+  const msg = `В этот временной интервал (${time}–${endTime}) уже запланировано:<br><br>${conflictList}<br><br>Сохранить оба события?`;
+
+  confirmAction(
+    'Пересечение по времени',
+    msg,
+    'Всё равно сохранить',
+    onConfirm,
+    () => { }
+  );
 }
 
 function openFormatFormModal(editId = null) {
@@ -2034,7 +2400,9 @@ function handleSaveFormat(e, editId) {
     const idx = db.formats.findIndex(x => x.id === editId);
     if(idx !== -1) db.formats[idx] = { ...db.formats[idx], ...payload };
   } else {
-    db.formats.push({ id: uid('fmt'), ...payload });
+    const newFmtId = uid('fmt');
+    if (db.deletedIds && db.deletedIds[newFmtId]) delete db.deletedIds[newFmtId];
+    db.formats.push({ id: newFmtId, ...payload });
   }
   saveDatabase();
   forceCloseModal();
@@ -2083,6 +2451,9 @@ function handleCreateClient(e) {
     existing.totalPaid = stats.total;
     existing.lastSeen = stats.lastSeen;
     existing.updatedAt = stamp;
+    if (db.deletedIds && db.deletedIds[existing.id]) {
+      delete db.deletedIds[existing.id];
+    }
     toast(`Данные гостя «${name}» обновлены`);
   } else {
     const newId = getStableClientId(tg, name);
@@ -2195,6 +2566,9 @@ function handleSaveClientCard(e, clientId) {
     c.telegram = tg;
     c.clientNotes = notes;
     c.updatedAt = nowTs();
+    if (db.deletedIds && db.deletedIds[clientId]) {
+      delete db.deletedIds[clientId];
+    }
     db.bookings.forEach(b => {
       if (b.clientId === clientId) {
         b.guestName = name;
@@ -2381,10 +2755,14 @@ function executeImport() {
       evs.forEach(it => {
         let fmt = db.formats.find(x => x.title.toLowerCase() === it.title.toLowerCase());
         if(!fmt) {
-          fmt = { id: uid('fmt'), title: it.title, shortDescription: it.note, defaultPrice: it.price, defaultCapacity: 20, frequencyDays: 21, defaultPresence: 'must', updatedAt: stamp };
+          const newFmtId = uid('fmt');
+          if (db.deletedIds && db.deletedIds[newFmtId]) delete db.deletedIds[newFmtId];
+          fmt = { id: newFmtId, title: it.title, shortDescription: it.note, defaultPrice: it.price, defaultCapacity: 20, frequencyDays: 21, defaultPresence: 'must', updatedAt: stamp };
           db.formats.push(fmt);
         }
-        db.events.push({ id: uid('ev'), formatId: fmt.id, title: it.title, date: it.date, time: it.time, endTime: it.endTime, price: it.price, capacity: 20, presenceType: 'must', note: it.note, updatedAt: stamp });
+        const newEvId = uid('ev');
+        if (db.deletedIds && db.deletedIds[newEvId]) delete db.deletedIds[newEvId];
+        db.events.push({ id: newEvId, formatId: fmt.id, title: it.title, date: it.date, time: it.time, endTime: it.endTime, price: it.price, capacity: 20, presenceType: 'must', note: it.note, updatedAt: stamp });
       });
       const first = parseYmd(evs[0].date);
       ui.year = first.getFullYear(); ui.month = first.getMonth(); ui.dayDate = evs[0].date; ui.view = 'month';
@@ -2398,9 +2776,12 @@ function executeImport() {
         if (existing) {
           if (c.notes) existing.clientNotes = existing.clientNotes ? `${existing.clientNotes} · ${c.notes}` : c.notes;
           existing.updatedAt = stamp;
+          if (db.deletedIds && db.deletedIds[existing.id]) delete db.deletedIds[existing.id];
         } else {
+          const newClId = getStableClientId(c.telegram, c.name);
+          if (db.deletedIds && db.deletedIds[newClId]) delete db.deletedIds[newClId];
           db.clients.push({
-            id: getStableClientId(c.telegram, c.name),
+            id: newClId,
             telegram: c.telegram,
             name: c.name,
             visitsCount: 0,
@@ -2546,7 +2927,6 @@ function openNotificationsModal() {
   window.addEventListener('focus', handleAppResume);
   window.addEventListener('online', handleAppResume);
 
-  // Защита от закрытия вкладки / свайпа браузера назад при несохраненных данных
   window.addEventListener('beforeunload', (e) => {
     if (FormGuard.isDirty()) {
       e.preventDefault();
