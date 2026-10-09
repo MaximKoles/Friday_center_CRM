@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Пятница.Пульт — Центр управления пространством</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -114,10 +114,10 @@ button { cursor: pointer; border: none; background: none; }
 }
 .icon-btn:hover { color: var(--ink); box-shadow: var(--sh2); transform: translateY(-1px); }
 .icon-btn.sm { width: 32px; height: 32px; border-radius: 9px; box-shadow: none; background: var(--subtle); border-color: transparent; }
-.cloud-status-btn.synced { background: #F4FAF6; border: 1.5px solid #C4EBD7; color: #2E7D56; }
-.cloud-status-btn.not-synced { background: #FFF7F6; border: 1.5px solid #F8C8C2; color: var(--must); }
+.cloud-status-btn.synced { background: #F2F9F5; border: 1.5px solid #C2E8D4; color: #2E7D56; }
+.cloud-status-btn.not-synced { background: #FFF6F5; border: 1.5px solid #F7C6C0; color: #D64535; }
+.cloud-status-btn .ic { width: 20px; height: 20px; }
 .notif-badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; background: var(--must); color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
-.conn-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #fff; }
 
 main { padding: 18px 0 80px; min-height: calc(100vh - 120px); }
 .page-head { margin-bottom: 16px; margin-top: 8px; min-height: 42px; }
@@ -227,7 +227,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 .modal-foot { padding: 14px 20px 18px; position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); z-index: 10; }
 .post-box { background: var(--bg); border-radius: 14px; padding: 16px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; max-height: 48vh; overflow-y: auto; font-family: monospace; border: 1px solid var(--line); }
 
-/* Level 2: Стек подтверждений и защитных алертов (поверх Level 1) */
+/* Level 2: Стек подтверждений и защитных алертов */
 #dialogRoot { position: fixed; inset: 0; z-index: 150; display: none; }
 #dialogRoot.open { display: block; }
 .dialog-backdrop {
@@ -260,8 +260,28 @@ textarea.inp { resize: vertical; min-height: 70px; }
   .bottom-nav { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; inset: auto 0 0 0; z-index: 60; background: rgba(255,255,255,.96); backdrop-filter: blur(16px); border-top: 1px solid var(--line); padding: 6px 2px calc(6px + env(safe-area-inset-bottom)); }
   .bottom-nav button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px; border-radius: 10px; font-size: 10px; font-weight: 600; color: var(--muted); }
   .bottom-nav button.active { color: var(--ink); }
+
+  /* Защита от авто-зума iOS Safari: размер шрифта полей ввода должен быть не менее 16px */
+  input, select, textarea, .inp {
+    font-size: 16px !important;
+  }
 }
 @media (min-width: 641px) { .modal-backdrop { align-items: center; padding: 20px; } .modal { border-radius: 22px; } }
+
+/* Выпадающий список автоподсказок гостей */
+.autocomplete-box {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 80;
+  background: var(--surface); border: 1.5px solid var(--line2); border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(32,36,48,.16); max-height: 220px; overflow-y: auto;
+  display: none; -webkit-overflow-scrolling: touch;
+}
+.autocomplete-item {
+  padding: 10px 14px; border-bottom: 1px solid var(--line); cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  transition: background .12s;
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:active, .autocomplete-item:hover { background: var(--subtle); }
 </style>
 </head>
 <body>
@@ -287,8 +307,15 @@ textarea.inp { resize: vertical; min-height: 70px; }
     <symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
     <symbol id="ic-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></symbol>
     <symbol id="ic-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
-    <symbol id="ic-cloudOk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><polyline points="8.5 14 11 16.5 15.5 11"/></symbol>
-    <symbol id="ic-cloudWarn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><line x1="12" y1="11" x2="12" y2="14"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="ic-cloudOk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+      <polyline points="9 13.5 12 16.5 16 11.5"/>
+    </symbol>
+    <symbol id="ic-cloudWarn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+      <line x1="12" y1="10.5" x2="12" y2="14.5"/>
+      <circle cx="12" cy="17.2" r="0.8" fill="currentColor"/>
+    </symbol>
     <symbol id="ic-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
   </defs>
 </svg>
@@ -312,9 +339,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 <main class="wrap" id="view"></main>
 <nav class="bottom-nav" id="bottomNav"></nav>
 
-<!-- Модальные окна приложения -->
 <div id="modalRoot"></div>
-<!-- Верхний слой подтверждений и защиты от потери данных -->
 <div id="dialogRoot"></div>
 <div style="position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none" id="toastRoot"></div>
 
@@ -360,13 +385,43 @@ function getEventInterval(ev) {
   return { start, end };
 }
 
-function getTgLink(tg) {
+function cleanTgUsername(tg) {
   if (!tg) return '';
-  const clean = tg.trim();
-  if (clean.startsWith('https://t.me/')) return clean;
-  if (clean.startsWith('t.me/')) return 'https://' + clean;
-  const username = clean.replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '');
+  let clean = String(tg).trim();
+  clean = clean.replace(/^https?:\/\/t\.me\//i, '').replace(/^t\.me\//i, '').replace(/^@/, '');
+  clean = clean.split('/')[0].split('?')[0];
+  return clean.replace(/[^a-zA-Z0-9_]/g, '');
+}
+
+function getTgLink(tg) {
+  const username = cleanTgUsername(tg);
   return username ? `https://t.me/${username}` : '';
+}
+
+function safeOpenTelegram(username, messageText) {
+  const cleanNick = cleanTgUsername(username);
+  if (!cleanNick) {
+    toast('Не указан ник Telegram');
+    return;
+  }
+  const encodedText = encodeURIComponent(messageText || '');
+  const appUrl = `tg://resolve?domain=${cleanNick}&text=${encodedText}`;
+  const webUrl = `https://t.me/${cleanNick}?text=${encodedText}`;
+
+  // Открываем через протокол приложения без создания пустой висячей вкладки браузера
+  const a = document.createElement('a');
+  a.href = appUrl;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { a.remove(); }, 300);
+
+  // Резервный таймер: если на десктопе нет приложения Telegram, через 1.2 сек даём ссылку в веб
+  setTimeout(() => {
+    if (document.hasFocus && document.hasFocus()) {
+      window.open(webUrl, '_blank', 'noopener,noreferrer');
+    }
+  }, 1200);
 }
 
 function stableStringify(o) {
@@ -395,9 +450,6 @@ function isUserActivelyTyping() {
   return active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName);
 }
 
-/* =========================================================================
-   АРХИТЕКТУРНЫЙ БЛОК: FormGuard (Защита от потери данных в формах)
-   ========================================================================= */
 const FormGuard = {
   initialSnapshot: null,
   activeRoot: null,
@@ -430,9 +482,6 @@ const FormGuard = {
   }
 };
 
-/* =========================================================================
-   АРХИТЕКТУРНЫЙ БЛОК: Двухуровневый менеджер окон (Modal Stack & Overlays)
-   ========================================================================= */
 const MODAL_ROOT = document.getElementById('modalRoot');
 const DIALOG_ROOT = document.getElementById('dialogRoot');
 
@@ -580,8 +629,8 @@ function seedDatabase() {
       { id: 'fmt-5', title: 'Аренда под закрытый праздник', shortDescription: 'Почасовая аренда пространства для лекций, мастер-классов или дней рождения.', defaultPrice: 2000, defaultCapacity: 30, frequencyDays: 0, defaultPresence: 'rent', updatedAt: stamp }
     ],
     events: [
-      { id: 'ev-201', formatId: 'fmt-4', title: 'Утренняя виньяса-йога', date: t, time: '09:00', endTime: '11:00', price: 600, capacity: 12, presenceType: 'team', isPublic: true, contactPerson: 'Оля (тренер)', note: 'Проветрить зал', updatedAt: stamp },
-      { id: 'ev-202', formatId: 'fmt-1', title: 'Осенний Квартирник при свечах', date: t, time: '19:00', endTime: '21:30', price: 900, capacity: 25, presenceType: 'must', isPublic: true, contactPerson: 'Лена', note: 'Зажечь свечи', updatedAt: stamp }
+      { id: 'ev-201', formatId: 'fmt-4', title: 'Утренняя виньяса-йога', date: t, time: '09:00', endTime: '11:00', price: 600, capacity: 12, presenceType: 'team', isPaid: false, contactPerson: 'Оля (тренер)', note: 'Проветрить зал', updatedAt: stamp },
+      { id: 'ev-202', formatId: 'fmt-1', title: 'Осенний Квартирник при свечах', date: t, time: '19:00', endTime: '21:30', price: 900, capacity: 25, presenceType: 'must', isPaid: false, contactPerson: 'Лена', note: 'Зажечь свечи', updatedAt: stamp }
     ],
     bookings: [
       { id: 'bk-1', eventId: 'ev-202', clientId: cl1Id, guestName: 'Марина Соколова', telegram: '@sokol_marina', ticketsCount: 2, isPaid: true, isCheckedIn: true, isWaitlist: false, note: 'У камина', eventTitle: 'Осенний Квартирник при свечах', eventDate: t, eventTime: '19:00', eventPrice: 900, updatedAt: stamp },
@@ -609,14 +658,12 @@ function cleanupClientDuplicates(d) {
   const canonicalMap = new Map();
   const idRemap = new Map();
 
-  // Исключаем клиентов, помеченных как удаленные
   d.clients = d.clients.filter(c => {
     if (!c || !c.id) return false;
     const delStamp = deletedIds[c.id];
     return !(delStamp && delStamp >= (c.updatedAt || 0));
   });
 
-  // Очищаем бронирования, помеченные как удаленные либо принадлежащие удаленному клиенту
   if (Array.isArray(d.bookings)) {
     d.bookings = d.bookings.filter(b => {
       if (!b || !b.id) return false;
@@ -756,7 +803,6 @@ function normalizeAndMigrateDB(raw) {
     });
   }
 
-  // Фильтруем удаленных гостей сразу
   clientsList = clientsList.filter(c => !deletedIds[c.id] || deletedIds[c.id] < (c.updatedAt || 0));
 
   let bookings = Array.isArray(d.bookings) ? d.bookings : Object.values(d.bookings || {});
@@ -776,7 +822,6 @@ function normalizeAndMigrateDB(raw) {
         const cleanName = String(b.guestName).toLowerCase().trim();
         client = clientsList.find(c => c.name.toLowerCase().trim() === cleanName);
       }
-      // Не воскрешаем клиента, если он был удален
       const candId = getStableClientId(b.telegram, b.guestName);
       if (!client && (!deletedIds[candId] || deletedIds[candId] < (b.updatedAt || 0))) {
         const isCheck = Boolean(b.isCheckedIn);
@@ -860,10 +905,10 @@ function openQuotaWarningModal() {
       <button class="icon-btn sm" onclick="forceCloseModal()">${ic('x')}</button>
     </div>
     <div class="modal-body text-base text-ink2" style="line-height:1.5">
-      Локальное хранилище браузера (LocalStorage) исчерпало лимит. Чтобы не потерять ваши данные, немедленно сохраните файл резервной копии.
+      Локальное хранилище браузера (LocalStorage) исчерпало лимит. Чтобы не потерять данные, сохраните файл резервной копии.
     </div>
     <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-primary" onclick="exportBackup()">${ic('download')} Сохранить резервную копию</button>
+      <button class="btn btn-primary" onclick="exportBackup()">${ic('download')} Сохранить бэкап</button>
       <button class="btn btn-ghost" onclick="forceCloseModal()">Закрыть</button>
     </div>
   `);
@@ -895,12 +940,8 @@ function markAsDeleted(id) {
 function mergeDatabases(local, remote) {
   const normRemote = normalizeAndMigrateDB(remote);
   
-  if (local.isInitialSeed && !normRemote.isInitialSeed) {
-    return normRemote;
-  }
-  if (!local.isInitialSeed && normRemote.isInitialSeed) {
-    return local;
-  }
+  if (local.isInitialSeed && !normRemote.isInitialSeed) return normRemote;
+  if (!local.isInitialSeed && normRemote.isInitialSeed) return local;
 
   const mergedDeletedIds = { ...(local.deletedIds || {}) };
   if (normRemote.deletedIds) {
@@ -926,9 +967,7 @@ function mergeDatabases(local, remote) {
     const result = [];
     map.forEach((item, id) => {
       const delStamp = mergedDeletedIds[id];
-      if (delStamp && delStamp >= (item.updatedAt || 0)) {
-        return;
-      }
+      if (delStamp && delStamp >= (item.updatedAt || 0)) return;
       result.push(item);
     });
     return result;
@@ -982,9 +1021,7 @@ async function pullFromFirebase(manual = false) {
     if (res.ok) {
       const data = await res.json();
       if (!data) {
-        if (db && !db.isInitialSeed) {
-          pushToFirebase();
-        }
+        if (db && !db.isInitialSeed) pushToFirebase();
       } else if (data && (data.events || data.formats || data.clients || data.deletedIds)) {
         const merged = mergeDatabases(db, data);
         const ns = stableStringify(merged);
@@ -1071,11 +1108,19 @@ function setupFirebaseRealtime() {
 }
 
 function handleAppResume() {
-  if (ui.firebaseUrl) {
-    pullFromFirebase(false);
-    if (!fbEventSource || fbEventSource.readyState === EventSource.CLOSED) {
-      setupFirebaseRealtime();
+  try {
+    if (!db || !Array.isArray(db.events)) {
+      loadDatabase();
+      render();
     }
+    if (ui.firebaseUrl) {
+      pullFromFirebase(false);
+      if (!fbEventSource || fbEventSource.readyState === EventSource.CLOSED) {
+        setupFirebaseRealtime();
+      }
+    }
+  } catch(err) {
+    console.error('Ошибка возобновления приложения:', err);
   }
 }
 
@@ -1234,7 +1279,7 @@ function renderSettingsBtn() {
   const btn = document.getElementById('settingsBtn'); if(!btn) return;
   const isConn = ui.cloudStatus === 'connected';
   btn.className = `icon-btn cloud-status-btn ${isConn?'synced':'not-synced'}`;
-  btn.innerHTML = `${isConn ? ic('cloudOk') : ic('cloudWarn')}<span class="conn-dot" style="background:${isConn?'#3E946E':'#DE6254'}"></span>`;
+  btn.innerHTML = isConn ? ic('cloudOk') : ic('cloudWarn');
 }
 
 function renderMonthView() {
@@ -1543,7 +1588,6 @@ function renderAnalyticsView() {
     }
   });
 
-  // Учитываем оплаченные аренды в аналитике доходов
   evs.forEach(e => {
     if (e.presenceType === 'rent' && e.isPaid) {
       rev += (Number(e.price) || 0);
@@ -1563,7 +1607,6 @@ function renderAnalyticsView() {
     }
   });
 
-  // Добавляем доход от аренды к соответствующему шаблону в реестре
   evs.forEach(e => {
     if (e.presenceType === 'rent' && e.isPaid && e.formatId && fmtMap[e.formatId]) {
       fmtMap[e.formatId].rev += (Number(e.price) || 0);
@@ -1616,17 +1659,27 @@ function renderAnalyticsView() {
 }
 
 function render() {
-  const top = document.getElementById('topNav'), bot = document.getElementById('bottomNav'), view = document.getElementById('view');
-  if (top) top.innerHTML = NAV.map(n => `<button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">${ic(n.icon)} ${n.label}</button>`).join('');
-  if (bot) bot.innerHTML = NAV.map(n => `<button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">${ic(n.icon)}<span>${n.label}</span></button>`).join('');
-  renderSettingsBtn();
-  updateNotifButton();
-  if (view) {
-    if(ui.view === 'month') view.innerHTML = renderMonthView();
-    else if(ui.view === 'day') view.innerHTML = renderDayView();
-    else if(ui.view === 'events') view.innerHTML = renderFormatsView();
-    else if(ui.view === 'clients') view.innerHTML = renderClientsView();
-    else if(ui.view === 'analytics') view.innerHTML = renderAnalyticsView();
+  try {
+    const top = document.getElementById('topNav'), bot = document.getElementById('bottomNav'), view = document.getElementById('view');
+    if (!db) loadDatabase();
+    if (top) top.innerHTML = NAV.map(n => `<button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">${ic(n.icon)} ${n.label}</button>`).join('');
+    if (bot) bot.innerHTML = NAV.map(n => `<button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">${ic(n.icon)}<span>${n.label}</span></button>`).join('');
+    renderSettingsBtn();
+    updateNotifButton();
+    if (view) {
+      if(ui.view === 'month') view.innerHTML = renderMonthView();
+      else if(ui.view === 'day') view.innerHTML = renderDayView();
+      else if(ui.view === 'events') view.innerHTML = renderFormatsView();
+      else if(ui.view === 'clients') view.innerHTML = renderClientsView();
+      else if(ui.view === 'analytics') view.innerHTML = renderAnalyticsView();
+    }
+  } catch(err) {
+    console.error('Ошибка рендера страницы:', err);
+    const view = document.getElementById('view');
+    if (view && !view.innerHTML.trim()) {
+      loadDatabase();
+      view.innerHTML = renderMonthView();
+    }
   }
 }
 
@@ -1745,11 +1798,21 @@ function openEventDetailsModal(id) {
         ${ui.quickBookingOpen ? `
           <form onsubmit="handleQuickBooking(event, '${ev.id}')" style="background:#FAF9F6;padding:12px;border-radius:12px;border:1px solid var(--line2);margin-top:8px">
             <div class="grid2" style="margin-bottom:8px">
-              <input class="inp" id="bkName" required placeholder="Имя гостя *" list="dlNames" oninput="autoFillTg(this.value)" onchange="autoFillTg(this.value)">
-              <input class="inp" id="bkTg" placeholder="@telegram" list="dlTgs" oninput="autoFillName(this.value)" onchange="autoFillName(this.value)">
+              <div style="position:relative">
+                <input class="inp" id="bkName" required placeholder="Имя гостя *" autocomplete="off"
+                       onfocus="showGuestSuggestions(this.value, 'name')"
+                       oninput="showGuestSuggestions(this.value, 'name')"
+                       onblur="hideGuestSuggestionsWithDelay()">
+                <div class="autocomplete-box" id="acNameBox"></div>
+              </div>
+              <div style="position:relative">
+                <input class="inp" id="bkTg" placeholder="@telegram" autocomplete="off"
+                       onfocus="showGuestSuggestions(this.value, 'tg')"
+                       oninput="showGuestSuggestions(this.value, 'tg')"
+                       onblur="hideGuestSuggestionsWithDelay()">
+                <div class="autocomplete-box" id="acTgBox"></div>
+              </div>
             </div>
-            <datalist id="dlNames">${db.clients.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist>
-            <datalist id="dlTgs">${db.clients.filter(c=>c.telegram).map(c=>`<option value="${esc(c.telegram)}">`).join('')}</datalist>
             <div class="flex gap-3 items-center" style="margin-bottom:8px">
               <label class="check"><input type="number" id="bkCount" min="1" value="1" style="width:58px" class="inp"> мест</label>
               <label class="check"><input type="checkbox" id="bkPaid"> Оплачено</label>
@@ -1832,6 +1895,73 @@ function toggleRentPayment(id) {
   toast(ev.isPaid ? 'Оплата аренды получена' : 'Отметка оплаты аренды снята');
 }
 
+let acTimer = null;
+function hideGuestSuggestionsWithDelay() {
+  clearTimeout(acTimer);
+  acTimer = setTimeout(() => {
+    const boxN = document.getElementById('acNameBox');
+    const boxT = document.getElementById('acTgBox');
+    if (boxN) boxN.style.display = 'none';
+    if (boxT) boxT.style.display = 'none';
+  }, 220);
+}
+
+function showGuestSuggestions(query, targetField) {
+  const isName = targetField === 'name';
+  const box = document.getElementById(isName ? 'acNameBox' : 'acTgBox');
+  const otherBox = document.getElementById(isName ? 'acTgBox' : 'acNameBox');
+  if (otherBox) otherBox.style.display = 'none';
+  if (!box || !db?.clients?.length) return;
+
+  const q = String(query || '').toLowerCase().trim().replace(/^@/, '');
+  let matches = [];
+
+  if (!q) {
+    // Если поле пустое, показываем самых активных гостей
+    matches = [...db.clients]
+      .sort((a,b) => (b.visitsCount || 0) - (a.visitsCount || 0))
+      .slice(0, 6);
+  } else {
+    matches = db.clients.filter(c => {
+      const matchName = (c.name || '').toLowerCase().includes(q);
+      const matchTg = (c.telegram || '').toLowerCase().replace(/^@/, '').includes(q);
+      return matchName || matchTg;
+    }).slice(0, 8);
+  }
+
+  if (!matches.length) {
+    box.style.display = 'none';
+    box.innerHTML = '';
+    return;
+  }
+
+  box.innerHTML = matches.map(c => `
+    <div class="autocomplete-item" onmousedown="selectGuestSuggestion('${esc(c.id)}')">
+      <div style="min-width:0;flex:1">
+        <div class="font-semibold text-base truncate">${esc(c.name)}</div>
+        <div class="text-xs text-muted truncate">${c.telegram ? esc(c.telegram) : 'Без Telegram'}${c.clientNotes ? ' · ' + esc(c.clientNotes) : ''}</div>
+      </div>
+      ${c.visitsCount > 0 ? `<span class="pill text-xs flex-none">${c.visitsCount} виз.</span>` : ''}
+    </div>
+  `).join('');
+
+  box.style.display = 'block';
+}
+
+function selectGuestSuggestion(clientId) {
+  const c = db.clients.find(x => x.id === clientId);
+  if (!c) return;
+  const nameInp = document.getElementById('bkName');
+  const tgInp = document.getElementById('bkTg');
+  if (nameInp) nameInp.value = c.name || '';
+  if (tgInp) tgInp.value = c.telegram || '';
+
+  const boxN = document.getElementById('acNameBox');
+  const boxT = document.getElementById('acTgBox');
+  if (boxN) boxN.style.display = 'none';
+  if (boxT) boxT.style.display = 'none';
+}
+
 function autoFillTg(val) {
   if(!val) return;
   const clean = val.toLowerCase().trim();
@@ -1851,9 +1981,46 @@ function autoFillName(val) {
 function openTgReminder(bookingId) {
   const b = db.bookings.find(x => x.id === bookingId); if(!b || !b.telegram) return;
   const ev = db.events.find(x => x.id === b.eventId);
-  const nick = b.telegram.replace(/^@/, '');
-  const text = `Привет! Напоминаю о встрече на «${ev ? ev.title : 'событии'}» в пространстве «Пятница»: ${ev ? fmtDateRu(ev.date) : ''} в ${ev ? ev.time : ''}. Ждем в гости!`;
-  window.open(`https://t.me/${nick}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+  const cleanNick = cleanTgUsername(b.telegram);
+  const evTitle = ev ? ev.title : (b.eventTitle || 'событии');
+  const evDateStr = ev ? fmtDateRu(ev.date) : (b.eventDate ? fmtDateRu(b.eventDate) : '');
+  const evTimeStr = ev ? ev.time : (b.eventTime || '');
+  const text = `Привет! Напоминаю о встрече на «${evTitle}» в пространстве «Пятница»${evDateStr ? ': ' + evDateStr : ''}${evTimeStr ? ' в ' + evTimeStr : ''}. Ждем в гости!`;
+
+  openDialog(`
+    <div class="dialog-box">
+      <div class="dialog-icon-badge info" style="background:#EBF5FB;color:#2AABEE">${ic('send')}</div>
+      <div class="font-bold text-lg text-ink" style="margin-bottom:4px">Напоминание для ${esc(b.guestName)}</div>
+      <div class="text-xs text-muted" style="margin-bottom:12px">Telegram: <b class="text-ink">@${esc(cleanNick)}</b></div>
+      
+      <div class="field" style="margin-bottom:14px">
+        <label>Текст сообщения:</label>
+        <div class="inp" style="background:var(--subtle);min-height:auto;font-size:12.5px;line-height:1.45;white-space:pre-wrap;user-select:all">${esc(text)}</div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <button class="btn btn-primary btn-sm w-full" id="btnLaunchTg">
+          ${ic('send')} Открыть в Telegram
+        </button>
+        <button class="btn btn-soft btn-sm w-full" id="btnCopyTgText">
+          ${ic('copy')} Скопировать текст сообщения
+        </button>
+        <button class="btn btn-ghost btn-sm w-full" onclick="closeDialog()">
+          Отмена
+        </button>
+      </div>
+    </div>
+  `);
+
+  document.getElementById('btnLaunchTg').onclick = () => {
+    closeDialog();
+    safeOpenTelegram(cleanNick, text);
+  };
+
+  document.getElementById('btnCopyTgText').onclick = () => {
+    copySafe(text);
+    toast('Текст скопирован в буфер');
+  };
 }
 
 function handleQuickBooking(e, evId) {
@@ -2221,7 +2388,6 @@ function handleSaveEvent(e, editId) {
     updatedAt: nowTs()
   };
 
-  // Проверка: есть ли уже записанные гости, если событие меняется на «Отлучку» или «Аренду»
   const existingBookings = editId ? db.bookings.filter(b => b.eventId === editId) : [];
   const needsGuestHandling = (presenceType === 'trip' || presenceType === 'rent') && existingBookings.length > 0;
 
@@ -2241,10 +2407,9 @@ function handleSaveEvent(e, editId) {
         db.events[idx] = { ...db.events[idx], ...payload };
       }
       if (clearBookings) {
-        // Открепляем записи от события, сохраняя информацию в истории гостей
         db.bookings.forEach(b => {
           if (b.eventId === editId) {
-            b.eventId = ''; // отвязано от календаря
+            b.eventId = '';
             b.isWaitlist = false;
             b.updatedAt = nowTs();
           }
@@ -2272,7 +2437,6 @@ function handleSaveEvent(e, editId) {
     toast('Событие сохранено');
   };
 
-  // Сценарий 1: У события были гости, но тип меняется на Аренду или Отлучку
   if (needsGuestHandling) {
     const typeLabel = presenceType === 'trip' ? '«Отсутствую»' : '«Аренда»';
     openDialog(`
@@ -2309,7 +2473,6 @@ function handleSaveEvent(e, editId) {
 
     document.getElementById('btnDeleteGuestsBookings').onclick = () => {
       closeDialog();
-      // Помечаем бронирования как удалённые
       existingBookings.forEach(b => {
         markAsDeleted(b.id);
       });
@@ -2324,7 +2487,6 @@ function handleSaveEvent(e, editId) {
     return;
   }
 
-  // Сценарий 2: Пересечения по времени в расписании
   if (conflicts.length > 0) {
     showConflictConfirmation(conflicts, time, endTime, () => commitSave(false));
     return;
@@ -2926,6 +3088,14 @@ function openNotificationsModal() {
   });
   window.addEventListener('focus', handleAppResume);
   window.addEventListener('online', handleAppResume);
+  window.addEventListener('pageshow', (event) => {
+    try {
+      if (!db || !Array.isArray(db.events)) loadDatabase();
+      render();
+    } catch(err) {
+      console.error('Ошибка pageshow:', err);
+    }
+  });
 
   window.addEventListener('beforeunload', (e) => {
     if (FormGuard.isDirty()) {
