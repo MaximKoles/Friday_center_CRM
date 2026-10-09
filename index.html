@@ -1457,7 +1457,7 @@ function renderDayView() {
                       </div>
                       <div class="text-xs text-muted" style="margin-top:2px">
                         <button class="pay-toggle ${b.isPaid ? 'paid' : 'unpaid'}" onclick="togglePayment('${b.id}')">
-                          ${b.isPaid ? '✓ Оплачено' : '⏳ На входе'}
+                          ${b.isPaid ? '✓ Оплачено' : '⏳ Не оплачено'}
                         </button>
                         ${b.telegram ? ' · ' + esc(b.telegram) : ''}
                         ${b.note ? ' · ' + esc(b.note) : ''}
@@ -1849,7 +1849,7 @@ function openEventDetailsModal(id) {
           <div class="flex-1">
             <div class="font-semibold text-base" style="${b.isCheckedIn?'text-decoration:line-through;opacity:.6':''}">${esc(b.guestName)} ${b.ticketsCount>1?`<span class="pill text-xs">${b.ticketsCount} чел.</span>`:''}</div>
             <div class="text-xs text-muted" style="margin-top:2px">
-              <button class="pay-toggle ${b.isPaid?'paid':'unpaid'}" onclick="togglePayment('${b.id}')">${b.isPaid?'✓ Оплачено':'⏳ На входе'}</button>
+              <button class="pay-toggle ${b.isPaid?'paid':'unpaid'}" onclick="togglePayment('${b.id}')">${b.isPaid?'✓ Оплачено':'⏳ Не оплачено'}</button>
               ${b.telegram ? ' · ' + esc(b.telegram) : ''} ${b.note ? ' · ' + esc(b.note) : ''}
             </div>
           </div>
@@ -2704,7 +2704,7 @@ function openClientCardModal(clientId) {
                 ${item.bk.isCheckedIn ? 'Был' : 'Записан'}
               </span>
               <span class="tag" style="${item.bk.isPaid ? 'background:#E7F5EE;color:#3E946E' : 'background:#FCF3DE;color:#B37D14'}">
-                ${item.bk.isPaid ? 'Оплачено' : 'На входе'}
+                ${item.bk.isPaid ? 'Оплачено' : 'Не оплачено'}
               </span>
               <button class="icon-btn sm" onclick="deleteBooking('${item.bk.id}')" title="Удалить эту запись">${ic('trash')}</button>
             </div>
