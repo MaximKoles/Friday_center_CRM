@@ -214,6 +214,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 .bar-val { width: 85px; text-align: right; font-size: 13px; font-weight: 700; flex-shrink: 0; }
 .section-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 20px 0 10px; }
 
+/* Level 1: Основные модальные окна */
 #modalRoot { position: fixed; inset: 0; z-index: 100; display: none; }
 #modalRoot.open { display: block; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(32,36,48,.42); backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; }
@@ -225,6 +226,30 @@ textarea.inp { resize: vertical; min-height: 70px; }
 .modal-body { padding: 16px 20px; }
 .modal-foot { padding: 14px 20px 18px; position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); z-index: 10; }
 .post-box { background: var(--bg); border-radius: 14px; padding: 16px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; max-height: 48vh; overflow-y: auto; font-family: monospace; border: 1px solid var(--line); }
+
+/* Level 2: Стек подтверждений и защитных алертов (поверх Level 1) */
+#dialogRoot { position: fixed; inset: 0; z-index: 150; display: none; }
+#dialogRoot.open { display: block; }
+.dialog-backdrop {
+  position: absolute; inset: 0; background: rgba(32,36,48,.52);
+  backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.dialog-box {
+  background: var(--surface); width: 100%; max-width: 420px; border-radius: 22px;
+  box-shadow: 0 16px 48px rgba(32,36,48,.24); border: 1px solid var(--line);
+  padding: 22px 22px 18px; transform: scale(1); animation: dialogPopIn .15s ease-out;
+}
+@keyframes dialogPopIn {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.dialog-icon-badge {
+  width: 42px; height: 42px; border-radius: 13px; display: flex; align-items: center;
+  justify-content: center; margin-bottom: 14px; flex-shrink: 0;
+}
+.dialog-icon-badge.warn { background: var(--must-bg); color: var(--must); }
+.dialog-icon-badge.info { background: var(--subtle); color: var(--ink); }
+
 .toast { background: var(--ink); color: #fff; font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 12px; box-shadow: 0 10px 30px rgba(32,36,48,.3); display: flex; align-items: center; gap: 8px; transition: all .25s ease; }
 .toast.out { opacity: 0; transform: translateY(6px); }
 
@@ -286,7 +311,11 @@ textarea.inp { resize: vertical; min-height: 70px; }
 </header>
 <main class="wrap" id="view"></main>
 <nav class="bottom-nav" id="bottomNav"></nav>
+
+<!-- Модальные окна приложения -->
 <div id="modalRoot"></div>
+<!-- Верхний слой подтверждений и защиты от потери данных -->
+<div id="dialogRoot"></div>
 <div style="position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none" id="toastRoot"></div>
 
 <script>
@@ -364,6 +393,174 @@ function toast(msg) {
 function isUserActivelyTyping() {
   const active = document.activeElement;
   return active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName);
+}
+
+/* =========================================================================
+   АРХИТЕКТУРНЫЙ БЛОК: FormGuard (Защита от потери данных в формах)
+   ========================================================================= */
+const FormGuard = {
+  initialSnapshot: null,
+  activeRoot: null,
+
+  watch(rootElement = null) {
+    this.activeRoot = rootElement || document.getElementById('modalRoot');
+    this.initialSnapshot = this.serialize();
+  },
+
+  serialize() {
+    if (!this.activeRoot) return null;
+    const fields = Array.from(this.activeRoot.querySelectorAll('input:not([data-no-dirty]), textarea:not([data-no-dirty]), select:not([data-no-dirty])'));
+    if (!fields.length) return null;
+    return fields.map(el => {
+      // Игнорируем строки быстрого поиска внутри списков
+      if (el.closest('.search') || el.type === 'search') return '';
+      if (el.type === 'checkbox' || el.type === 'radio') return `${el.id || el.name || el.type}:${el.checked ? 1 : 0}`;
+      return `${el.id || el.name || 'field'}:${el.value.trim()}`;
+    }).join('|#|');
+  },
+
+  isDirty() {
+    if (this.initialSnapshot === null) return false;
+    const current = this.serialize();
+    return current !== this.initialSnapshot;
+  },
+
+  reset() {
+    this.initialSnapshot = null;
+    this.activeRoot = null;
+  }
+};
+
+/* =========================================================================
+   АРХИТЕКТУРНЫЙ БЛОК: Двухуровневый менеджер окон (Modal Stack & Overlays)
+   ========================================================================= */
+const MODAL_ROOT = document.getElementById('modalRoot');
+const DIALOG_ROOT = document.getElementById('dialogRoot');
+
+function openModal(html, opts = {}) {
+  MODAL_ROOT.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)requestCloseModal()"><div class="modal ${opts.wide?'modal-wide':''}">${html}</div></div>`;
+  MODAL_ROOT.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Автоматический снимок состояния полей ввода
+  setTimeout(() => { FormGuard.watch(); }, 25);
+}
+
+function openDialog(html) {
+  if (!DIALOG_ROOT) return;
+  DIALOG_ROOT.innerHTML = `<div class="dialog-backdrop" onclick="if(event.target===this)closeDialog()">${html}</div>`;
+  DIALOG_ROOT.classList.add('open');
+}
+
+function closeDialog() {
+  if (!DIALOG_ROOT) return;
+  DIALOG_ROOT.classList.remove('open');
+  DIALOG_ROOT.innerHTML = '';
+}
+
+// Запрос на закрытие: проверяет наличие несохраненных данных
+function requestCloseModal(onDiscard = null) {
+  if (FormGuard.isDirty()) {
+    showDiscardConfirmation(onDiscard);
+    return;
+  }
+  forceCloseModal();
+  if (typeof onDiscard === 'function') onDiscard();
+}
+
+// Принудительное закрытие (после успешного сохранения или подтвержденного сброса)
+function forceCloseModal() {
+  FormGuard.reset();
+  closeDialog();
+  MODAL_ROOT.classList.remove('open');
+  MODAL_ROOT.innerHTML = '';
+  document.body.style.overflow = '';
+  ui.modal = null;
+  ui.guestListSearch = '';
+  ui.guestListFilter = 'all';
+  render();
+}
+
+// Алиас для обратной совместимости в шаблонах
+const closeModal = requestCloseModal;
+
+// Кастомный оверлей «Есть несохраненные изменения» в стиле Пятницы
+function showDiscardConfirmation(onDiscard = null) {
+  openDialog(`
+    <div class="dialog-box">
+      <div class="dialog-icon-badge warn">${ic('alert')}</div>
+      <div class="font-bold text-lg text-ink" style="margin-bottom:6px">Несохранённые изменения</div>
+      <div class="text-sm text-ink2" style="line-height:1.55;margin-bottom:20px">
+        В форме есть введенные данные. Если закрыть окно сейчас, всё заполненное будет потеряно.
+      </div>
+      <div class="flex gap-2 justify-end">
+        <button class="btn btn-soft btn-sm" id="btnStayForm">Остаться в форме</button>
+        <button class="btn btn-danger btn-sm" id="btnDiscardForm">Сбросить и закрыть</button>
+      </div>
+    </div>
+  `);
+
+  document.getElementById('btnStayForm').onclick = () => {
+    closeDialog();
+  };
+
+  document.getElementById('btnDiscardForm').onclick = () => {
+    forceCloseModal();
+    if (typeof onDiscard === 'function') onDiscard();
+  };
+}
+
+// Модальное окно подтверждения деструктивных действий (поверх любого экрана)
+function confirmAction(title, msg, btnText, onConfirm, onCancel = null) {
+  openDialog(`
+    <div class="dialog-box">
+      <div class="dialog-icon-badge warn">${ic('alert')}</div>
+      <div class="font-bold text-lg text-ink" style="margin-bottom:6px">${esc(title)}</div>
+      <div class="text-sm text-ink2" style="line-height:1.5;margin-bottom:20px">${msg}</div>
+      <div class="flex gap-2 justify-end">
+        <button class="btn btn-ghost btn-sm" id="cCancel">Отмена</button>
+        <button class="btn btn-danger btn-sm" id="cAct">${esc(btnText)}</button>
+      </div>
+    </div>
+  `);
+
+  const handleCancel = () => {
+    closeDialog();
+    if (typeof onCancel === 'function') onCancel();
+  };
+
+  document.getElementById('cCancel').onclick = handleCancel;
+  document.getElementById('cAct').onclick = () => {
+    closeDialog();
+    if (typeof onConfirm === 'function') onConfirm();
+  };
+}
+
+// Защита от случайного закрытия по Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (DIALOG_ROOT && DIALOG_ROOT.classList.contains('open')) {
+      closeDialog();
+      return;
+    }
+    if (MODAL_ROOT && MODAL_ROOT.classList.contains('open')) {
+      requestCloseModal();
+    }
+  }
+});
+
+// Защита от случайного двойного клика (двойная отправка)
+function lockSubmitBtn(e) {
+  const btn = e.target.querySelector('button[type="submit"]');
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.65';
+    btn.style.pointerEvents = 'none';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.pointerEvents = '';
+    }, 700);
+  }
 }
 
 const TODAY_ISO = ymd(new Date());
@@ -581,7 +778,7 @@ function normalizeAndMigrateDB(raw) {
       clientId: client.id,
       guestName: b.guestName || client.name,
       telegram: b.telegram !== undefined ? b.telegram : client.telegram,
-      ticketsCount: Number(b.ticketsCount) || 1,
+      ticketsCount: Math.max(1, Number(b.ticketsCount) || 1),
       isPaid: Boolean(b.isPaid),
       isCheckedIn: Boolean(b.isCheckedIn),
       isWaitlist: Boolean(b.isWaitlist),
@@ -589,7 +786,7 @@ function normalizeAndMigrateDB(raw) {
       eventTitle: b.eventTitle || ev?.title || 'Событие',
       eventDate: b.eventDate || ev?.date || TODAY_ISO,
       eventTime: b.eventTime || ev?.time || '19:00',
-      eventPrice: b.eventPrice !== undefined ? Number(b.eventPrice) : (ev?.price || 0),
+      eventPrice: b.eventPrice !== undefined ? Math.max(0, Number(b.eventPrice)) : (ev?.price || 0),
       updatedAt: b.updatedAt || stamp
     };
   });
@@ -636,14 +833,14 @@ function openQuotaWarningModal() {
         ${ic('alert')}
         <div class="modal-title">Память браузера переполнена!</div>
       </div>
-      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+      <button class="icon-btn sm" onclick="forceCloseModal()">${ic('x')}</button>
     </div>
     <div class="modal-body text-base text-ink2" style="line-height:1.5">
       Локальное хранилище браузера (LocalStorage) исчерпало лимит. Чтобы не потерять ваши данные, немедленно сохраните файл резервной копии.
     </div>
     <div class="modal-foot flex gap-2 justify-end">
       <button class="btn btn-primary" onclick="exportBackup()">${ic('download')} Сохранить резервную копию</button>
-      <button class="btn btn-ghost" onclick="closeModal()">Закрыть</button>
+      <button class="btn btn-ghost" onclick="forceCloseModal()">Закрыть</button>
     </div>
   `);
 }
@@ -762,7 +959,8 @@ async function pullFromFirebase(manual = false) {
         if (ns !== stableStringify(db) && !isLocalPushing) {
           db = merged;
           localStorage.setItem(STORE_KEY, JSON.stringify(db));
-          if (!isUserActivelyTyping()) {
+          // Не перерисовываем экран, если пользователь сейчас заполняет форму!
+          if (!isUserActivelyTyping() && !FormGuard.isDirty()) {
             render();
             if (ui.modal?.type === 'event') openEventDetailsModal(ui.modal.id);
             else if (ui.modal?.type === 'client') openClientCardModal(ui.modal.id);
@@ -790,7 +988,7 @@ function handleRemoteDataUpdate(remoteData) {
   if (curStr !== newStr) {
     db = merged;
     localStorage.setItem(STORE_KEY, JSON.stringify(db));
-    if (!isUserActivelyTyping()) {
+    if (!isUserActivelyTyping() && !FormGuard.isDirty()) {
       render();
       if (ui.modal?.type === 'event') openEventDetailsModal(ui.modal.id);
       else if (ui.modal?.type === 'client') openClientCardModal(ui.modal.id);
@@ -1217,7 +1415,7 @@ function renderClientsRows(list) {
       </div>
       <div class="flex items-center gap-2 flex-none" onclick="event.stopPropagation()">
         ${c.telegram ? `<a href="${getTgLink(c.telegram)}" target="_blank" rel="noopener noreferrer" class="icon-btn sm" style="color:#2AABEE" title="Написать в Telegram">${ic('send')}</a>` : ''}
-        <button class="icon-btn sm" onclick="confirmAction('Удалить гостя?','Удалить профиль гостя и его бронирования?','Удалить',()=>{ deleteClient('${esc(c.id)}') })" title="Удалить">${ic('trash')}</button>
+        <button class="icon-btn sm" onclick="confirmAction('Удалить гостя?','Удалить профиль гостя и все связанные записи?','Удалить',()=>{ deleteClient('${esc(c.id)}') })" title="Удалить">${ic('trash')}</button>
       </div>
     </div>
   `).join('');
@@ -1338,44 +1536,6 @@ function render() {
   }
 }
 
-const MODAL_ROOT = document.getElementById('modalRoot');
-function openModal(html, opts = {}) {
-  MODAL_ROOT.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal ${opts.wide?'modal-wide':''}">${html}</div></div>`;
-  MODAL_ROOT.classList.add('open'); document.body.style.overflow = 'hidden';
-}
-function closeModal() {
-  MODAL_ROOT.classList.remove('open'); MODAL_ROOT.innerHTML = '';
-  document.body.style.overflow = ''; ui.modal = null; ui.guestListSearch = ''; ui.guestListFilter = 'all';
-  render();
-}
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
-
-function confirmAction(title, msg, btnText, onConfirm, onCancel = null) {
-  openModal(`
-    <div class="modal-head flex items-start justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <div class="text-must">${ic('alert')}</div>
-        <div class="modal-title">${esc(title)}</div>
-      </div>
-      <button class="icon-btn sm" id="cClose">${ic('x')}</button>
-    </div>
-    <div class="modal-body text-base text-ink2" style="line-height:1.5">${msg}</div>
-    <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-ghost" id="cCancel">Отмена</button>
-      <button class="btn btn-danger" id="cAct">${esc(btnText)}</button>
-    </div>
-  `);
-
-  const handleCancel = () => {
-    closeModal();
-    if (typeof onCancel === 'function') onCancel();
-  };
-
-  document.getElementById('cClose').onclick = handleCancel;
-  document.getElementById('cCancel').onclick = handleCancel;
-  document.getElementById('cAct').onclick = () => { closeModal(); onConfirm(); };
-}
-
 function openEventDetailsModal(id) {
   const ev = db.events.find(e => e.id === id); if(!ev) return;
   ui.modal = { type: 'event', id };
@@ -1397,7 +1557,7 @@ function openEventDetailsModal(id) {
         <div class="modal-title">${esc(ev.title)}</div>
         <div class="modal-sub">${fmtDateFull(ev.date)} · ${ev.time}–${ev.endTime}</div>
       </div>
-      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
     <div class="modal-body">
       <div class="modal-triplet-card flex items-center justify-between gap-2 flex-wrap">
@@ -1422,7 +1582,7 @@ function openEventDetailsModal(id) {
             <datalist id="dlNames">${db.clients.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist>
             <datalist id="dlTgs">${db.clients.filter(c=>c.telegram).map(c=>`<option value="${esc(c.telegram)}">`).join('')}</datalist>
             <div class="flex gap-3 items-center" style="margin-bottom:8px">
-              <label class="check"><input type="number" id="bkCount" min="1" value="1" style="width:50px" class="inp"> мест</label>
+              <label class="check"><input type="number" id="bkCount" min="1" value="1" style="width:58px" class="inp"> мест</label>
               <label class="check"><input type="checkbox" id="bkPaid"> Оплачено</label>
               <label class="check"><input type="checkbox" id="bkWait"> Лист ожидания</label>
             </div>
@@ -1487,7 +1647,7 @@ function openEventDetailsModal(id) {
       <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить событие из графика?','Удалить событие «${esc(ev.title)}» из календаря?<br><br><b>История посещений и оплаты гостей сохранятся в их карточках.</b>','Удалить из графика',()=>{ deleteEvent('${ev.id}'); })">${ic('trash')} Удалить из графика</button>
       <div class="flex-1"></div>
       <button class="btn btn-soft btn-sm" onclick="openAddEventModal('','','','${ev.id}')">${ic('edit')} Править</button>
-      <button class="btn btn-primary btn-sm" onclick="closeModal()">Готово</button>
+      <button class="btn btn-primary btn-sm" onclick="requestCloseModal()">Готово</button>
     </div>
   `, { wide: true });
 }
@@ -1518,10 +1678,11 @@ function openTgReminder(bookingId) {
 
 function handleQuickBooking(e, evId) {
   e.preventDefault();
+  lockSubmitBtn(e);
   const name = document.getElementById('bkName').value.trim();
   let tg = document.getElementById('bkTg').value.trim();
   if(tg && !tg.startsWith('@') && !tg.startsWith('http')) tg = '@' + tg;
-  const count = parseInt(document.getElementById('bkCount').value) || 1;
+  const count = Math.max(1, parseInt(document.getElementById('bkCount').value) || 1);
   const isPaid = document.getElementById('bkPaid').checked;
   const isWait = document.getElementById('bkWait').checked;
   const note = document.getElementById('bkNote').value.trim();
@@ -1574,7 +1735,10 @@ function handleQuickBooking(e, evId) {
   client.lastSeen = stats.lastSeen;
   client.updatedAt = stamp;
 
-  saveDatabase(); toast(isWait ? 'Добавлено в резерв' : 'Гость успешно записан'); openEventDetailsModal(evId); render();
+  saveDatabase();
+  toast(isWait ? 'Добавлено в резерв' : 'Гость успешно записан');
+  openEventDetailsModal(evId);
+  render();
 }
 
 function toggleCheckin(id) {
@@ -1632,7 +1796,7 @@ function deleteEvent(id) {
   markAsDeleted(id);
   db.events = db.events.filter(x => x.id !== id);
   saveDatabase(true);
-  closeModal();
+  forceCloseModal();
   render();
   toast('Событие удалено из графика');
 }
@@ -1688,7 +1852,7 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
       <div class="modal-title">${ex ? 'Редактировать событие' : 'Новое событие в график'}</div>
-      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
     <form onsubmit="handleSaveEvent(event, '${editId||''}')">
       <div class="modal-body">
@@ -1706,8 +1870,8 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
           <div class="field"><label>Окончание</label><input class="inp" type="time" id="evEnd" required value="${initial.endTime}"></div>
         </div>
         <div class="grid2">
-          <div class="field"><label>Цена, ₽</label><input class="inp" type="number" id="evP" value="${initial.price}"></div>
-          <div class="field"><label>Вместимость</label><input class="inp" type="number" id="evC" value="${initial.capacity}"></div>
+          <div class="field"><label>Цена, ₽</label><input class="inp" type="number" min="0" id="evP" value="${initial.price}"></div>
+          <div class="field"><label>Вместимость</label><input class="inp" type="number" min="1" id="evC" value="${initial.capacity}"></div>
         </div>
         <div class="field">
           <label>Формат участия</label>
@@ -1721,7 +1885,7 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
         <div class="field"><label>Заметка</label><input class="inp" id="evN" value="${esc(initial.note)}"></div>
       </div>
       <div class="modal-foot flex gap-2 justify-end">
-        <button type="button" class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+        <button type="button" class="btn btn-ghost" onclick="requestCloseModal()">Отмена</button>
         <button type="submit" class="btn btn-primary">${ic('check')} Сохранить</button>
       </div>
     </form>
@@ -1741,13 +1905,15 @@ function setPresencePicker(k, inpId = 'evPresence', pickerId = 'presencePicker')
 
 function handleSaveEvent(e, editId) {
   e.preventDefault();
+  lockSubmitBtn(e);
+
   const date = document.getElementById('evD').value;
   const time = document.getElementById('evStart').value;
   let endTime = document.getElementById('evEnd').value;
   const title = document.getElementById('evT').value.trim();
   const formatId = document.getElementById('evFmtSel').value;
-  const price = parseFloat(document.getElementById('evP').value) || 0;
-  const capacity = parseInt(document.getElementById('evC').value) || 0;
+  const price = Math.max(0, parseFloat(document.getElementById('evP').value) || 0);
+  const capacity = Math.max(1, parseInt(document.getElementById('evC').value) || 20);
   const presenceType = document.getElementById('evPresence').value;
   const note = document.getElementById('evN').value.trim();
 
@@ -1792,7 +1958,7 @@ function handleSaveEvent(e, editId) {
       db.events.push({ id: uid('ev'), ...payload });
     }
     saveDatabase();
-    closeModal();
+    forceCloseModal();
     render();
     toast('Событие сохранено');
   };
@@ -1808,7 +1974,7 @@ function handleSaveEvent(e, editId) {
       msg,
       'Всё равно сохранить',
       commitSave,
-      () => openAddEventModal(formatId, date, time, editId, payload)
+      () => { /* Остаемся в текущей форме, данные не теряются */ }
     );
     return;
   }
@@ -1822,16 +1988,16 @@ function openFormatFormModal(editId = null) {
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
       <div class="modal-title">${f ? 'Редактировать шаблон' : 'Новый шаблон события'}</div>
-      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
     <form onsubmit="handleSaveFormat(event, '${editId||''}')">
       <div class="modal-body">
         <div class="field"><label>Название *</label><input class="inp" id="fT" required value="${esc(initial.title)}"></div>
         <div class="field"><label>Описание (для постов в Telegram)</label><textarea class="inp" id="fD">${esc(initial.shortDescription)}</textarea></div>
         <div class="grid3">
-          <div class="field"><label>Цена, ₽</label><input class="inp" type="number" id="fP" value="${initial.defaultPrice}"></div>
-          <div class="field"><label>Вместимость</label><input class="inp" type="number" id="fC" value="${initial.defaultCapacity}"></div>
-          <div class="field"><label>Частота, дней</label><input class="inp" type="number" id="fF" value="${initial.frequencyDays}"></div>
+          <div class="field"><label>Цена, ₽</label><input class="inp" type="number" min="0" id="fP" value="${initial.defaultPrice}"></div>
+          <div class="field"><label>Вместимость</label><input class="inp" type="number" min="1" id="fC" value="${initial.defaultCapacity}"></div>
+          <div class="field"><label>Частота, дней</label><input class="inp" type="number" min="0" id="fF" value="${initial.frequencyDays}"></div>
         </div>
         <div class="field">
           <label>Формат участия по умолчанию</label>
@@ -1844,7 +2010,7 @@ function openFormatFormModal(editId = null) {
         </div>
       </div>
       <div class="modal-foot flex gap-2 justify-end">
-        <button type="button" class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+        <button type="button" class="btn btn-ghost" onclick="requestCloseModal()">Отмена</button>
         <button type="submit" class="btn btn-primary">${ic('check')} Сохранить</button>
       </div>
     </form>
@@ -1853,13 +2019,14 @@ function openFormatFormModal(editId = null) {
 
 function handleSaveFormat(e, editId) {
   e.preventDefault();
+  lockSubmitBtn(e);
   const stamp = nowTs();
   const payload = {
     title: document.getElementById('fT').value.trim(),
     shortDescription: document.getElementById('fD').value.trim(),
-    defaultPrice: parseFloat(document.getElementById('fP').value) || 0,
-    defaultCapacity: parseInt(document.getElementById('fC').value) || 0,
-    frequencyDays: parseInt(document.getElementById('fF').value) || 0,
+    defaultPrice: Math.max(0, parseFloat(document.getElementById('fP').value) || 0),
+    defaultCapacity: Math.max(1, parseInt(document.getElementById('fC').value) || 20),
+    frequencyDays: Math.max(0, parseInt(document.getElementById('fF').value) || 0),
     defaultPresence: document.getElementById('fPresence').value,
     updatedAt: stamp
   };
@@ -1869,12 +2036,15 @@ function handleSaveFormat(e, editId) {
   } else {
     db.formats.push({ id: uid('fmt'), ...payload });
   }
-  saveDatabase(); closeModal(); render(); toast('Шаблон сохранен');
+  saveDatabase();
+  forceCloseModal();
+  render();
+  toast('Шаблон сохранен');
 }
 
 function openAddClientModal() {
   openModal(`
-    <div class="modal-head flex items-start justify-between gap-3"><div class="modal-title">Новый гость в базу</div><button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button></div>
+    <div class="modal-head flex items-start justify-between gap-3"><div class="modal-title">Новый гость в базу</div><button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button></div>
     <form onsubmit="handleCreateClient(event)">
       <div class="modal-body">
         <div class="grid2">
@@ -1884,7 +2054,7 @@ function openAddClientModal() {
         <div class="field"><label>Предпочтения, хобби и заметки</label><textarea class="inp" id="clNotes" placeholder="Любит травяной чай, ходит на квартирники..."></textarea></div>
       </div>
       <div class="modal-foot flex gap-2 justify-end">
-        <button type="button" class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+        <button type="button" class="btn btn-ghost" onclick="requestCloseModal()">Отмена</button>
         <button type="submit" class="btn btn-primary">${ic('check')} Добавить</button>
       </div>
     </form>
@@ -1893,6 +2063,7 @@ function openAddClientModal() {
 
 function handleCreateClient(e) {
   e.preventDefault();
+  lockSubmitBtn(e);
   const name = document.getElementById('clN').value.trim();
   let tg = document.getElementById('clTg').value.trim();
   if(tg && !tg.startsWith('@') && !tg.startsWith('http')) tg = '@' + tg;
@@ -1940,7 +2111,9 @@ function handleCreateClient(e) {
     toast(`Гость «${name}» добавлен`);
   }
 
-  saveDatabase(true); closeModal(); render();
+  saveDatabase(true);
+  forceCloseModal();
+  render();
 }
 
 function openClientCardModal(clientId) {
@@ -1955,7 +2128,7 @@ function openClientCardModal(clientId) {
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
       <div><div class="modal-title">${esc(c.name)}</div><div class="modal-sub">${c.telegram ? esc(c.telegram) : 'Без Telegram'} · ${displayVisits} ${plural(displayVisits, 'визит', 'визита', 'визитов')} · ${money(displayPaid)}${displayLastSeen ? ' · крайний ' + fmtDateRu(displayLastSeen) : ''}</div></div>
-      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
     <div class="modal-body">
       <div class="stats" style="grid-template-columns:1fr 1fr;margin-bottom:14px">
@@ -1974,7 +2147,9 @@ function openClientCardModal(clientId) {
           </div>
         </div>
         <div class="field"><label>Вкусовые предпочтения и заметки</label><textarea class="inp" id="cNt">${esc(c.clientNotes || '')}</textarea></div>
-        <button type="submit" class="btn btn-primary btn-sm w-full">${ic('check')} Сохранить профиль</button>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px">
+          <button type="submit" class="btn btn-primary btn-sm">${ic('check')} Сохранить профиль</button>
+        </div>
       </form>
       <div class="section-title">История визитов и записей (${visitedEvs.length})</div>
       <div class="list-card bg-subtle" style="box-shadow:none">
@@ -2000,16 +2175,15 @@ function openClientCardModal(clientId) {
         `).join('')}
       </div>
     </div>
-    <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-danger btn-sm" onclick="closeModal(); confirmAction('Удалить гостя?','Удалить профиль гостя и все его записи?','Удалить',()=>{ deleteClient('${c.id}') })">${ic('trash')} Удалить</button>
-      <div class="flex-1"></div>
-      <button class="btn btn-soft btn-sm" onclick="closeModal()">Закрыть</button>
+    <div class="modal-foot flex gap-2 justify-between items-center">
+      <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить гостя?','Удалить профиль гостя и все его записи?','Удалить',()=>{ deleteClient('${c.id}'); forceCloseModal(); })">${ic('trash')} Удалить</button>
     </div>
   `, { wide: true });
 }
 
 function handleSaveClientCard(e, clientId) {
   e.preventDefault();
+  lockSubmitBtn(e);
   const name = document.getElementById('clName').value.trim();
   let tg = document.getElementById('clTg').value.trim();
   if(tg && !tg.startsWith('@') && !tg.startsWith('http')) tg = '@' + tg;
@@ -2028,7 +2202,10 @@ function handleSaveClientCard(e, clientId) {
         b.updatedAt = c.updatedAt;
       }
     });
-    saveDatabase(true); toast('Профиль обновлен'); closeModal(); render();
+    saveDatabase(true);
+    toast('Профиль обновлен');
+    forceCloseModal();
+    render();
   }
 }
 
@@ -2062,7 +2239,7 @@ function openTelegramPostModal() {
         <div class="modal-title">Анонс в Telegram</div>
         <div class="modal-sub">${MONTHS[ui.month]} ${ui.year} · личные отлучки и аренда исключены</div>
       </div>
-      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
     <div class="modal-body">
       <div class="flex gap-3 flex-wrap" style="margin-bottom:12px">
@@ -2095,7 +2272,7 @@ function openTextImportModal(t = 'events') {
         <div class="modal-title">Импорт данных</div>
         <div class="modal-sub">Копируйте строки из таблиц, заметок или Telegram</div>
       </div>
-      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
     <div class="modal-body">
       <div class="chips">
@@ -2176,7 +2353,7 @@ function parseSmartImportLines(txt, type) {
           if(num) pr = parseInt(num[0].replace(/\s+/g,''), 10) || 0;
         }
       }
-      evs.push({ title, date: iso, time: t, endTime: endT, price: pr, note });
+      evs.push({ title, date: iso, time: t, endTime: endT, price: Math.max(0, pr), note });
     } else {
       const name = parts[0];
       const tg = parts.find(p => p.includes('@') || p.includes('t.me')) || '';
@@ -2238,7 +2415,10 @@ function executeImport() {
       cleanupClientDuplicates(db);
       ui.view = 'clients';
     }
-    saveDatabase(); closeModal(); render(); toast(`Импортировано: ${importType==='events'?evs.length:clients.length}`);
+    saveDatabase();
+    forceCloseModal();
+    render();
+    toast(`Импортировано: ${importType==='events'?evs.length:clients.length}`);
   };
 
   if(importMode === 'replace') {
@@ -2249,7 +2429,7 @@ function executeImport() {
 function openSyncModal() {
   const isConn = ui.cloudStatus === 'connected';
   openModal(`
-    <div class="modal-head flex items-start justify-between gap-3"><div class="modal-title">Синхронизация и данные</div><button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button></div>
+    <div class="modal-head flex items-start justify-between gap-3"><div class="modal-title">Синхронизация и данные</div><button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button></div>
     <div class="modal-body">
       <div class="flex items-center gap-3 rounded-2xl" style="background:${isConn?'#E7F5EE':'#FFF7F6'};border:1px solid ${isConn?'#C4EBD7':'#F8C8C2'};padding:12px 14px;margin-bottom:14px">
         <div style="color:${isConn?'#2E7D56':'#DE6254'}">${isConn?ic('cloudOk'):ic('cloudWarn')}</div>
@@ -2320,7 +2500,7 @@ function openNotificationsModal() {
           <div class="modal-sub">${warns.length ? `Подошел срок (${warns.length}):` : 'Все события в графике'}</div>
         </div>
       </div>
-      <button class="icon-btn sm" onclick="closeModal()">${ic('x')}</button>
+      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
     <div class="modal-body">
       ${!warns.length ? `<div class="text-center text-muted" style="padding:24px">Все регулярные события запланированы вовремя!</div>` : `
@@ -2335,7 +2515,7 @@ function openNotificationsModal() {
                 </div>
               </div>
               <div class="flex items-center gap-2 flex-none">
-                <button class="btn btn-primary btn-sm" onclick="closeModal(); openAddEventModal('${w.format.id}')">${ic('plus')} В график</button>
+                <button class="btn btn-primary btn-sm" onclick="forceCloseModal(); openAddEventModal('${w.format.id}')">${ic('plus')} В график</button>
                 <button class="icon-btn sm" onclick="snoozePrompt('${w.format.id}'); openNotificationsModal(); toast('Отложено на неделю')">${ic('x')}</button>
               </div>
             </div>
@@ -2344,8 +2524,8 @@ function openNotificationsModal() {
       `}
     </div>
     <div class="modal-foot flex gap-2 justify-end">
-      ${warns.length > 1 ? `<button class="btn btn-ghost btn-sm" onclick="getActivePrompts().forEach(w=>snoozePrompt(w.format.id)); closeModal(); toast('Все напоминания отложены')">Отложить все</button>` : ''}
-      <button class="btn btn-soft btn-sm" onclick="closeModal()">Закрыть</button>
+      ${warns.length > 1 ? `<button class="btn btn-ghost btn-sm" onclick="getActivePrompts().forEach(w=>snoozePrompt(w.format.id)); forceCloseModal(); toast('Все напоминания отложены')">Отложить все</button>` : ''}
+      <button class="btn btn-soft btn-sm" onclick="requestCloseModal()">Закрыть</button>
     </div>
   `);
 }
@@ -2365,7 +2545,16 @@ function openNotificationsModal() {
   });
   window.addEventListener('focus', handleAppResume);
   window.addEventListener('online', handleAppResume);
-  window.addEventListener('beforeunload', () => { saveDatabase(false); });
+
+  // Защита от закрытия вкладки / свайпа браузера назад при несохраненных данных
+  window.addEventListener('beforeunload', (e) => {
+    if (FormGuard.isDirty()) {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    }
+    saveDatabase(false);
+  });
 })();
 </script>
 </body>
