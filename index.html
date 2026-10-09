@@ -257,6 +257,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 @media (max-width: 900px) {
   .top-nav, .chips-desktop { display: none !important; }
   .chips-mobile { display: flex !important; margin-bottom: 14px; }
+  main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
   .bottom-nav { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; inset: auto 0 0 0; z-index: 60; background: rgba(255,255,255,.96); backdrop-filter: blur(16px); border-top: 1px solid var(--line); padding: 6px 2px calc(6px + env(safe-area-inset-bottom)); }
   .bottom-nav button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px; border-radius: 10px; font-size: 10px; font-weight: 600; color: var(--muted); }
   .bottom-nav button.active { color: var(--ink); }
@@ -2660,8 +2661,11 @@ function openClientCardModal(clientId) {
 
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
-      <div><div class="modal-title">${esc(c.name)}</div><div class="modal-sub">${c.telegram ? esc(c.telegram) : 'Без Telegram'} · ${displayVisits} ${plural(displayVisits, 'визит', 'визита', 'визитов')} · ${money(displayPaid)}${displayLastSeen ? ' · крайний ' + fmtDateRu(displayLastSeen) : ''}</div></div>
-      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
+      <div style="min-width:0;flex:1">
+        <div class="modal-title truncate">${esc(c.name)}</div>
+        <div class="modal-sub truncate">${c.telegram ? esc(c.telegram) : 'Без Telegram'} · ${displayVisits} ${plural(displayVisits, 'визит', 'визита', 'визитов')} · ${money(displayPaid)}${displayLastSeen ? ' · крайний ' + fmtDateRu(displayLastSeen) : ''}</div>
+      </div>
+      <button class="icon-btn sm flex-none" style="width:36px;height:36px" onclick="requestCloseModal()" aria-label="Закрыть">${ic('x')}</button>
     </div>
     <div class="modal-body">
       <div class="stats" style="grid-template-columns:1fr 1fr;margin-bottom:14px">
@@ -2710,6 +2714,7 @@ function openClientCardModal(clientId) {
     </div>
     <div class="modal-foot flex gap-2 justify-between items-center">
       <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить гостя?','Удалить профиль гостя и все его записи?','Удалить',()=>{ deleteClient('${c.id}'); forceCloseModal(); })">${ic('trash')} Удалить</button>
+      <button class="btn btn-primary btn-sm" onclick="requestCloseModal()">Закрыть</button>
     </div>
   `, { wide: true });
 }
