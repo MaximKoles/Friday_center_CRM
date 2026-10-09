@@ -209,12 +209,11 @@ textarea.inp { resize: vertical; min-height: 70px; }
 .stat-val { font-size: 24px; font-weight: 700; margin-top: 6px; }
 
 .bar-name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; }
-.bar-track { flex: 0 0 50%; height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.bar-track { flex: 0 0 45%; height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
 .bar-fill { height: 100%; border-radius: 999px; }
-.bar-val { width: 85px; text-align: right; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.bar-val { width: 95px; text-align: right; font-size: 13px; font-weight: 700; flex-shrink: 0; }
 .section-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 20px 0 10px; }
 
-/* Level 1: Основные модальные окна */
 #modalRoot { position: fixed; inset: 0; z-index: 100; display: none; }
 #modalRoot.open { display: block; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(32,36,48,.42); backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; }
@@ -227,7 +226,6 @@ textarea.inp { resize: vertical; min-height: 70px; }
 .modal-foot { padding: 14px 20px 18px; position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); z-index: 10; }
 .post-box { background: var(--bg); border-radius: 14px; padding: 16px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; max-height: 48vh; overflow-y: auto; font-family: monospace; border: 1px solid var(--line); }
 
-/* Level 2: Стек подтверждений и защитных алертов */
 #dialogRoot { position: fixed; inset: 0; z-index: 150; display: none; }
 #dialogRoot.open { display: block; }
 .dialog-backdrop {
@@ -262,14 +260,26 @@ textarea.inp { resize: vertical; min-height: 70px; }
   .bottom-nav button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px; border-radius: 10px; font-size: 10px; font-weight: 600; color: var(--muted); }
   .bottom-nav button.active { color: var(--ink); }
 
-  /* Защита от авто-зума iOS Safari: размер шрифта полей ввода должен быть не менее 16px */
   input, select, textarea, .inp {
     font-size: 16px !important;
   }
+
+  /* Компактный дашборд аналитики на мобильных устройствах */
+  .stats { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; margin-bottom: 12px !important; }
+  .stat { padding: 9px 12px !important; border-radius: 14px !important; }
+  .stat-label { font-size: 9.5px !important; gap: 4px !important; }
+  .stat-label .ic { width: 14px !important; height: 14px !important; }
+  .stat-val { font-size: 17px !important; margin-top: 2px !important; }
+  .section-title { margin: 12px 0 6px !important; font-size: 10px !important; }
+  .page-head { margin-bottom: 8px !important; margin-top: 2px !important; }
+
+  /* Скрытие прогресс-бара и плотная верстка списка мероприятий и гостей */
+  .bar-track { display: none !important; }
+  .bar-val { width: auto !important; font-size: 13.5px !important; white-space: nowrap !important; }
+  .row { padding: 9px 12px !important; }
 }
 @media (min-width: 641px) { .modal-backdrop { align-items: center; padding: 20px; } .modal { border-radius: 22px; } }
 
-/* Выпадающий список автоподсказок гостей */
 .autocomplete-box {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 80;
   background: var(--surface); border: 1.5px solid var(--line2); border-radius: 14px;
@@ -409,7 +419,6 @@ function safeOpenTelegram(username, messageText) {
   const appUrl = `tg://resolve?domain=${cleanNick}&text=${encodedText}`;
   const webUrl = `https://t.me/${cleanNick}?text=${encodedText}`;
 
-  // Открываем через протокол приложения без создания пустой висячей вкладки браузера
   const a = document.createElement('a');
   a.href = appUrl;
   a.style.display = 'none';
@@ -417,7 +426,6 @@ function safeOpenTelegram(username, messageText) {
   a.click();
   setTimeout(() => { a.remove(); }, 300);
 
-  // Резервный таймер: если на десктопе нет приложения Telegram, через 1.2 сек даём ссылку в веб
   setTimeout(() => {
     if (document.hasFocus && document.hasFocus()) {
       window.open(webUrl, '_blank', 'noopener,noreferrer');
@@ -608,7 +616,7 @@ const TODAY_ISO = ymd(new Date());
 let db = null;
 let ui = {
   view: 'month', year: new Date().getFullYear(), month: new Date().getMonth(),
-  dayDate: TODAY_ISO, filter: 'all', search: '', analyticsPeriod: 'month',
+  dayDate: TODAY_ISO, filter: 'all', search: '', analyticsPeriod: 'month', analyticsTab: 'events',
   modal: null, guestListFilter: 'all', guestListSearch: '', firebaseUrl: '',
   cloudStatus: 'disconnected', quickBookingOpen: false,
   tgPostOpts: { includePrices: true, includeDescriptions: true, includeAddress: true }
@@ -1572,49 +1580,105 @@ function renderClientsView() {
 function renderAnalyticsView() {
   const isM = ui.analyticsPeriod === 'month';
   const curY = ui.year, curM = ui.month;
+  const currentTab = ui.analyticsTab || 'events';
+
+  // События выбранного периода (месяц или всё время)
   const evs = db.events.filter(e => {
     if(!isM) return true;
     const d = parseYmd(e.date); return d.getFullYear() === curY && d.getMonth() === curM;
   });
   const evIds = new Set(evs.map(e => e.id));
-  let rev = 0, checkins = 0;
 
-  db.bookings.forEach(b => {
-    if(evIds.has(b.eventId) && !b.isWaitlist) {
-      const e = db.events.find(x => x.id === b.eventId);
-      if(e && b.isPaid) {
-        rev += (b.ticketsCount || 1) * (e.price || 0);
-      }
-      if(b.isCheckedIn) checkins += (b.ticketsCount || 1);
-    }
-  });
+  // Подсчёт общей выручки и чекинов
+  let totalRev = 0, totalCheckins = 0;
+
+  // Карта выручки и гостей по событиям: только участвовавшие в выручке за месяц
+  const eventAnalyticsMap = new Map();
 
   evs.forEach(e => {
+    let evRev = 0;
+    const eventBookings = db.bookings.filter(b => b.eventId === e.id && !b.isWaitlist);
+    
+    // Подсчет выручки с билетов
+    eventBookings.forEach(b => {
+      if (b.isPaid) {
+        evRev += (b.ticketsCount || 1) * (e.price || 0);
+      }
+    });
+
+    // Подсчет выручки с аренды
     if (e.presenceType === 'rent' && e.isPaid) {
-      rev += (Number(e.price) || 0);
+      evRev += (Number(e.price) || 0);
+    }
+
+    // Если событие принесло выручку — учитываем его в аналитике
+    if (evRev > 0) {
+      totalRev += evRev;
+      const peopleCount = eventBookings.reduce((sum, b) => sum + (b.ticketsCount || 1), 0);
+      eventAnalyticsMap.set(e.id, {
+        id: e.id,
+        title: e.title,
+        date: e.date,
+        time: e.time,
+        presenceType: e.presenceType,
+        revenue: evRev,
+        people: peopleCount
+      });
     }
   });
 
-  const fmtMap = {};
-  db.formats.forEach(f => { fmtMap[f.id] = { title: f.title, rev: 0, count: 0, guests: 0 }; });
-  evs.forEach(e => { if(fmtMap[e.formatId]) fmtMap[e.formatId].count++; });
+  // Чекины за период
   db.bookings.forEach(b => {
-    if(evIds.has(b.eventId) && !b.isWaitlist) {
-      const e = db.events.find(x => x.id === b.eventId);
-      if(e?.formatId && fmtMap[e.formatId]) {
-        if(b.isPaid) fmtMap[e.formatId].rev += (b.ticketsCount || 1) * (e.price || 0);
-        fmtMap[e.formatId].guests += (b.ticketsCount || 1);
+    if(evIds.has(b.eventId) && !b.isWaitlist && b.isCheckedIn) {
+      totalCheckins += (b.ticketsCount || 1);
+    }
+  });
+
+  // Список событий с выручкой (сортировка по убыванию выручки)
+  const revenueEvents = Array.from(eventAnalyticsMap.values()).sort((a,b) => b.revenue - a.revenue);
+  const maxEventRev = Math.max(1, ...revenueEvents.map(x => x.revenue));
+
+  // Подсчет выручки и посещений по гостям за этот месяц
+  const guestAnalyticsMap = new Map();
+
+  db.bookings.forEach(b => {
+    if(evIds.has(b.eventId) && !b.isWaitlist && b.isPaid) {
+      const ev = db.events.find(x => x.id === b.eventId);
+      const paidAmount = (b.ticketsCount || 1) * (ev?.price || 0);
+
+      if (paidAmount > 0) {
+        const cId = b.clientId || getStableClientId(b.telegram, b.guestName);
+        if (!guestAnalyticsMap.has(cId)) {
+          const clientObj = db.clients.find(c => c.id === cId);
+          guestAnalyticsMap.set(cId, {
+            id: cId,
+            name: b.guestName || clientObj?.name || 'Гость',
+            telegram: b.telegram || clientObj?.telegram || '',
+            revenue: 0,
+            visits: 0
+          });
+        }
+        const guestData = guestAnalyticsMap.get(cId);
+        guestData.revenue += paidAmount;
+        // Посещения гостя на событиях с оплатой
+        if (b.isCheckedIn) {
+          guestData.visits += (b.ticketsCount || 1);
+        }
       }
     }
   });
 
-  evs.forEach(e => {
-    if (e.presenceType === 'rent' && e.isPaid && e.formatId && fmtMap[e.formatId]) {
-      fmtMap[e.formatId].rev += (Number(e.price) || 0);
+  // Если чекин не нажимался, но гость оплатил бронь, считаем минимум 1 посещение
+  guestAnalyticsMap.forEach(g => {
+    if (g.visits === 0) {
+      const count = db.bookings.filter(b => evIds.has(b.eventId) && !b.isWaitlist && b.isPaid && (b.clientId === g.id || b.guestName === g.name)).reduce((s,b)=>s+(b.ticketsCount||1), 0);
+      g.visits = count || 1;
     }
   });
 
-  const sorted = Object.values(fmtMap).sort((a,b)=>b.rev - a.rev), maxRev = Math.max(1, ...sorted.map(x=>x.rev));
+  const revenueGuests = Array.from(guestAnalyticsMap.values()).sort((a,b) => b.revenue - a.revenue);
+  const maxGuestRev = Math.max(1, ...revenueGuests.map(x => x.revenue));
+
   const years = [curY-1, curY, curY+1];
 
   return `
@@ -1633,28 +1697,87 @@ function renderAnalyticsView() {
             <button class="icon-btn sm" onclick="changeMonth(1)">${ic('chevRight')}</button>
             <button class="btn btn-ghost btn-sm" style="height:32px;min-height:32px" onclick="ui.year=new Date().getFullYear();ui.month=new Date().getMonth();render()">Текущий</button>
           </div>
-        ` : `<div class="text-sm text-muted" style="margin-top:3px">За всё время работы (по оплаченным броням)</div>`}
+        ` : `<div class="text-sm text-muted" style="margin-top:3px">За всё время работы (по оплаченным событиям)</div>`}
       </div>
       <div class="chips" style="margin:0">
         <button class="chip ${isM?'on':''}" onclick="ui.analyticsPeriod='month';render()">Выбранный месяц</button>
         <button class="chip ${!isM?'on':''}" onclick="ui.analyticsPeriod='all';render()">Всё время</button>
       </div>
     </div>
+
     <div class="stats">
-      <div class="stat"><div class="stat-label">${ic('wallet')} Выручка</div><div class="stat-val font-bold">${money(rev)}</div></div>
-      <div class="stat"><div class="stat-label">${ic('check')} Чекинов</div><div class="stat-val font-bold">${checkins} чел.</div></div>
-      <div class="stat"><div class="stat-label">${ic('calendar')} Событий</div><div class="stat-val font-bold">${evs.length}</div></div>
-      <div class="stat"><div class="stat-label">${ic('users')} База гостей</div><div class="stat-val font-bold">${db.clients.length}</div></div>
+      <div class="stat"><div class="stat-label">${ic('wallet')} Выручка</div><div class="stat-val font-bold">${money(totalRev)}</div></div>
+      <div class="stat"><div class="stat-label">${ic('check')} Чекинов</div><div class="stat-val font-bold">${totalCheckins} чел.</div></div>
+      <div class="stat"><div class="stat-label">${ic('calendar')} С выручкой</div><div class="stat-val font-bold">${revenueEvents.length} из ${evs.length}</div></div>
+      <div class="stat"><div class="stat-label">${ic('users')} Платящих гостей</div><div class="stat-val font-bold">${revenueGuests.length} чел.</div></div>
     </div>
-    <div class="section-title">Финансовая отдача форматов (факт оплат)</div>
+
+    <div class="flex items-center justify-between flex-wrap gap-2" style="margin: 14px 0 10px;">
+      <div class="section-title" style="margin:0">
+        ${currentTab === 'events' ? 'Мероприятия с выручкой за месяц' : 'Гости, оплатившие участие за месяц'}
+      </div>
+      <div class="chips" style="margin:0;gap:6px">
+        <button class="chip ${currentTab==='events'?'on':''}" onclick="ui.analyticsTab='events';render()">
+          ${ic('calendar')} События (${revenueEvents.length})
+        </button>
+        <button class="chip ${currentTab==='clients'?'on':''}" onclick="ui.analyticsTab='clients';render()">
+          ${ic('users')} Гости (${revenueGuests.length})
+        </button>
+      </div>
+    </div>
+
     <div class="list-card">
-      ${sorted.map(f => `
-        <div class="row flex items-center gap-3">
-          <div class="bar-name">${esc(f.title)}<div class="text-xs text-muted">${f.count} соб. · ${f.guests} гостей</div></div>
-          <div class="bar-track"><div class="bar-fill" style="width:${Math.round(f.rev/maxRev*100)}%;background:var(--team)"></div></div>
-          <div class="bar-val">${money(f.rev)}</div>
-        </div>
-      `).join('')}
+      ${currentTab === 'events' ? (
+        revenueEvents.length === 0 ? `
+          <div class="text-center text-muted" style="padding:28px 16px">
+            <div style="margin-bottom:6px">${ic('calendar')}</div>
+            <div class="font-semibold text-base text-ink">Нет мероприятий с полученной выручкой</div>
+            <div class="text-xs" style="margin-top:2px">В этом месяце пока нет оплаченных бронирований или закрытых договоров аренды.</div>
+          </div>
+        ` : revenueEvents.map(ev => `
+          <div class="row row-click flex items-center justify-between gap-3" onclick="openEventDetailsModal('${ev.id}')">
+            <div class="bar-name">
+              <div class="flex items-center gap-2 flex-wrap font-semibold">
+                <span>${esc(ev.title)}</span>
+                <span class="tag" style="background:${PRESENCE[ev.presenceType]?.bg};color:${PRESENCE[ev.presenceType]?.color};font-size:10px;padding:2px 7px">
+                  ${PRESENCE[ev.presenceType]?.label || ''}
+                </span>
+              </div>
+              <div class="text-xs text-muted" style="margin-top:2px">
+                ${fmtDateRu(ev.date)} · ${ev.time} · <b>${ev.people} ${plural(ev.people, 'человек', 'человека', 'человек')}</b>
+              </div>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${Math.round(ev.revenue / maxEventRev * 100)}%;background:var(--team)"></div>
+            </div>
+            <div class="bar-val font-bold text-ink">${money(ev.revenue)}</div>
+          </div>
+        `).join('')
+      ) : (
+        revenueGuests.length === 0 ? `
+          <div class="text-center text-muted" style="padding:28px 16px">
+            <div style="margin-bottom:6px">${ic('users')}</div>
+            <div class="font-semibold text-base text-ink">Нет оплативших гостей за выбранный период</div>
+            <div class="text-xs" style="margin-top:2px">Здесь отображаются гости, которые внесли оплату за события этого месяца.</div>
+          </div>
+        ` : revenueGuests.map(g => `
+          <div class="row row-click flex items-center justify-between gap-3" onclick="openClientCardModal('${esc(g.id)}')">
+            <div class="bar-name">
+              <div class="flex items-center gap-2 flex-wrap font-semibold">
+                <span>${esc(g.name)}</span>
+                ${g.telegram ? `<span class="pill" style="font-size:10.5px">${esc(g.telegram)}</span>` : ''}
+              </div>
+              <div class="text-xs text-muted" style="margin-top:2px">
+                <b>${g.visits} ${plural(g.visits, 'посещение', 'посещения', 'посещений')}</b> в этом месяце
+              </div>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${Math.round(g.revenue / maxGuestRev * 100)}%;background:var(--ink)"></div>
+            </div>
+            <div class="bar-val font-bold text-ink">${money(g.revenue)}</div>
+          </div>
+        `).join('')
+      )}
     </div>
   `;
 }
@@ -1918,7 +2041,6 @@ function showGuestSuggestions(query, targetField) {
   let matches = [];
 
   if (!q) {
-    // Если поле пустое, показываем самых активных гостей
     matches = [...db.clients]
       .sort((a,b) => (b.visitsCount || 0) - (a.visitsCount || 0))
       .slice(0, 6);
@@ -1961,22 +2083,6 @@ function selectGuestSuggestion(clientId) {
   const boxT = document.getElementById('acTgBox');
   if (boxN) boxN.style.display = 'none';
   if (boxT) boxT.style.display = 'none';
-}
-
-function autoFillTg(val) {
-  if(!val) return;
-  const clean = val.toLowerCase().trim();
-  const c = db.clients.find(x => x.name.toLowerCase() === clean);
-  const tgInp = document.getElementById('bkTg');
-  if(c && c.telegram && tgInp && !tgInp.value) tgInp.value = c.telegram;
-}
-
-function autoFillName(val) {
-  if(!val) return;
-  const raw = val.trim().toLowerCase().replace(/^@/, '');
-  const c = db.clients.find(x => (x.telegram || '').toLowerCase().replace(/^@/, '') === raw);
-  const nameInp = document.getElementById('bkName');
-  if(c && c.name && nameInp && !nameInp.value) nameInp.value = c.name;
 }
 
 function openTgReminder(bookingId) {
