@@ -1618,10 +1618,10 @@ function renderDayView() {
               <div class="font-bold text-sm truncate">${esc(ev.title)}</div>
               <div class="flex items-center gap-1.5" style="margin-top:3px">
                 <span class="text-xs ${isSel ? 'text-white' : 'text-muted'}" style="opacity:.85;font-size:12px">${ev.time}</span>
+                ${rightBadgeHtml}
                 ${timeTagHtml}
               </div>
             </div>
-            ${rightBadgeHtml}
           </div>
         `;
       }).join('')}
@@ -1697,27 +1697,19 @@ function renderDayView() {
             <div class="flex justify-between items-start gap-3 flex-wrap">
               <div>
                 <div class="font-bold text-xl">${esc(activeEv.title)}</div>
-                <div class="text-sm text-muted" style="margin-top:2px">
-                  ${activeEv.time}–${activeEv.endTime} · ${activeEv.price ? money(activeEv.price) : 'Бесплатно'}
-                  ${activeEv.note ? ' · ' + esc(activeEv.note) : ''}
+                <div class="flex items-center gap-2 flex-wrap text-sm text-muted" style="margin-top:3px">
+                  <span>${activeEv.time}–${activeEv.endTime} · ${activeEv.price ? money(activeEv.price) : 'Бесплатно'}</span>
+                  <span class="text-xs text-muted font-medium bg-subtle rounded-lg border-line" style="padding:2px 8px">
+                    Собрано: <b class="text-ink">${money(paidSum)}</b>
+                  </span>
+                  ${activeEv.note ? `<span>· ${esc(activeEv.note)}</span>` : ''}
+                  ${waitlist.length ? `<span class="pill text-xs font-semibold" style="color:var(--rent);background:var(--rent-bg)">Резерв: ${waitlist.length}</span>` : ''}
                 </div>
               </div>
               <div class="flex items-center gap-2">
                 <button class="btn btn-primary btn-sm" onclick="openAddGuestModal('${activeEv.id}')">${ic('plus')} Добавить гостя</button>
                 <button class="btn btn-soft btn-sm" onclick="copyFilteredGuestList('${activeEv.id}')" title="Скопировать отфильтрованный список гостей">${ic('copy')} Список</button>
                 <button class="icon-btn sm" onclick="openAddEventModal('','','','${activeEv.id}')" title="Редактировать событие">${ic('edit')}</button>
-              </div>
-            </div>
-
-            <!-- Компактный триплет счетчиков -->
-            <div class="flex items-center justify-between gap-2 flex-wrap" style="margin-top:14px;padding:9px 13px;background:var(--subtle);border-radius:14px;border:1px solid var(--line)">
-              <div class="flex items-center gap-4 flex-wrap">
-                <span class="text-sm">Пришли: <b class="text-team">${checked}</b></span>
-                <span class="text-sm">Записаны: <b class="text-ink">${booked}</b></span>
-                <span class="text-sm text-muted">Лимит: <b>${activeEv.capacity || '∞'}</b></span>
-              </div>
-              <div class="text-xs text-muted font-medium">
-                Собрано: <b class="text-ink">${money(paidSum)}</b>
               </div>
             </div>
 
@@ -1738,7 +1730,6 @@ function renderDayView() {
                   <span class="cnt">${favCount}</span>
                 </button>
               </div>
-              ${waitlist.length ? `<span class="pill text-xs font-semibold" style="color:var(--rent);background:var(--rent-bg)">Резерв: ${waitlist.length}</span>` : ''}
             </div>
           </div>
 
