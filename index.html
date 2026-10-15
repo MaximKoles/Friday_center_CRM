@@ -117,6 +117,9 @@ button { cursor: pointer; border: none; background: none; }
 .icon-btn:hover { color: var(--ink); box-shadow: var(--sh2); transform: translateY(-1px); }
 .icon-btn.sm { width: 34px; height: 34px; border-radius: 10px; box-shadow: none; background: var(--subtle); border-color: transparent; }
 .icon-btn.sm:hover { background: var(--surface); box-shadow: var(--sh); }
+.icon-btn.danger-icon { color: var(--must); background: var(--must-bg); border-color: rgba(222,98,84,.2); }
+.icon-btn.danger-icon:hover { background: #FCDDD7; color: #B93327; box-shadow: 0 2px 8px rgba(222,98,84,.2); }
+
 .cloud-status-btn.synced { background: #F2F9F5; border: 1.5px solid #C2E8D4; color: #2E7D56; }
 .cloud-status-btn.not-synced { background: #FFF6F5; border: 1.5px solid #F7C6C0; color: #D64535; }
 .cloud-status-btn .ic { width: 20px; height: 20px; }
@@ -171,12 +174,6 @@ main { padding: 18px 0 80px; min-height: calc(100vh - 120px); }
 .bubble-checked { background: var(--team-bg); color: var(--team); }
 .bubble-booked { background: #F0EDE6; color: var(--ink); }
 .bubble-limit { background: transparent; color: var(--muted); border: 1px solid #D6D2C8; }
-
-.modal-triplet-card { background: var(--subtle); border-radius: 14px; padding: 8px 14px; margin-bottom: 12px; border: 1px solid var(--line); }
-.triplet-circle { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; }
-.triplet-circle.green { background: #E7F5EE; color: #2E7D56; border: 1.5px solid #C4EBD7; }
-.triplet-circle.dark { background: var(--ink); color: #fff; }
-.triplet-circle.gray { background: #fff; color: #7B8191; border: 1.5px dashed #D6D2C8; }
 
 .day-tabs-scroll {
   display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 12px;
@@ -311,7 +308,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 #modalRoot.open { display: block; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(32,36,48,.42); backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; }
 .modal { background: var(--surface); width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto; border-radius: 22px 22px 0 0; box-shadow: 0 -10px 50px rgba(32,36,48,.2); }
-.modal-wide { max-width: 740px; }
+.modal-wide { max-width: 820px; }
 .modal-head { padding: 18px 20px 12px; position: sticky; top: 0; background: var(--surface); z-index: 10; border-bottom: 1px solid var(--line); }
 .modal-title { font-size: 18px; font-weight: 700; }
 .modal-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
@@ -626,8 +623,6 @@ function forceCloseModal() {
   MODAL_ROOT.innerHTML = '';
   document.body.style.overflow = '';
   ui.modal = null;
-  ui.guestListSearch = '';
-  ui.guestListFilter = 'all';
   render();
 }
 
@@ -714,7 +709,7 @@ let db = null;
 let ui = {
   view: 'month', year: new Date().getFullYear(), month: new Date().getMonth(),
   dayDate: TODAY_ISO, filter: 'all', search: '', analyticsPeriod: 'month', analyticsTab: 'events',
-  modal: null, guestListFilter: 'all', guestListSearch: '', firebaseUrl: '',
+  modal: null, firebaseUrl: '',
   cloudStatus: 'disconnected', quickBookingOpen: false,
   selectedDayEventId: null, dayGuestFilter: 'all',
   tgPostOpts: { includePrices: true, includeDescriptions: true, includeAddress: true }
@@ -1315,21 +1310,18 @@ function findPriorityEventId(dayEvs) {
     const now = new Date();
     const curMin = now.getHours() * 60 + now.getMinutes();
     
-    // 1. Идет прямо сейчас
     const active = dayEvs.find(ev => {
       const { start, end } = getEventInterval(ev);
       return curMin >= start && curMin <= end;
     });
     if (active) return active.id;
 
-    // 2. Скоро начнется (в течение 60 мин)
     const soon = dayEvs.find(ev => {
       const { start } = getEventInterval(ev);
       return curMin >= (start - 60) && curMin < start;
     });
     if (soon) return soon.id;
 
-    // 3. Ближайшее следующее сегодня
     const upcoming = dayEvs.find(ev => {
       const { start } = getEventInterval(ev);
       return curMin < start;
@@ -1460,6 +1452,209 @@ function renderSettingsBtn() {
   btn.innerHTML = isConn ? ic('cloudOk') : ic('cloudWarn');
 }
 
+function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
+  if (!activeEv) return '';
+  const isRent = activeEv.presenceType === 'rent';
+  const isTrip = activeEv.presenceType === 'trip';
+  const showDeleteBtn = Boolean(opts.isModal);
+
+  const deleteBtnHtml = showDeleteBtn ? `
+    <button class="icon-btn sm danger-icon" onclick="confirmDeleteEventAction('${activeEv.id}')" title="Удалить из графика" aria-label="Удалить из графика">
+      ${ic('trash')}
+    </button>
+  ` : '';
+
+  if (isTrip) {
+    return `
+      <div class="list-card" style="padding:18px 20px;max-width:960px;${opts.isModal ? 'border:none;box-shadow:none;border-radius:0;' : ''}">
+        <div class="flex justify-between items-start gap-3 flex-wrap">
+          <div>
+            <div class="font-bold text-xl">${esc(activeEv.title)}</div>
+            <div class="text-sm text-muted" style="margin-top:2px">${activeEv.time}–${activeEv.endTime} · Личное отсутствие / поездка</div>
+            ${activeEv.note ? `<div class="text-sm text-ink2" style="margin-top:8px">${esc(activeEv.note)}</div>` : ''}
+          </div>
+          <div class="flex items-center gap-1.5 flex-none">
+            <button class="icon-btn sm" onclick="openAddEventModal('','','','${activeEv.id}')" title="Редактировать">${ic('edit')}</button>
+            ${deleteBtnHtml}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (isRent) {
+    return `
+      <div class="list-card" style="padding:18px 20px;max-width:960px;${opts.isModal ? 'border:none;box-shadow:none;border-radius:0;' : ''}">
+        <div class="flex justify-between items-start gap-3 flex-wrap">
+          <div>
+            <div class="font-bold text-xl">${esc(activeEv.title)}</div>
+            <div class="text-sm text-muted" style="margin-top:2px">${activeEv.time}–${activeEv.endTime} · Стоимость аренды: <b>${money(activeEv.price)}</b></div>
+            ${activeEv.note ? `<div class="text-sm text-ink2" style="margin-top:8px">${esc(activeEv.note)}</div>` : ''}
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button class="pay-pill-btn ${activeEv.isPaid ? 'paid' : 'unpaid'}" style="padding:7px 14px;font-size:12.5px" onclick="toggleRentPayment('${activeEv.id}')">
+              ${activeEv.isPaid ? '✓ Аренда оплачена' : '⏳ Отметить оплату'}
+            </button>
+            <div class="flex items-center gap-1.5">
+              <button class="icon-btn sm" onclick="openAddEventModal('','','','${activeEv.id}')" title="Редактировать">${ic('edit')}</button>
+              ${deleteBtnHtml}
+            </div>
+          </div>
+        </div>
+        <div class="bg-subtle rounded-xl border-line text-sm text-ink2" style="padding:12px 14px;margin-top:14px;line-height:1.5">
+          ℹ️ Список гостей не ведётся — за встречу участников отвечает арендатор. Сумма учитывается в аналитике.
+        </div>
+      </div>
+    `;
+  }
+
+  // Регулярное мероприятие с гостями
+  const { booked, checked, paidSum } = getEventStats(activeEv.id, activeEv.price || 0);
+  
+  // Сортировка гостей в алфавитном порядке
+  const allBookings = db.bookings
+    .filter(b => b.eventId === activeEv.id && !b.isWaitlist)
+    .sort((a, b) => (a.guestName || '').localeCompare(b.guestName || '', 'ru'));
+
+  const waitlist = db.bookings
+    .filter(b => b.eventId === activeEv.id && b.isWaitlist)
+    .sort((a, b) => (a.guestName || '').localeCompare(b.guestName || '', 'ru'));
+
+  const favCount = allBookings.filter(b => b.isFavorite).length;
+  const checkedCount = allBookings.filter(b => b.isCheckedIn).length;
+  const pendingCount = allBookings.filter(b => !b.isCheckedIn).length;
+
+  let displayList = allBookings;
+  const currentFilter = ui.dayGuestFilter || 'all';
+  if (currentFilter === 'checked') displayList = displayList.filter(b => b.isCheckedIn);
+  else if (currentFilter === 'pending') displayList = displayList.filter(b => !b.isCheckedIn);
+  else if (currentFilter === 'fav') displayList = displayList.filter(b => b.isFavorite);
+
+  return `
+    <div class="list-card" style="max-width:960px;margin-bottom:16px;${opts.isModal ? 'border:none;box-shadow:none;border-radius:0;margin-bottom:0;' : ''}">
+      <div style="padding:16px 18px 12px;border-bottom:1px solid var(--line)">
+        <div class="flex justify-between items-start gap-3 flex-wrap">
+          <div>
+            <div class="font-bold text-xl">${esc(activeEv.title)}</div>
+            <div class="flex items-center gap-2 flex-wrap text-sm text-muted" style="margin-top:3px">
+              <span>${activeEv.time}–${activeEv.endTime} · ${activeEv.price ? money(activeEv.price) : 'Бесплатно'}</span>
+              <span class="text-xs text-muted font-medium bg-subtle rounded-lg border-line" style="padding:2px 8px">
+                Собрано: <b class="text-ink">${money(paidSum)}</b>
+              </span>
+              ${activeEv.note ? `<span>· ${esc(activeEv.note)}</span>` : ''}
+              ${waitlist.length ? `<span class="pill text-xs font-semibold" style="color:var(--rent);background:var(--rent-bg)">Резерв: ${waitlist.length}</span>` : ''}
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button class="btn btn-primary btn-sm" onclick="openAddGuestModal('${activeEv.id}')">${ic('plus')} Добавить гостя</button>
+            <button class="btn btn-soft btn-sm" onclick="copyFilteredGuestList('${activeEv.id}')" title="Скопировать отфильтрованный список гостей">${ic('copy')} Список</button>
+            <div class="flex items-center gap-1.5">
+              <button class="icon-btn sm" onclick="openAddEventModal('','','','${activeEv.id}')" title="Редактировать событие">${ic('edit')}</button>
+              ${deleteBtnHtml}
+            </div>
+          </div>
+        </div>
+
+        <!-- Фильтры гостей -->
+        <div class="flex items-center justify-between gap-2 flex-wrap" style="margin-top:14px">
+          <div class="chips" style="margin:0;gap:6px">
+            <button class="chip ${currentFilter==='all'?'on':''}" style="padding:5px 11px;font-size:12px" onclick="setDayGuestFilter('all')">
+              Все <span class="cnt">${allBookings.length}</span>
+            </button>
+            <button class="chip ${currentFilter==='checked'?'on':''}" style="padding:5px 11px;font-size:12px" onclick="setDayGuestFilter('checked')">
+              Пришли <span class="cnt">${checkedCount}</span>
+            </button>
+            <button class="chip ${currentFilter==='pending'?'on':''}" style="padding:5px 11px;font-size:12px" onclick="setDayGuestFilter('pending')">
+              Ждём <span class="cnt">${pendingCount}</span>
+            </button>
+            <button class="chip ${currentFilter==='fav'?'on':''}" style="padding:5px 11px;font-size:12px;color:${currentFilter==='fav'?'var(--star)':'var(--ink2)'}" onclick="setDayGuestFilter('fav')">
+              <svg style="width:14px;height:14px;color:var(--star)"><use href="#ic-star"/></svg>
+              <span class="cnt">${favCount}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Список гостей (в алфавитном порядке) -->
+      <div>
+        ${!displayList.length ? `
+          <div class="text-center text-muted" style="padding:28px 16px">
+            <div class="font-semibold text-base text-ink" style="margin-bottom:2px">В этом списке нет гостей</div>
+            <div class="text-xs">Нажмите «+ Добавить гостя» чтобы записать участника</div>
+          </div>
+        ` : displayList.map(b => `
+          <div class="guest-row-card" id="guestRow_${b.id}">
+            <!-- Кнопка Чекина -->
+            <button class="checkin-btn ${b.isCheckedIn ? 'on' : ''}" onclick="toggleCheckin('${b.id}')" title="Отметить посещение">
+              ${b.isCheckedIn ? ic('check') : ''}
+            </button>
+
+            <!-- Данные гостя (долгое нажатие для редактирования) -->
+            <div class="flex-1 guest-info-block" style="min-width:0"
+                 title="Удерживайте для редактирования"
+                 onpointerdown="handleGuestPressStart(event, '${b.id}', '${activeEv.id}')"
+                 onpointerup="handleGuestPressEnd(event)"
+                 onpointerleave="handleGuestPressEnd(event)"
+                 onpointercancel="handleGuestPressEnd(event)"
+                 oncontextmenu="event.preventDefault()">
+              <div class="font-bold text-base truncate" style="${b.isCheckedIn ? 'text-decoration:line-through;opacity:.65' : ''}">
+                ${esc(b.guestName)} ${b.ticketsCount > 1 ? `<span class="pill text-xs">${b.ticketsCount} чел.</span>` : ''}
+              </div>
+              <div class="flex items-center gap-2 flex-wrap" style="margin-top:3px" onpointerdown="event.stopPropagation()">
+                <button class="pay-pill-btn ${b.isPaid ? 'paid' : 'unpaid'}" onclick="togglePayment('${b.id}')" title="Изменить статус оплаты">
+                  ${b.isPaid ? '✓ Оплачено' : '⏳ Не оплачено'}
+                </button>
+                ${b.telegram ? `<span class="text-xs text-muted truncate">${esc(b.telegram)}</span>` : ''}
+                ${b.note ? `<span class="text-xs text-ink2 truncate" style="font-style:italic">· ${esc(b.note)}</span>` : ''}
+              </div>
+            </div>
+
+            <!-- Быстрые действия: Избранное, Telegram, Удалить -->
+            <div class="flex items-center gap-1 flex-none" onpointerdown="event.stopPropagation()">
+              <!-- Звездочка Избранное -->
+              <button class="star-btn ${b.isFavorite ? 'on' : ''}" onclick="toggleBookingFavorite('${b.id}')" title="Метка «Избранное»">
+                <svg><use href="${b.isFavorite ? '#ic-star' : '#ic-starOutline'}"/></svg>
+              </button>
+
+              <!-- Напоминание в Telegram -->
+              ${b.telegram ? `
+                <button class="icon-btn sm" onclick="openTgReminder('${b.id}')" title="Напомнить в Telegram" style="color:#2AABEE">
+                  ${ic('send')}
+                </button>
+              ` : ''}
+
+              <!-- Удалить гостя из записи -->
+              <button class="icon-btn sm" onclick="deleteBooking('${b.id}', '${activeEv.id}')" title="Удалить запись">
+                ${ic('trash')}
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Список ожидания (Резерв) -->
+      ${waitlist.length ? `
+        <div style="border-top:1px dashed var(--line);background:#FCFBF9;padding:12px 16px">
+          <div class="text-xs font-bold text-rent uppercase" style="margin-bottom:8px">Лист ожидания / Резерв (${waitlist.length})</div>
+          ${waitlist.map(b => `
+            <div class="flex items-center justify-between gap-3" style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04)">
+              <div class="flex-1 truncate">
+                <span class="font-semibold text-base">${esc(b.guestName)}</span>
+                <span class="pill text-xs">${b.ticketsCount} чел.</span>
+                <span class="text-xs text-muted" style="margin-left:4px">${b.telegram || ''} ${b.note ? ' · ' + esc(b.note) : ''}</span>
+              </div>
+              <div class="flex items-center gap-2 flex-none">
+                <button class="btn btn-soft btn-sm" style="height:28px;min-height:28px;padding:3px 9px;font-size:11.5px" onclick="transferFromWaitlist('${b.id}')">В основу</button>
+                <button class="icon-btn sm" style="width:28px;height:28px" onclick="deleteBooking('${b.id}', '${activeEv.id}')">${ic('trash')}</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
 function renderMonthView() {
   const { year, month } = ui, weeks = getMonthWeeks(year, month);
   const evs = db.events.filter(e => ui.filter === 'all' || e.presenceType === ui.filter);
@@ -1584,7 +1779,7 @@ function renderDayView() {
     return html;
   }
 
-  // Горизонтальный селектор мероприятий дня с индикаторами "идёт сейчас" и "скоро начало"
+  // Горизонтальный селектор мероприятий дня с индикаторами
   html += `
     <div class="day-tabs-scroll" style="max-width:960px">
       ${dayEvs.map(ev => {
@@ -1628,190 +1823,8 @@ function renderDayView() {
     </div>
   `;
 
-  // Подробности выбранного мероприятия
   if (activeEv) {
-    const p = PRESENCE[activeEv.presenceType] || PRESENCE.team;
-    const isRent = activeEv.presenceType === 'rent';
-    const isTrip = activeEv.presenceType === 'trip';
-
-    if (isTrip) {
-      html += `
-        <div class="list-card" style="padding:18px 20px;max-width:960px">
-          <div class="flex justify-between items-start gap-3">
-            <div>
-              <div class="font-bold text-xl">${esc(activeEv.title)}</div>
-              <div class="text-sm text-muted" style="margin-top:2px">${activeEv.time}–${activeEv.endTime} · Личное отсутствие / поездка</div>
-              ${activeEv.note ? `<div class="text-sm text-ink2" style="margin-top:8px">${esc(activeEv.note)}</div>` : ''}
-            </div>
-            <button class="btn btn-soft btn-sm" onclick="openAddEventModal('','','','${activeEv.id}')">${ic('edit')} Править</button>
-          </div>
-        </div>
-      `;
-    } else if (isRent) {
-      html += `
-        <div class="list-card" style="padding:18px 20px;max-width:960px">
-          <div class="flex justify-between items-start gap-3 flex-wrap">
-            <div>
-              <div class="font-bold text-xl">${esc(activeEv.title)}</div>
-              <div class="text-sm text-muted" style="margin-top:2px">${activeEv.time}–${activeEv.endTime} · Стоимость аренды: <b>${money(activeEv.price)}</b></div>
-              ${activeEv.note ? `<div class="text-sm text-ink2" style="margin-top:8px">${esc(activeEv.note)}</div>` : ''}
-            </div>
-            <div class="flex items-center gap-2">
-              <button class="pay-pill-btn ${activeEv.isPaid ? 'paid' : 'unpaid'}" style="padding:7px 14px;font-size:12.5px" onclick="toggleRentPayment('${activeEv.id}')">
-                ${activeEv.isPaid ? '✓ Аренда оплачена' : '⏳ Отметить оплату'}
-              </button>
-              <button class="btn btn-soft btn-sm" onclick="openAddEventModal('','','','${activeEv.id}')">${ic('edit')}</button>
-            </div>
-          </div>
-          <div class="bg-subtle rounded-xl border-line text-sm text-ink2" style="padding:12px 14px;margin-top:14px;line-height:1.5">
-            ℹ️ Список гостей не ведётся — за встречу участников отвечает арендатор. Сумма учитывается в аналитике.
-          </div>
-        </div>
-      `;
-    } else {
-      // Регулярное мероприятие с гостями
-      const { booked, checked, paidSum } = getEventStats(activeEv.id, activeEv.price || 0);
-      
-      // Сортировка гостей в алфавитном порядке
-      const allBookings = db.bookings
-        .filter(b => b.eventId === activeEv.id && !b.isWaitlist)
-        .sort((a, b) => (a.guestName || '').localeCompare(b.guestName || '', 'ru'));
-
-      const waitlist = db.bookings
-        .filter(b => b.eventId === activeEv.id && b.isWaitlist)
-        .sort((a, b) => (a.guestName || '').localeCompare(b.guestName || '', 'ru'));
-
-      const favCount = allBookings.filter(b => b.isFavorite).length;
-      const checkedCount = allBookings.filter(b => b.isCheckedIn).length;
-      const pendingCount = allBookings.filter(b => !b.isCheckedIn).length;
-
-      let displayList = allBookings;
-      const currentFilter = ui.dayGuestFilter || 'all';
-      if (currentFilter === 'checked') displayList = displayList.filter(b => b.isCheckedIn);
-      else if (currentFilter === 'pending') displayList = displayList.filter(b => !b.isCheckedIn);
-      else if (currentFilter === 'fav') displayList = displayList.filter(b => b.isFavorite);
-
-      html += `
-        <div class="list-card" style="max-width:960px;margin-bottom:16px">
-          <div style="padding:16px 18px 12px;border-bottom:1px solid var(--line)">
-            <div class="flex justify-between items-start gap-3 flex-wrap">
-              <div>
-                <div class="font-bold text-xl">${esc(activeEv.title)}</div>
-                <div class="flex items-center gap-2 flex-wrap text-sm text-muted" style="margin-top:3px">
-                  <span>${activeEv.time}–${activeEv.endTime} · ${activeEv.price ? money(activeEv.price) : 'Бесплатно'}</span>
-                  <span class="text-xs text-muted font-medium bg-subtle rounded-lg border-line" style="padding:2px 8px">
-                    Собрано: <b class="text-ink">${money(paidSum)}</b>
-                  </span>
-                  ${activeEv.note ? `<span>· ${esc(activeEv.note)}</span>` : ''}
-                  ${waitlist.length ? `<span class="pill text-xs font-semibold" style="color:var(--rent);background:var(--rent-bg)">Резерв: ${waitlist.length}</span>` : ''}
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <button class="btn btn-primary btn-sm" onclick="openAddGuestModal('${activeEv.id}')">${ic('plus')} Добавить гостя</button>
-                <button class="btn btn-soft btn-sm" onclick="copyFilteredGuestList('${activeEv.id}')" title="Скопировать отфильтрованный список гостей">${ic('copy')} Список</button>
-                <button class="icon-btn sm" onclick="openAddEventModal('','','','${activeEv.id}')" title="Редактировать событие">${ic('edit')}</button>
-              </div>
-            </div>
-
-            <!-- Фильтры гостей -->
-            <div class="flex items-center justify-between gap-2 flex-wrap" style="margin-top:14px">
-              <div class="chips" style="margin:0;gap:6px">
-                <button class="chip ${currentFilter==='all'?'on':''}" style="padding:5px 11px;font-size:12px" onclick="setDayGuestFilter('all')">
-                  Все <span class="cnt">${allBookings.length}</span>
-                </button>
-                <button class="chip ${currentFilter==='checked'?'on':''}" style="padding:5px 11px;font-size:12px" onclick="setDayGuestFilter('checked')">
-                  Пришли <span class="cnt">${checkedCount}</span>
-                </button>
-                <button class="chip ${currentFilter==='pending'?'on':''}" style="padding:5px 11px;font-size:12px" onclick="setDayGuestFilter('pending')">
-                  Ждём <span class="cnt">${pendingCount}</span>
-                </button>
-                <button class="chip ${currentFilter==='fav'?'on':''}" style="padding:5px 11px;font-size:12px;color:${currentFilter==='fav'?'var(--star)':'var(--ink2)'}" onclick="setDayGuestFilter('fav')">
-                  <svg style="width:14px;height:14px;color:var(--star)"><use href="#ic-star"/></svg>
-                  <span class="cnt">${favCount}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Список гостей (в алфавитном порядке) -->
-          <div>
-            ${!displayList.length ? `
-              <div class="text-center text-muted" style="padding:28px 16px">
-                <div class="font-semibold text-base text-ink" style="margin-bottom:2px">В этом списке нет гостей</div>
-                <div class="text-xs">Нажмите «+ Добавить гостя» чтобы записать участника</div>
-              </div>
-            ` : displayList.map(b => `
-              <div class="guest-row-card" id="guestRow_${b.id}">
-                <!-- Кнопка Чекина -->
-                <button class="checkin-btn ${b.isCheckedIn ? 'on' : ''}" onclick="toggleCheckin('${b.id}')" title="Отметить посещение">
-                  ${b.isCheckedIn ? ic('check') : ''}
-                </button>
-
-                <!-- Данные гостя (долгое нажатие для редактирования) -->
-                <div class="flex-1 guest-info-block" style="min-width:0"
-                     title="Удерживайте для редактирования"
-                     onpointerdown="handleGuestPressStart(event, '${b.id}', '${activeEv.id}')"
-                     onpointerup="handleGuestPressEnd(event)"
-                     onpointerleave="handleGuestPressEnd(event)"
-                     onpointercancel="handleGuestPressEnd(event)"
-                     oncontextmenu="event.preventDefault()">
-                  <div class="font-bold text-base truncate" style="${b.isCheckedIn ? 'text-decoration:line-through;opacity:.65' : ''}">
-                    ${esc(b.guestName)} ${b.ticketsCount > 1 ? `<span class="pill text-xs">${b.ticketsCount} чел.</span>` : ''}
-                  </div>
-                  <div class="flex items-center gap-2 flex-wrap" style="margin-top:3px" onpointerdown="event.stopPropagation()">
-                    <button class="pay-pill-btn ${b.isPaid ? 'paid' : 'unpaid'}" onclick="togglePayment('${b.id}')" title="Изменить статус оплаты">
-                      ${b.isPaid ? '✓ Оплачено' : '⏳ Не оплачено'}
-                    </button>
-                    ${b.telegram ? `<span class="text-xs text-muted truncate">${esc(b.telegram)}</span>` : ''}
-                    ${b.note ? `<span class="text-xs text-ink2 truncate" style="font-style:italic">· ${esc(b.note)}</span>` : ''}
-                  </div>
-                </div>
-
-                <!-- Быстрые действия: Избранное, Telegram, Удалить -->
-                <div class="flex items-center gap-1 flex-none" onpointerdown="event.stopPropagation()">
-                  <!-- Звездочка Избранное -->
-                  <button class="star-btn ${b.isFavorite ? 'on' : ''}" onclick="toggleBookingFavorite('${b.id}')" title="Метка «Избранное»">
-                    <svg><use href="${b.isFavorite ? '#ic-star' : '#ic-starOutline'}"/></svg>
-                  </button>
-
-                  <!-- Напоминание в Telegram -->
-                  ${b.telegram ? `
-                    <button class="icon-btn sm" onclick="openTgReminder('${b.id}')" title="Напомнить в Telegram" style="color:#2AABEE">
-                      ${ic('send')}
-                    </button>
-                  ` : ''}
-
-                  <!-- Удалить гостя из записи -->
-                  <button class="icon-btn sm" onclick="deleteBooking('${b.id}', '${activeEv.id}')" title="Удалить запись">
-                    ${ic('trash')}
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-
-          <!-- Список ожидания (Резерв) -->
-          ${waitlist.length ? `
-            <div style="border-top:1px dashed var(--line);background:#FCFBF9;padding:12px 16px">
-              <div class="text-xs font-bold text-rent uppercase" style="margin-bottom:8px">Лист ожидания / Резерв (${waitlist.length})</div>
-              ${waitlist.map(b => `
-                <div class="flex items-center justify-between gap-3" style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04)">
-                  <div class="flex-1 truncate">
-                    <span class="font-semibold text-base">${esc(b.guestName)}</span>
-                    <span class="pill text-xs">${b.ticketsCount} чел.</span>
-                    <span class="text-xs text-muted" style="margin-left:4px">${b.telegram || ''} ${b.note ? ' · ' + esc(b.note) : ''}</span>
-                  </div>
-                  <div class="flex items-center gap-2 flex-none">
-                    <button class="btn btn-soft btn-sm" style="height:28px;min-height:28px;padding:3px 9px;font-size:11.5px" onclick="transferFromWaitlist('${b.id}')">В основу</button>
-                    <button class="icon-btn sm" style="width:28px;height:28px" onclick="deleteBooking('${b.id}', '${activeEv.id}')">${ic('trash')}</button>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          ` : ''}
-        </div>
-      `;
-    }
+    html += renderEventDetailsCardHtml(activeEv, { isModal: false });
   }
 
   return html;
@@ -1832,7 +1845,11 @@ function selectDayEvent(eventId) {
 
 function setDayGuestFilter(filterKey) {
   ui.dayGuestFilter = filterKey;
-  render();
+  if (ui.modal?.type === 'event') {
+    openEventDetailsModal(ui.modal.id);
+  } else {
+    render();
+  }
 }
 
 function toggleBookingFavorite(bookingId) {
@@ -1841,7 +1858,11 @@ function toggleBookingFavorite(bookingId) {
   b.isFavorite = !b.isFavorite;
   b.updatedAt = nowTs();
   saveDatabase(true);
-  render();
+  if (ui.modal?.type === 'event') {
+    openEventDetailsModal(ui.modal.id);
+  } else {
+    render();
+  }
   toast(b.isFavorite ? 'Добавлено в избранное' : 'Метка снята');
 }
 
@@ -1849,7 +1870,6 @@ let guestPressTimer = null;
 let guestPressStarted = false;
 
 function handleGuestPressStart(e, bookingId, eventId) {
-  // Игнорируем нажатия правой кнопкой мыши
   if (e.button && e.button !== 0) return;
   guestPressStarted = true;
   clearTimeout(guestPressTimer);
@@ -1871,15 +1891,17 @@ function openAddGuestModal(eventId) {
   const ev = db.events.find(x => x.id === eventId);
   if (!ev) return;
 
+  const returnToModalId = (ui.modal?.type === 'event') ? ui.modal.id : null;
+
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
       <div>
         <div class="modal-title">Добавить гостя</div>
         <div class="modal-sub">На «${esc(ev.title)}» · ${fmtDateRu(ev.date)}, ${ev.time}</div>
       </div>
-      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
+      <button class="icon-btn sm" onclick="${returnToModalId ? `openEventDetailsModal('${returnToModalId}')` : 'requestCloseModal()'}">${ic('x')}</button>
     </div>
-    <form onsubmit="handleModalAddGuest(event, '${ev.id}')">
+    <form onsubmit="handleModalAddGuest(event, '${ev.id}', ${returnToModalId ? `'${returnToModalId}'` : 'null'})">
       <div class="modal-body">
         <div class="grid2">
           <div class="field" style="position:relative">
@@ -1931,7 +1953,7 @@ function openAddGuestModal(eventId) {
         </div>
       </div>
       <div class="modal-foot flex gap-2 justify-end">
-        <button type="button" class="btn btn-ghost" onclick="requestCloseModal()">Отмена</button>
+        <button type="button" class="btn btn-ghost" onclick="${returnToModalId ? `openEventDetailsModal('${returnToModalId}')` : 'requestCloseModal()'}">Отмена</button>
         <button type="submit" class="btn btn-primary">${ic('check')} Записать гостя</button>
       </div>
     </form>
@@ -1943,6 +1965,7 @@ function openEditGuestModal(bookingId, eventId) {
   if (!b) return;
   const ev = db.events.find(x => x.id === eventId);
   const isFav = Boolean(b.isFavorite);
+  const returnToModalId = (ui.modal?.type === 'event') ? ui.modal.id : null;
 
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
@@ -1950,9 +1973,9 @@ function openEditGuestModal(bookingId, eventId) {
         <div class="modal-title">Редактировать запись гостя</div>
         <div class="modal-sub">${ev ? `На «${esc(ev.title)}»` : 'Запись гостя'}</div>
       </div>
-      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
+      <button class="icon-btn sm" onclick="${returnToModalId ? `openEventDetailsModal('${returnToModalId}')` : 'requestCloseModal()'}">${ic('x')}</button>
     </div>
-    <form onsubmit="handleModalEditGuest(event, '${b.id}', '${eventId}')">
+    <form onsubmit="handleModalEditGuest(event, '${b.id}', '${eventId}', ${returnToModalId ? `'${returnToModalId}'` : 'null'})">
       <div class="modal-body">
         <div class="grid2">
           <div class="field" style="position:relative">
@@ -2004,14 +2027,14 @@ function openEditGuestModal(bookingId, eventId) {
         </div>
       </div>
       <div class="modal-foot flex gap-2 justify-end">
-        <button type="button" class="btn btn-ghost" onclick="requestCloseModal()">Отмена</button>
+        <button type="button" class="btn btn-ghost" onclick="${returnToModalId ? `openEventDetailsModal('${returnToModalId}')` : 'requestCloseModal()'}">Отмена</button>
         <button type="submit" class="btn btn-primary">${ic('check')} Сохранить изменения</button>
       </div>
     </form>
   `);
 }
 
-function handleModalEditGuest(e, bookingId, eventId) {
+function handleModalEditGuest(e, bookingId, eventId, returnToModalId = null) {
   e.preventDefault();
   lockSubmitBtn(e);
 
@@ -2037,7 +2060,6 @@ function handleModalEditGuest(e, bookingId, eventId) {
   b.note = note;
   b.updatedAt = stamp;
 
-  // Обновляем карточку клиента
   if (b.clientId) {
     const c = db.clients.find(x => x.id === b.clientId);
     if (c) {
@@ -2052,7 +2074,11 @@ function handleModalEditGuest(e, bookingId, eventId) {
   }
 
   saveDatabase(true);
-  forceCloseModal();
+  if (returnToModalId) {
+    openEventDetailsModal(returnToModalId);
+  } else {
+    forceCloseModal();
+  }
   render();
   toast('Запись гостя обновлена');
 }
@@ -2074,7 +2100,7 @@ function toggleModalFav() {
   }
 }
 
-function handleModalAddGuest(e, evId) {
+function handleModalAddGuest(e, evId, returnToModalId = null) {
   e.preventDefault();
   lockSubmitBtn(e);
 
@@ -2147,7 +2173,11 @@ function handleModalAddGuest(e, evId) {
   client.updatedAt = stamp;
 
   saveDatabase(true);
-  forceCloseModal();
+  if (returnToModalId) {
+    openEventDetailsModal(returnToModalId);
+  } else {
+    forceCloseModal();
+  }
   render();
   toast(isWait ? 'Добавлено в резерв' : 'Гость успешно записан');
 }
@@ -2460,162 +2490,56 @@ function render() {
 }
 
 function openEventDetailsModal(id) {
-  const ev = db.events.find(e => e.id === id); if(!ev) return;
+  const ev = db.events.find(e => e.id === id); 
+  if(!ev) return;
   ui.modal = { type: 'event', id };
-  const isRent = ev.presenceType === 'rent';
-  const isTrip = ev.presenceType === 'trip';
 
-  if (isTrip) {
-    openModal(`
-      <div class="modal-head flex items-start justify-between gap-3">
-        <div>
-          <div class="modal-title">${esc(ev.title)}</div>
-          <div class="modal-sub">${fmtDateFull(ev.date)} · ${ev.time}–${ev.endTime}</div>
-        </div>
-        <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
-      </div>
-      <div class="modal-body">
-        <div class="modal-triplet-card" style="padding:14px">
-          <div class="font-semibold text-base" style="color:var(--trip)">Период личного отсутствия / поездки</div>
-          <div class="text-sm text-muted" style="margin-top:4px">В это время пространство недоступно для проведения событий.</div>
-        </div>
-        ${ev.note ? `
-          <div class="field" style="margin-top:14px">
-            <label>Заметка / Детали</label>
-            <div class="inp" style="background:var(--subtle);min-height:auto">${esc(ev.note)}</div>
-          </div>
-        ` : ''}
-      </div>
-      <div class="modal-foot flex gap-2 justify-end">
-        <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить отлучку?','Удалить отлучку «${esc(ev.title)}» из календаря?','Удалить',()=>{ deleteEvent('${ev.id}'); })">${ic('trash')} Удалить</button>
-        <div class="flex-1"></div>
-        <button class="btn btn-soft btn-sm" onclick="openAddEventModal('','','','${ev.id}')">${ic('edit')} Править</button>
-        <button class="btn btn-primary btn-sm" onclick="requestCloseModal()">Готово</button>
-      </div>
-    `);
-    return;
-  }
-
-  if (isRent) {
-    openModal(`
-      <div class="modal-head flex items-start justify-between gap-3">
-        <div>
-          <div class="modal-title">${esc(ev.title)}</div>
-          <div class="modal-sub">${fmtDateFull(ev.date)} · ${ev.time}–${ev.endTime}</div>
-        </div>
-        <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
-      </div>
-      <div class="modal-body">
-        <div class="modal-triplet-card flex items-center justify-between gap-3 flex-wrap" style="padding:14px">
-          <div>
-            <div class="text-xs font-semibold text-muted uppercase">Стоимость аренды</div>
-            <div class="font-bold text-2xl" style="margin-top:2px">${money(ev.price)}</div>
-          </div>
-          <button class="btn btn-sm ${ev.isPaid ? 'btn-soft' : 'btn-primary'}" onclick="toggleRentPayment('${ev.id}')">
-            ${ev.isPaid ? '✓ Оплата аренды получена' : '⏳ Отметить получение оплаты'}
-          </button>
-        </div>
-
-        <div class="bg-subtle rounded-xl border-line text-sm text-ink2" style="padding:12px 14px;margin-top:14px;line-height:1.5">
-          ℹ️ <b>Учет гостей отключен:</b> за список и встречу участников отвечает арендатор. Сумма аренды учитывается в выручке аналитики при отметке оплаты.
-        </div>
-
-        ${ev.note ? `
-          <div class="field" style="margin-top:14px">
-            <label>Заметка / Контакты арендатора</label>
-            <div class="inp" style="background:var(--subtle);min-height:auto">${esc(ev.note)}</div>
-          </div>
-        ` : ''}
-      </div>
-      <div class="modal-foot flex gap-2 justify-end">
-        <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить аренду?','Удалить запись об аренде «${esc(ev.title)}» из графика?','Удалить',()=>{ deleteEvent('${ev.id}'); })">${ic('trash')} Удалить</button>
-        <div class="flex-1"></div>
-        <button class="btn btn-soft btn-sm" onclick="openAddEventModal('','','','${ev.id}')">${ic('edit')} Править</button>
-        <button class="btn btn-primary btn-sm" onclick="requestCloseModal()">Готово</button>
-      </div>
-    `);
-    return;
-  }
-
-  const all = db.bookings.filter(b => b.eventId === id);
-  let main = all.filter(b=>!b.isWaitlist), wait = all.filter(b=>b.isWaitlist);
-  const { checked, booked, paidSum } = getEventStats(id, ev.price || 0);
-
-  if (ui.guestListFilter === 'checked') main = main.filter(b => b.isCheckedIn);
-  else if (ui.guestListFilter === 'pending') main = main.filter(b => !b.isCheckedIn);
-
-  if (ui.guestListSearch) {
-    const q = ui.guestListSearch.toLowerCase().trim();
-    main = main.filter(b => (b.guestName||'').toLowerCase().includes(q) || (b.telegram||'').toLowerCase().includes(q));
-  }
+  const p = PRESENCE[ev.presenceType] || PRESENCE.team;
+  const innerHtml = renderEventDetailsCardHtml(ev, { isModal: true });
 
   openModal(`
-    <div class="modal-head flex items-start justify-between gap-3">
-      <div>
-        <div class="modal-title">${esc(ev.title)}</div>
-        <div class="modal-sub">${fmtDateFull(ev.date)} · ${ev.time}–${ev.endTime}</div>
+    <div class="modal-head flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3.5 flex-wrap">
+        <div class="modal-title">${fmtDateFull(ev.date)}</div>
+        <span class="tag" style="background:${p.bg};color:${p.color};font-size:12px;padding:3.5px 11px;font-weight:600;margin-left:6px">
+          <span class="dot" style="background:${p.color}"></span>${p.label}
+        </span>
       </div>
       <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
-    <div class="modal-body">
-      <div class="modal-triplet-card flex items-center justify-between gap-2 flex-wrap">
-        <div class="flex items-center gap-3">
-          <div class="flex items-center gap-1.5"><span class="triplet-circle green">${checked}</span><span class="text-xs font-semibold text-muted">пришли</span></div>
-          <div class="flex items-center gap-1.5"><span class="triplet-circle dark">${booked}</span><span class="text-xs font-semibold text-muted">записаны</span></div>
-          <div class="flex items-center gap-1.5"><span class="triplet-circle gray">${ev.capacity||'∞'}</span><span class="text-xs font-semibold text-muted">лимит</span></div>
-        </div>
-        <div class="text-sm text-muted">Оплачено: <b class="text-ink">${money(paidSum)}</b></div>
-      </div>
-
-      <div class="flex items-center justify-between flex-wrap gap-2" style="margin:12px 0 10px">
-        <div class="text-xs font-bold text-muted uppercase">Записанные гости (${main.length})</div>
-        <button class="btn btn-primary btn-sm" onclick="openAddGuestModal('${ev.id}')">${ic('plus')} Добавить гостя</button>
-      </div>
-
-      ${main.map(b => `
-        <div class="guest-row-card">
-          <button class="checkin-btn ${b.isCheckedIn?'on':''}" onclick="toggleCheckin('${b.id}')">${b.isCheckedIn?ic('check'):''}</button>
-          <div class="flex-1" style="min-width:0">
-            <div class="font-bold text-base truncate" style="${b.isCheckedIn?'text-decoration:line-through;opacity:.65':''}">${esc(b.guestName)} ${b.ticketsCount>1?`<span class="pill text-xs">${b.ticketsCount} чел.</span>`:''}</div>
-            <div class="flex items-center gap-2 flex-wrap" style="margin-top:3px">
-              <button class="pay-pill-btn ${b.isPaid?'paid':'unpaid'}" onclick="togglePayment('${b.id}')">${b.isPaid?'✓ Оплачено':'⏳ Не оплачено'}</button>
-              ${b.telegram ? `<span class="text-xs text-muted truncate">${esc(b.telegram)}</span>` : ''}
-              ${b.note ? `<span class="text-xs text-ink2 truncate" style="font-style:italic">· ${esc(b.note)}</span>` : ''}
-            </div>
-          </div>
-          <div class="flex items-center gap-1 flex-none">
-            <button class="star-btn ${b.isFavorite ? 'on' : ''}" onclick="toggleBookingFavorite('${b.id}')" title="Избранное">
-              <svg><use href="${b.isFavorite ? '#ic-star' : '#ic-starOutline'}"/></svg>
-            </button>
-            ${b.telegram ? `<button class="icon-btn sm" onclick="openTgReminder('${b.id}')" title="Напомнить в Telegram" style="color:#2AABEE">${ic('send')}</button>` : ''}
-            <button class="icon-btn sm" onclick="deleteBooking('${b.id}','${ev.id}')">${ic('trash')}</button>
-          </div>
-        </div>
-      `).join('')}
-
-      ${wait.length ? `
-        <div class="text-xs font-bold text-rent uppercase" style="margin:16px 0 6px">Лист ожидания / Резерв (${wait.length})</div>
-        ${wait.map(b => `
-          <div class="flex items-center justify-between gap-3" style="padding:8px 0;border-bottom:1px solid var(--line)">
-            <div class="flex-1 truncate">
-              <div class="font-semibold text-base">${esc(b.guestName)} (${b.ticketsCount} чел.)</div>
-              <div class="text-xs text-muted">${b.telegram || 'Без контакта'} ${b.note ? ' · ' + esc(b.note) : ''}</div>
-            </div>
-            <div class="flex items-center gap-2 flex-none">
-              <button class="btn btn-soft btn-sm" onclick="transferFromWaitlist('${b.id}')">В основу</button>
-              <button class="icon-btn sm" onclick="deleteBooking('${b.id}','${ev.id}')">${ic('trash')}</button>
-            </div>
-          </div>
-        `).join('')}
-      ` : ''}
+    <div class="modal-body" style="padding:0">
+      ${innerHtml}
     </div>
     <div class="modal-foot flex gap-2 justify-end">
-      <button class="btn btn-danger btn-sm" onclick="confirmAction('Удалить событие из графика?','Удалить событие «${esc(ev.title)}» из календаря?<br><br><b>История посещений и оплаты гостей сохранятся в их карточках.</b>','Удалить из графика',()=>{ deleteEvent('${ev.id}'); })">${ic('trash')} Удалить из графика</button>
-      <div class="flex-1"></div>
-      <button class="btn btn-soft btn-sm" onclick="openAddEventModal('','','','${ev.id}')">${ic('edit')} Править</button>
       <button class="btn btn-primary btn-sm" onclick="requestCloseModal()">Готово</button>
     </div>
   `, { wide: true });
+}
+
+function confirmDeleteEventAction(id) {
+  const ev = db.events.find(e => e.id === id);
+  if (!ev) return;
+
+  const isTrip = ev.presenceType === 'trip';
+  const isRent = ev.presenceType === 'rent';
+
+  let title = 'Удалить событие из графика?';
+  let msg = `Удалить «${esc(ev.title)}» из календаря?<br><br><b>История посещений и оплаты гостей сохранятся в их карточках.</b>`;
+
+  if (isTrip) {
+    title = 'Удалить отлучку?';
+    msg = `Удалить период отсутствия «${esc(ev.title)}» из календаря?`;
+  } else if (isRent) {
+    title = 'Удалить аренду?';
+    msg = `Удалить запись об аренде «${esc(ev.title)}» из графика?`;
+  }
+
+  confirmAction(
+    title,
+    msg,
+    'Удалить',
+    () => { deleteEvent(id); }
+  );
 }
 
 function toggleRentPayment(id) {
@@ -2864,6 +2788,7 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
 
   const existingBookings = editId ? db.bookings.filter(b => b.eventId === editId) : [];
   const hasBookings = existingBookings.length > 0;
+  const returnToEventId = editId || (ui.modal?.type === 'event' ? ui.modal.id : null);
 
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
@@ -2871,9 +2796,9 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
         <div class="modal-title">${ex ? 'Редактировать событие' : 'Новое событие в график'}</div>
         ${hasBookings ? `<div class="modal-sub" style="color:var(--rent)">Записано гостей: ${existingBookings.length} чел.</div>` : ''}
       </div>
-      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
+      <button class="icon-btn sm" onclick="${returnToEventId ? `openEventDetailsModal('${returnToEventId}')` : 'requestCloseModal()'}">${ic('x')}</button>
     </div>
-    <form id="eventForm" novalidate onsubmit="handleSaveEvent(event, '${editId||''}')">
+    <form id="eventForm" novalidate onsubmit="handleSaveEvent(event, '${editId||''}', ${returnToEventId ? `'${returnToEventId}'` : 'null'})">
       <div class="modal-body">
         <div class="field">
           <label>Формат участия</label>
@@ -2923,7 +2848,7 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
         <div class="field"><label>Заметка / детали</label><input class="inp" id="evN" value="${esc(initial.note)}"></div>
       </div>
       <div class="modal-foot flex gap-2 justify-end">
-        <button type="button" class="btn btn-ghost" onclick="requestCloseModal()">Отмена</button>
+        <button type="button" class="btn btn-ghost" onclick="${returnToEventId ? `openEventDetailsModal('${returnToEventId}')` : 'requestCloseModal()'}">Отмена</button>
         <button type="submit" class="btn btn-primary" id="evSubmitBtn">${ic('check')} Сохранить</button>
       </div>
     </form>
@@ -2998,7 +2923,7 @@ function setPresencePicker(k, inpId = 'evPresence', pickerId = 'presencePicker')
   }
 }
 
-function handleSaveEvent(e, editId) {
+function handleSaveEvent(e, editId, returnToEventId = null) {
   e.preventDefault();
 
   const titleInp = document.getElementById('evT');
@@ -3058,6 +2983,7 @@ function handleSaveEvent(e, editId) {
   const commitSave = (clearBookings = false) => {
     lockSubmitBtn(e);
 
+    let savedId = editId;
     if (editId) {
       const idx = db.events.findIndex(x => x.id === editId);
       if (idx !== -1) {
@@ -3087,10 +3013,15 @@ function handleSaveEvent(e, editId) {
       if (db.deletedIds && db.deletedIds[newEvId]) delete db.deletedIds[newEvId];
       db.events.push({ id: newEvId, ...payload });
       ui.selectedDayEventId = newEvId;
+      savedId = newEvId;
     }
 
     saveDatabase(true);
-    forceCloseModal();
+    if (returnToEventId && savedId) {
+      openEventDetailsModal(savedId);
+    } else {
+      forceCloseModal();
+    }
     render();
     toast('Событие сохранено');
   };
