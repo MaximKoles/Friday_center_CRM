@@ -201,6 +201,44 @@ main { padding: 18px 0 80px; min-height: calc(100vh - 120px); }
 .day-tab.active .tab-badge { background: rgba(255,255,255,.2); color: #fff; }
 .day-tab-line { width: 4px; height: 24px; border-radius: 999px; flex-shrink: 0; }
 
+.time-status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 700; line-height: 1;
+  padding: 3px 8px; border-radius: 999px;
+  user-select: none; flex-shrink: 0;
+  transition: all .2s ease;
+}
+.time-status-pill.now {
+  background: rgba(62, 148, 110, 0.2);
+  color: #38b47e;
+  border: 1px solid rgba(62, 148, 110, 0.45);
+  animation: pulseLiveBadge 1.8s infinite ease-in-out;
+}
+.day-tab.active .time-status-pill.now {
+  background: #1e563e;
+  color: #6ce4ad;
+  border-color: #38b47e;
+}
+.time-status-pill.soon {
+  background: rgba(200, 148, 42, 0.18);
+  color: #df9f24;
+  border: 1px solid rgba(200, 148, 42, 0.45);
+  animation: pulseLiveBadge 2s infinite ease-in-out;
+}
+.day-tab.active .time-status-pill.soon {
+  background: #533e14;
+  color: #f7cb6d;
+  border-color: #df9f24;
+}
+.time-status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; flex-shrink: 0;
+}
+@keyframes pulseLiveBadge {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.97); opacity: 0.78; }
+}
+
 .guest-row-card {
   padding: 11px 14px; border-bottom: 1px solid var(--line);
   display: flex; align-items: center; gap: 12px; transition: background .12s ease;
@@ -1261,6 +1299,76 @@ function getMonthWeeks(y, m) {
   return weeks;
 }
 
+function getEventLiveStatus(ev) {
+  if (!ev || ev.date !== TODAY_ISO) return null;
+  const now = new Date();
+  const curMin = now.getHours() * 60 + now.getMinutes();
+  const { start, end } = getEventInterval(ev);
+  if (curMin >= start && curMin <= end) return 'now';
+  if (curMin >= (start - 60) && curMin < start) return 'soon';
+  return null;
+}
+
+function findPriorityEventId(dayEvs) {
+  if (!dayEvs || !dayEvs.length) return null;
+  if (ui.dayDate === TODAY_ISO) {
+    const now = new Date();
+    const curMin = now.getHours() * 60 + now.getMinutes();
+    
+    // 1. Идет прямо сейчас
+    const active = dayEvs.find(ev => {
+      const { start, end } = getEventInterval(ev);
+      return curMin >= start && curMin <= end;
+    });
+    if (active) return active.id;
+
+    // 2. Скоро начнется (в течение 60 мин)
+    const soon = dayEvs.find(ev => {
+      const { start } = getEventInterval(ev);
+      return curMin >= (start - 60) && curMin < start;
+    });
+    if (soon) return soon.id;
+
+    // 3. Ближайшее следующее сегодня
+    const upcoming = dayEvs.find(ev => {
+      const { start } = getEventInterval(ev);
+      return curMin < start;
+    });
+    if (upcoming) return upcoming.id;
+  }
+  return dayEvs[0].id;
+}
+
+function copyFilteredGuestList(eventId) {
+  const ev = db.events.find(x => x.id === eventId);
+  if (!ev) return;
+
+  const allBookings = db.bookings
+    .filter(b => b.eventId === eventId && !b.isWaitlist)
+    .sort((a, b) => (a.guestName || '').localeCompare(b.guestName || '', 'ru'));
+
+  let list = allBookings;
+  const currentFilter = ui.dayGuestFilter || 'all';
+  if (currentFilter === 'checked') list = list.filter(b => b.isCheckedIn);
+  else if (currentFilter === 'pending') list = list.filter(b => !b.isCheckedIn);
+  else if (currentFilter === 'fav') list = list.filter(b => b.isFavorite);
+
+  if (!list.length) {
+    toast('В выбранном фильтре нет гостей');
+    return;
+  }
+
+  const lines = list.map(b => {
+    const name = (b.guestName || '').trim();
+    const tg = b.telegram ? (' ' + b.telegram.trim()) : '';
+    return `${name}${tg}`;
+  });
+
+  const textToCopy = lines.join('\n');
+  copySafe(textToCopy);
+  toast(`Скопировано гостей: ${list.length}`);
+}
+
 function computeDayEventLayouts(events) {
   if (!events?.length) return [];
   const items = events.map(ev => ({
@@ -1446,7 +1554,8 @@ function renderDayView() {
       activeEv = dayEvs.find(e => e.id === ui.selectedDayEventId);
     }
     if (!activeEv) {
-      activeEv = dayEvs[0];
+      const priorityId = findPriorityEventId(dayEvs);
+      activeEv = dayEvs.find(e => e.id === priorityId) || dayEvs[0];
       ui.selectedDayEventId = activeEv.id;
     }
   } else {
@@ -1475,7 +1584,7 @@ function renderDayView() {
     return html;
   }
 
-  // Горизонтальный селектор мероприятий дня
+  // Горизонтальный селектор мероприятий дня с индикаторами "идёт сейчас" и "скоро начало"
   html += `
     <div class="day-tabs-scroll" style="max-width:960px">
       ${dayEvs.map(ev => {
@@ -1484,14 +1593,22 @@ function renderDayView() {
         const isRent = ev.presenceType === 'rent';
         const isTrip = ev.presenceType === 'trip';
         const { booked, checked } = getEventStats(ev.id);
+        const liveStatus = getEventLiveStatus(ev);
         
-        let badgeHtml = '';
+        let rightBadgeHtml = '';
         if (isTrip) {
-          badgeHtml = `<span class="tab-badge">отлучка</span>`;
+          rightBadgeHtml = `<span class="tab-badge">отлучка</span>`;
         } else if (isRent) {
-          badgeHtml = `<span class="tab-badge" style="${ev.isPaid ? 'color:#2E7D56' : 'color:#B37D14'}">${ev.isPaid ? 'оплачено' : 'аренда'}</span>`;
+          rightBadgeHtml = `<span class="tab-badge" style="${ev.isPaid ? 'color:#2E7D56' : 'color:#B37D14'}">${ev.isPaid ? 'оплачено' : 'аренда'}</span>`;
         } else {
-          badgeHtml = `<span class="tab-badge">${checked}/${booked}</span>`;
+          rightBadgeHtml = `<span class="tab-badge">${checked}/${booked}</span>`;
+        }
+
+        let timeTagHtml = '';
+        if (liveStatus === 'now') {
+          timeTagHtml = `<span class="time-status-pill now"><span class="time-status-dot"></span>идёт</span>`;
+        } else if (liveStatus === 'soon') {
+          timeTagHtml = `<span class="time-status-pill soon"><span class="time-status-dot"></span>скоро</span>`;
         }
 
         return `
@@ -1499,9 +1616,12 @@ function renderDayView() {
             <span class="day-tab-line" style="background:${p.color}"></span>
             <div style="min-width:0;flex:1">
               <div class="font-bold text-sm truncate">${esc(ev.title)}</div>
-              <div class="text-xs ${isSel ? 'text-white' : 'text-muted'}" style="opacity:.85;margin-top:1px">${ev.time}</div>
+              <div class="flex items-center gap-1.5" style="margin-top:3px">
+                <span class="text-xs ${isSel ? 'text-white' : 'text-muted'}" style="opacity:.85;font-size:12px">${ev.time}</span>
+                ${timeTagHtml}
+              </div>
             </div>
-            ${badgeHtml}
+            ${rightBadgeHtml}
           </div>
         `;
       }).join('')}
@@ -1516,7 +1636,7 @@ function renderDayView() {
 
     if (isTrip) {
       html += `
-        <div class="list-card" style="padding:18px 20px;max-width:960px;border-left:0px solid ${p.color}">
+        <div class="list-card" style="padding:18px 20px;max-width:960px">
           <div class="flex justify-between items-start gap-3">
             <div>
               <div class="font-bold text-xl">${esc(activeEv.title)}</div>
@@ -1529,7 +1649,7 @@ function renderDayView() {
       `;
     } else if (isRent) {
       html += `
-        <div class="list-card" style="padding:18px 20px;max-width:960px;border-left:0px solid ${p.color}">
+        <div class="list-card" style="padding:18px 20px;max-width:960px">
           <div class="flex justify-between items-start gap-3 flex-wrap">
             <div>
               <div class="font-bold text-xl">${esc(activeEv.title)}</div>
@@ -1551,8 +1671,15 @@ function renderDayView() {
     } else {
       // Регулярное мероприятие с гостями
       const { booked, checked, paidSum } = getEventStats(activeEv.id, activeEv.price || 0);
-      const allBookings = db.bookings.filter(b => b.eventId === activeEv.id && !b.isWaitlist);
-      const waitlist = db.bookings.filter(b => b.eventId === activeEv.id && b.isWaitlist);
+      
+      // Сортировка гостей в алфавитном порядке
+      const allBookings = db.bookings
+        .filter(b => b.eventId === activeEv.id && !b.isWaitlist)
+        .sort((a, b) => (a.guestName || '').localeCompare(b.guestName || '', 'ru'));
+
+      const waitlist = db.bookings
+        .filter(b => b.eventId === activeEv.id && b.isWaitlist)
+        .sort((a, b) => (a.guestName || '').localeCompare(b.guestName || '', 'ru'));
 
       const favCount = allBookings.filter(b => b.isFavorite).length;
       const checkedCount = allBookings.filter(b => b.isCheckedIn).length;
@@ -1565,7 +1692,7 @@ function renderDayView() {
       else if (currentFilter === 'fav') displayList = displayList.filter(b => b.isFavorite);
 
       html += `
-        <div class="list-card" style="max-width:960px;margin-bottom:16px;border-left:0px solid ${p.color}">
+        <div class="list-card" style="max-width:960px;margin-bottom:16px">
           <div style="padding:16px 18px 12px;border-bottom:1px solid var(--line)">
             <div class="flex justify-between items-start gap-3 flex-wrap">
               <div>
@@ -1577,6 +1704,7 @@ function renderDayView() {
               </div>
               <div class="flex items-center gap-2">
                 <button class="btn btn-primary btn-sm" onclick="openAddGuestModal('${activeEv.id}')">${ic('plus')} Добавить гостя</button>
+                <button class="btn btn-soft btn-sm" onclick="copyFilteredGuestList('${activeEv.id}')" title="Скопировать отфильтрованный список гостей">${ic('copy')} Список</button>
                 <button class="icon-btn sm" onclick="openAddEventModal('','','','${activeEv.id}')" title="Редактировать событие">${ic('edit')}</button>
               </div>
             </div>
@@ -1614,7 +1742,7 @@ function renderDayView() {
             </div>
           </div>
 
-          <!-- Список гостей -->
+          <!-- Список гостей (в алфавитном порядке) -->
           <div>
             ${!displayList.length ? `
               <div class="text-center text-muted" style="padding:28px 16px">
@@ -1800,7 +1928,7 @@ function openAddGuestModal(eventId) {
           </div>
         </div>
 
-        <div class="field" style="margin-top:20px">
+        <div class="field" style="margin-top:20px;margin-bottom:6px">
           <label>Заметка к брони</label>
           <div class="flex items-center gap-2">
             <input type="hidden" id="mBkFavVal" value="0">
@@ -1873,7 +2001,7 @@ function openEditGuestModal(bookingId, eventId) {
           </div>
         </div>
 
-        <div class="field" style="margin-top:10px">
+        <div class="field" style="margin-top:20px;margin-bottom:6px">
           <label>Заметка к брони</label>
           <div class="flex items-center gap-2">
             <input type="hidden" id="mBkFavVal" value="${isFav ? '1' : '0'}">
