@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- HTTP-метатеги запрета кэширования браузером (Safari, Chrome, Firefox) -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Пятница.Пульт — Центр управления пространством</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,6 +98,41 @@ button { cursor: pointer; border: none; background: none; }
 .top-nav button { display: flex; align-items: center; gap: 8px; padding: 8px 13px; border-radius: 12px; font-size: 13.5px; font-weight: 500; color: var(--ink2); transition: all .15s ease; white-space: nowrap; }
 .top-nav button:hover { background: var(--surface); box-shadow: var(--sh); color: var(--ink); }
 .top-nav button.active { background: var(--ink); color: #fff; box-shadow: 0 4px 14px rgba(32,36,48,.16); }
+
+.version-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--subtle);
+  color: var(--ink2);
+  border: 1px solid var(--line2);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.update-banner {
+  background: #FFF9E6;
+  border-bottom: 1px solid #FFE499;
+  padding: 8px 16px;
+  font-size: 12.5px;
+  color: #7A5300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 45;
+}
+.update-banner button {
+  background: #E5A118;
+  color: #fff;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11.5px;
+}
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 15px;
@@ -406,6 +445,12 @@ textarea.inp { resize: vertical; min-height: 70px; }
     <symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
     <symbol id="ic-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></symbol>
     <symbol id="ic-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+    <symbol id="ic-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+      <path d="M3 3v5h5"/>
+      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+      <path d="M16 21h5v-5"/>
+    </symbol>
     <symbol id="ic-star" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
     </symbol>
@@ -425,12 +470,17 @@ textarea.inp { resize: vertical; min-height: 70px; }
   </defs>
 </svg>
 
+<div id="updateBannerRoot"></div>
+
 <header class="app-head">
   <div class="wrap head-inner flex items-center justify-between gap-4">
     <div class="brand flex items-center gap-3" onclick="navTo('month')" title="На главную сетку месяца">
       <div class="brand-mark flex items-center justify-center">П</div>
       <div>
-        <div class="font-bold text-base tracking-tight">Пятница.Пульт</div>
+        <div class="flex items-center gap-2">
+          <div class="font-bold text-base tracking-tight">Пятница.Пульт</div>
+          <span class="version-pill" id="headerVersionPill" title="Текущая версия приложения">v1.0.1</span>
+        </div>
         <div class="text-xs text-muted">центр управления пространством</div>
       </div>
     </div>
@@ -449,6 +499,15 @@ textarea.inp { resize: vertical; min-height: 70px; }
 <div style="position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none" id="toastRoot"></div>
 
 <script>
+// ============================================================================
+// ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
+// Задавайте актуальную версию здесь. При каждом обновлении коммита или тега
+// приложение уведомит пользователя и предложит обновиться в 1 клик.
+// ============================================================================
+const APP_VERSION = '1.0.1';
+const GITHUB_REPO = 'MaximKoles/Friday_center_CRM'; // Замените на: 'ваш-логин/ваш-репозиторий'
+const GITHUB_BRANCH = 'main';               // Основная ветка
+
 const STORE_KEY = 'pyatnitsa_hub_db_v4', STORE_BACKUP_KEY = 'pyatnitsa_hub_db_backup_auto', FIREBASE_URL_KEY = 'pyatnitsa_firebase_url';
 const SCHEMA_VERSION = 4;
 const H_START = 8, H_END = 23, HOUR_H = 28, MIN_DURATION_MIN = 110;
@@ -467,6 +526,91 @@ const NAV = [
   { id:'events', label:'Реестр', icon:'list' }, { id:'clients', label:'Гости', icon:'users' },
   { id:'analytics', label:'Аналитика', icon:'chart' }
 ];
+
+/**
+ * Жесткий сброс кэша браузера с сохранением пользовательских данных
+ */
+async function hardResetCacheAndReload() {
+  try {
+    toast('Сброс кэша и перезагрузка...');
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        await registration.unregister();
+      }
+    }
+  } catch (err) {
+    console.warn('Ошибка очистки кэша:', err);
+  } finally {
+    // Добавляем уникальный query параметр для принудительного обхода кэша на уровне сети
+    const url = new URL(window.location.href);
+    url.searchParams.set('_cb', Date.now().toString());
+    window.location.replace(url.toString());
+  }
+}
+
+/**
+ * Проверка новой версии через GitHub API
+ */
+async function checkForGitHubUpdate(manual = false) {
+  if (!GITHUB_REPO || GITHUB_REPO.includes('owner/')) {
+    if (manual) toast('Укажите GITHUB_REPO вверху кода скрипта');
+    return;
+  }
+
+  try {
+    // Проверяем последний коммит в ветке
+    const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/commits/${GITHUB_BRANCH}?t=${Date.now()}`;
+    const res = await fetch(apiUrl, {
+      cache: 'no-store',
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
+    });
+
+    if (!res.ok) {
+      if (manual) toast(`Ошибка проверки обновлений (${res.status})`);
+      return;
+    }
+
+    const commitData = await res.json();
+    const latestCommitSha = commitData.sha ? commitData.sha.substring(0, 7) : null;
+    const storedSha = localStorage.getItem('pyatnitsa_last_seen_sha');
+
+    if (latestCommitSha) {
+      if (storedSha && storedSha !== latestCommitSha) {
+        showUpdateBanner(latestCommitSha);
+      } else if (!storedSha) {
+        localStorage.setItem('pyatnitsa_last_seen_sha', latestCommitSha);
+      }
+    }
+
+    if (manual) {
+      if (storedSha && storedSha === latestCommitSha) {
+        toast('У вас установлена последняя версия с GitHub');
+      } else {
+        toast('Проверка обновлений завершена');
+      }
+    }
+  } catch (err) {
+    console.error('Ошибка GitHub API:', err);
+    if (manual) toast('Не удалось связаться с GitHub API');
+  }
+}
+
+function showUpdateBanner(newCommitSha) {
+  const root = document.getElementById('updateBannerRoot');
+  if (!root) return;
+  root.innerHTML = `
+    <div class="update-banner">
+      <span>🔔 <b>Доступна новая версия на GitHub</b> (${newCommitSha}). Рекомендуется обновить страницу.</span>
+      <button onclick="hardResetCacheAndReload()">Обновить сейчас</button>
+      <button style="background:transparent;color:#7A5300;padding:2px 6px" onclick="document.getElementById('updateBannerRoot').innerHTML=''">✕</button>
+    </div>
+  `;
+}
 
 const ic = n => `<svg class="ic"><use href="#ic-${n}"/></svg>`;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1222,6 +1366,8 @@ function handleAppResume() {
         setupFirebaseRealtime();
       }
     }
+    // Автоматическая проверка свежести версии при возврате на вкладку
+    checkForGitHubUpdate(false);
   } catch(err) {
     console.error('Ошибка возобновления приложения:', err);
   }
@@ -2467,6 +2613,8 @@ function renderAnalyticsView() {
 function render() {
   try {
     const top = document.getElementById('topNav'), bot = document.getElementById('bottomNav'), view = document.getElementById('view');
+    const headerPill = document.getElementById('headerVersionPill');
+    if (headerPill) headerPill.textContent = `v${APP_VERSION}`;
     if (!db) loadDatabase();
     if (top) top.innerHTML = NAV.map(n => `<button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">${ic(n.icon)} ${n.label}</button>`).join('');
     if (bot) bot.innerHTML = NAV.map(n => `<button onclick="navTo('${n.id}')" class="${ui.view===n.id?'active':''}">${ic(n.icon)}<span>${n.label}</span></button>`).join('');
@@ -3582,7 +3730,25 @@ function openSyncModal() {
         </div>
       </div>
 
-      <details style="margin-top:18px;border-top:1px solid var(--line);padding-top:10px">
+      <!-- Блок обновления и сброса кэша браузера -->
+      <div style="margin-top:16px;background:var(--subtle);border:1px solid var(--line2);border-radius:14px;padding:12px 14px">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div>
+            <div class="font-bold text-sm text-ink">Версия и кэш приложения</div>
+            <div class="text-xs text-muted" style="margin-top:2px">Текущая сборка: <b>v${APP_VERSION}</b> · GitHub: ${esc(GITHUB_REPO)}</div>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-soft btn-sm" onclick="checkForGitHubUpdate(true)">
+              ${ic('search')} Проверить GitHub
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="confirmAction('Сбросить кэш и обновить?','Браузер сбросит закэшированные файлы страницы и загрузит последнюю версию из сети. Ваши сохранённые события и гости останутся нетронутыми.','Сбросить и обновить', hardResetCacheAndReload)">
+              ${ic('refresh')} Сбросить кэш
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <details style="margin-top:16px;border-top:1px solid var(--line);padding-top:10px">
         <summary class="flex justify-between items-center text-xs text-muted font-semibold" style="cursor:pointer;user-select:none;padding:4px 0;outline:none">
           <span>Файлы резервной копии (.json)</span>
           <span style="font-size:10px;opacity:.7">▾</span>
@@ -3675,6 +3841,11 @@ function openNotificationsModal() {
     pullFromFirebase(false);
     setupFirebaseRealtime();
   }
+
+  // Проверка версии GitHub при старте
+  setTimeout(() => {
+    checkForGitHubUpdate(false);
+  }, 1500);
   
   window.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') handleAppResume();
