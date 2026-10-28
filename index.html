@@ -479,7 +479,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
       <div>
         <div class="flex items-center gap-2">
           <div class="font-bold text-base tracking-tight">Пятница.Пульт</div>
-          <span class="version-pill" id="headerVersionPill" title="Текущая версия приложения">v1.0.1</span>
+          <span class="version-pill" id="headerVersionPill" title="Текущая версия приложения">v1.2.0</span>
         </div>
         <div class="text-xs text-muted">центр управления пространством</div>
       </div>
@@ -501,12 +501,10 @@ textarea.inp { resize: vertical; min-height: 70px; }
 <script>
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
-// Задавайте актуальную версию здесь. При каждом обновлении коммита или тега
-// приложение уведомит пользователя и предложит обновиться в 1 клик.
 // ============================================================================
-const APP_VERSION = '1.0.1';
-const GITHUB_REPO = 'MaximKoles/Friday_center_CRM'; // Замените на: 'ваш-логин/ваш-репозиторий'
-const GITHUB_BRANCH = 'main';               // Основная ветка
+const APP_VERSION = '1.2.0';
+const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
+const GITHUB_BRANCH = 'main';
 
 const STORE_KEY = 'pyatnitsa_hub_db_v4', STORE_BACKUP_KEY = 'pyatnitsa_hub_db_backup_auto', FIREBASE_URL_KEY = 'pyatnitsa_firebase_url';
 const SCHEMA_VERSION = 4;
@@ -527,9 +525,6 @@ const NAV = [
   { id:'analytics', label:'Аналитика', icon:'chart' }
 ];
 
-/**
- * Жесткий сброс кэша браузера с сохранением пользовательских данных
- */
 async function hardResetCacheAndReload() {
   try {
     toast('Сброс кэша и перезагрузка...');
@@ -546,16 +541,12 @@ async function hardResetCacheAndReload() {
   } catch (err) {
     console.warn('Ошибка очистки кэша:', err);
   } finally {
-    // Добавляем уникальный query параметр для принудительного обхода кэша на уровне сети
     const url = new URL(window.location.href);
     url.searchParams.set('_cb', Date.now().toString());
     window.location.replace(url.toString());
   }
 }
 
-/**
- * Проверка новой версии через GitHub API
- */
 async function checkForGitHubUpdate(manual = false) {
   if (!GITHUB_REPO || GITHUB_REPO.includes('owner/')) {
     if (manual) toast('Укажите GITHUB_REPO вверху кода скрипта');
@@ -563,7 +554,6 @@ async function checkForGitHubUpdate(manual = false) {
   }
 
   try {
-    // Проверяем последний коммит в ветке
     const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/commits/${GITHUB_BRANCH}?t=${Date.now()}`;
     const res = await fetch(apiUrl, {
       cache: 'no-store',
@@ -852,6 +842,9 @@ const TODAY_ISO = ymd(new Date());
 let db = null;
 let ui = {
   view: 'month', year: new Date().getFullYear(), month: new Date().getMonth(),
+  monthViewMode: 'grid', // 'grid' | 'list'
+  eventSearch: '',
+  eventTimeScope: 'upcoming', // 'upcoming' | 'month' | 'all'
   dayDate: TODAY_ISO, filter: 'all', search: '', analyticsPeriod: 'month', analyticsTab: 'events',
   modal: null, firebaseUrl: '',
   cloudStatus: 'disconnected', quickBookingOpen: false,
@@ -1005,6 +998,9 @@ function normalizeAndMigrateDB(raw) {
   events = events.map(e => ({
     ...e,
     isPaid: Boolean(e.isPaid),
+    adminPerson: e.adminPerson || '',
+    rentClientPerson: e.rentClientPerson || '',
+    contactPerson: e.contactPerson || 'Лена',
     updatedAt: e.updatedAt || stamp
   }));
 
@@ -1366,7 +1362,6 @@ function handleAppResume() {
         setupFirebaseRealtime();
       }
     }
-    // Автоматическая проверка свежести версии при возврате на вкладку
     checkForGitHubUpdate(false);
   } catch(err) {
     console.error('Ошибка возобновления приложения:', err);
@@ -1375,9 +1370,9 @@ function handleAppResume() {
 
 function getEventStats(eventId, price = 0) {
   const bk = db.bookings.filter(b => b.eventId === eventId && !b.isWaitlist);
-  const booked = bk.reduce((s, b) => s + (b.ticketsCount || 1), 0);
-  const checked = bk.filter(b => b.isCheckedIn).reduce((s, b) => s + (b.ticketsCount || 1), 0);
-  const paidSum = bk.filter(b => b.isPaid).reduce((s, b) => s + (b.ticketsCount || 1) * price, 0);
+  const booked = bk.reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
+  const checked = bk.filter(b => b.isCheckedIn).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
+  const paidSum = bk.filter(b => b.isPaid).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)) * price, 0);
   return { booked, checked, paidSum, list: bk };
 }
 
@@ -1404,10 +1399,10 @@ function getClientStats(clientId) {
   const checkedIn = history.filter(x => x.bk.isCheckedIn);
   const paid = history.filter(x => x.bk.isPaid);
 
-  const bookingVisits = checkedIn.reduce((s, x) => s + (x.bk.ticketsCount || 1), 0);
+  const bookingVisits = checkedIn.reduce((s, x) => s + (Math.max(1, Number(x.bk.ticketsCount) || 1)), 0);
   const totalVisits = (Number(c.initialVisits) || 0) + bookingVisits;
 
-  const bookingPaid = paid.reduce((s, x) => s + (x.bk.ticketsCount || 1) * x.price, 0);
+  const bookingPaid = paid.reduce((s, x) => s + (Math.max(1, Number(x.bk.ticketsCount) || 1)) * x.price, 0);
   const totalPaid = (Number(c.initialPaid) || 0) + bookingPaid;
 
   let latestVisitDate = null;
@@ -1569,24 +1564,178 @@ function updateNotifButton() {
 function renderFilterChips() {
   const counts = { all: db.events.length, must:0, team:0, rent:0, trip:0 };
   db.events.forEach(e => { if(counts[e.presenceType] !== undefined) counts[e.presenceType]++; });
+  const isListView = ui.monthViewMode === 'list';
+
   return `
-    <div class="chips chips-desktop">
-      <button class="chip ${ui.filter==='all'?'on':''}" onclick="setFilter('all')">Все <span class="cnt">${counts.all}</span></button>
-      ${Object.keys(PRESENCE).map(k => `
-        <button class="chip ${ui.filter===k?'on':''}" onclick="setFilter('${k}')">
-          <span class="dot" style="background:${PRESENCE[k].color}"></span>${PRESENCE[k].label} <span class="cnt">${counts[k]||0}</span>
+    <div class="flex items-center gap-3 flex-wrap" style="margin-bottom:16px">
+      <!-- Переключатель Сетка / Список перед категориями -->
+      <div class="inline-flex bg-subtle rounded-xl border-line flex-none" style="padding:3px;gap:2px">
+        <button class="btn btn-sm" style="min-height:30px;padding:3px 10px;font-size:12px;border-radius:9px;background:${!isListView ? 'var(--surface)' : 'transparent'};color:${!isListView ? 'var(--ink)' : 'var(--muted)'};box-shadow:${!isListView ? 'var(--sh)' : 'none'}" onclick="setMonthViewMode('grid')">
+          ${ic('calendar')} Сетка
         </button>
-      `).join('')}
-    </div>
-    <div class="chips-mobile">
-      <select class="inp" style="min-height:38px;padding:6px 12px;font-weight:600" onchange="setFilter(this.value)">
-        <option value="all" ${ui.filter==='all'?'selected':''}>Все события (${counts.all})</option>
-        ${Object.keys(PRESENCE).map(k => `<option value="${k}" ${ui.filter===k?'selected':''}>${PRESENCE[k].label} (${counts[k]||0})</option>`).join('')}
-      </select>
+        <button class="btn btn-sm" style="min-height:30px;padding:3px 10px;font-size:12px;border-radius:9px;background:${isListView ? 'var(--surface)' : 'transparent'};color:${isListView ? 'var(--ink)' : 'var(--muted)'};box-shadow:${isListView ? 'var(--sh)' : 'none'}" onclick="setMonthViewMode('list')">
+          ${ic('list')} Список
+        </button>
+      </div>
+
+      <div class="chips chips-desktop" style="margin:0">
+        <button class="chip ${ui.filter==='all'?'on':''}" onclick="setFilter('all')">Все <span class="cnt">${counts.all}</span></button>
+        ${Object.keys(PRESENCE).map(k => `
+          <button class="chip ${ui.filter===k?'on':''}" onclick="setFilter('${k}')">
+            <span class="dot" style="background:${PRESENCE[k].color}"></span>${PRESENCE[k].label} <span class="cnt">${counts[k]||0}</span>
+          </button>
+        `).join('')}
+      </div>
+
+      <div class="chips-mobile" style="margin:0;flex:1">
+        <select class="inp" style="min-height:36px;padding:4px 10px;font-weight:600" onchange="setFilter(this.value)">
+          <option value="all" ${ui.filter==='all'?'selected':''}>Все категории (${counts.all})</option>
+          ${Object.keys(PRESENCE).map(k => `<option value="${k}" ${ui.filter===k?'selected':''}>${PRESENCE[k].label} (${counts[k]||0})</option>`).join('')}
+        </select>
+      </div>
     </div>
   `;
 }
 function setFilter(f) { ui.filter = f; render(); }
+
+function setMonthViewMode(mode) {
+  ui.monthViewMode = mode;
+  render();
+}
+
+function setEventTimeScope(scope) {
+  ui.eventTimeScope = scope;
+  render();
+}
+
+function filterEventsList() {
+  const curY = ui.year, curM = ui.month;
+  const q = (ui.eventSearch || '').toLowerCase().trim();
+
+  let list = db.events.filter(e => ui.filter === 'all' || e.presenceType === ui.filter);
+
+  if (ui.eventTimeScope === 'upcoming') {
+    list = list.filter(e => e.date >= TODAY_ISO);
+  } else if (ui.eventTimeScope === 'month') {
+    list = list.filter(e => {
+      const d = parseYmd(e.date);
+      return d.getFullYear() === curY && d.getMonth() === curM;
+    });
+  }
+
+  if (q) {
+    list = list.filter(e => {
+      const titleMatch = (e.title || '').toLowerCase().includes(q);
+      const noteMatch = (e.note || '').toLowerCase().includes(q);
+      const contactMatch = (e.contactPerson || '').toLowerCase().includes(q);
+      const adminMatch = (e.adminPerson || '').toLowerCase().includes(q);
+      const clientMatch = (e.rentClientPerson || '').toLowerCase().includes(q);
+      const dateRu = fmtDateRu(e.date).toLowerCase();
+      const dateIso = e.date.toLowerCase();
+      return titleMatch || noteMatch || contactMatch || adminMatch || clientMatch || dateRu.includes(q) || dateIso.includes(q);
+    });
+  }
+
+  if (ui.eventTimeScope === 'all') {
+    list.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
+  } else {
+    list.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  }
+  return list;
+}
+
+function renderEventsListRowsHtml(list) {
+  if (!list.length) {
+    return `
+      <div class="text-center text-muted" style="padding:38px 16px">
+        <div style="margin-bottom:8px" class="flex justify-center">${ic('calendar')}</div>
+        <div class="font-bold text-base text-ink" style="margin-bottom:4px">События не найдены</div>
+        <div class="text-xs">Попробуйте изменить параметры поиска или временной интервал</div>
+      </div>
+    `;
+  }
+
+  return list.map(ev => {
+    const p = PRESENCE[ev.presenceType] || PRESENCE.team;
+    const isRent = ev.presenceType === 'rent';
+    const isTrip = ev.presenceType === 'trip';
+    const isToday = ev.date === TODAY_ISO;
+    const { booked, checked } = getEventStats(ev.id);
+
+    return `
+      <div class="row row-click flex items-center justify-between gap-3" onclick="openEventDetailsModal('${ev.id}')">
+        <div class="flex-1" style="min-width:0">
+          <div class="row-title flex items-center gap-2">
+            <span class="font-bold text-base">${esc(ev.title)}</span>
+            <span class="tag" style="background:${p.bg};color:${p.color}">
+              <span class="dot" style="background:${p.color}"></span>${p.label}
+            </span>
+            ${isToday ? `<span class="pill" style="background:var(--ink);color:#fff">Сегодня</span>` : ''}
+          </div>
+          <div class="row-sub flex items-center gap-2 flex-wrap">
+            <span class="font-semibold text-ink">${fmtDateFull(ev.date)}</span>
+            <span>· ${ev.time}–${ev.endTime || ''}</span>
+            <span>· ${isTrip ? 'Личное' : isRent ? (ev.price ? money(ev.price) : 'Аренда') : (ev.price ? money(ev.price) : 'Бесплатно')}</span>
+            ${isRent && ev.rentClientPerson ? `<span class="pill">Арендатор: ${esc(ev.rentClientPerson)}</span>` : ''}
+            ${isRent && ev.adminPerson ? `<span class="pill">Админ: ${esc(ev.adminPerson)}</span>` : ''}
+            ${ev.note ? `<span class="truncate" style="max-width:240px;font-style:italic">· ${esc(ev.note)}</span>` : ''}
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 flex-none" onclick="event.stopPropagation()">
+          ${isTrip ? `
+            <span class="pill text-xs">отлучка</span>
+          ` : isRent ? `
+            <button class="pay-pill-btn ${ev.isPaid ? 'paid' : 'unpaid'}" onclick="toggleRentPayment('${ev.id}')">
+              ${ev.isPaid ? '✓ Оплачено' : '⏳ Ждет оплаты'}
+            </button>
+          ` : `
+            <div class="badge-triplet" title="Пришли / Записано / Мест (человек)">
+              <span class="badge-bubble bubble-checked">${checked}</span>
+              <span class="badge-bubble bubble-booked">${booked}</span>
+              <span class="badge-bubble bubble-limit">${ev.capacity || '∞'}</span>
+            </div>
+          `}
+          <button class="icon-btn sm" onclick="openAddEventModal('','','','${ev.id}')" title="Редактировать">${ic('edit')}</button>
+          <button class="icon-btn sm danger-icon" onclick="confirmDeleteEventAction('${ev.id}')" title="Удалить">${ic('trash')}</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderEventsListView() {
+  const curY = ui.year, curM = ui.month;
+  const list = filterEventsList();
+
+  return `
+    <div style="margin-bottom:14px">
+      <!-- Поисковая строка -->
+      <div class="search flex items-center gap-2" style="margin-bottom:10px">
+        ${ic('search')}
+        <input placeholder="Поиск по названию, дате, ведущему или заметкам..." 
+               value="${esc(ui.eventSearch)}" 
+               oninput="ui.eventSearch=this.value;document.getElementById('eventsListContainer').innerHTML=renderEventsListRowsHtml(filterEventsList());">
+        ${ui.eventSearch ? `
+          <button class="icon-btn sm flex-none" style="border:none;background:transparent" onclick="ui.eventSearch='';render()" title="Очистить поиск">
+            ${ic('x')}
+          </button>
+        ` : ''}
+      </div>
+
+      <!-- Фильтры периода -->
+      <div class="chips" style="margin:0;gap:6px">
+        <button class="chip ${ui.eventTimeScope==='upcoming'?'on':''}" onclick="setEventTimeScope('upcoming')">Предстоящие</button>
+        <button class="chip ${ui.eventTimeScope==='month'?'on':''}" onclick="setEventTimeScope('month')">${MONTHS[curM]} ${curY}</button>
+        <button class="chip ${ui.eventTimeScope==='all'?'on':''}" onclick="setEventTimeScope('all')">Все / Архив</button>
+      </div>
+    </div>
+
+    <div class="list-card" id="eventsListContainer">
+      ${renderEventsListRowsHtml(list)}
+    </div>
+  `;
+}
 
 function changeMonth(d) { ui.month += d; if(ui.month>11){ui.month=0;ui.year++;} else if(ui.month<0){ui.month=11;ui.year--;} render(); }
 function navTo(v) { ui.view = v; ui.search = ''; render(); window.scrollTo(0,0); }
@@ -1635,6 +1784,10 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
           <div>
             <div class="font-bold text-xl">${esc(activeEv.title)}</div>
             <div class="text-sm text-muted" style="margin-top:2px">${activeEv.time}–${activeEv.endTime} · Стоимость аренды: <b>${money(activeEv.price)}</b></div>
+            <div class="flex items-center gap-2 flex-wrap" style="margin-top:6px">
+              ${activeEv.rentClientPerson ? `<span class="pill">Клиент (Арендатор): <b class="text-ink">${esc(activeEv.rentClientPerson)}</b></span>` : ''}
+              ${activeEv.adminPerson ? `<span class="pill">Администратор: <b class="text-ink">${esc(activeEv.adminPerson)}</b></span>` : ''}
+            </div>
             ${activeEv.note ? `<div class="text-sm text-ink2" style="margin-top:8px">${esc(activeEv.note)}</div>` : ''}
           </div>
           <div class="flex items-center gap-2 flex-wrap">
@@ -1648,16 +1801,14 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
           </div>
         </div>
         <div class="bg-subtle rounded-xl border-line text-sm text-ink2" style="padding:12px 14px;margin-top:14px;line-height:1.5">
-          ℹ️ Список гостей не ведётся — за встречу участников отвечает арендатор. Сумма учитывается в аналитике.
+          ℹ️ Список билетов гостей не ведётся — за встречу участников отвечает арендатор. Сумма учитывается в аналитике.
         </div>
       </div>
     `;
   }
 
-  // Регулярное мероприятие с гостями
   const { booked, checked, paidSum } = getEventStats(activeEv.id, activeEv.price || 0);
   
-  // Сортировка гостей в алфавитном порядке
   const allBookings = db.bookings
     .filter(b => b.eventId === activeEv.id && !b.isWaitlist)
     .sort((a, b) => (a.guestName || '').localeCompare(b.guestName || '', 'ru'));
@@ -1666,9 +1817,10 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
     .filter(b => b.eventId === activeEv.id && b.isWaitlist)
     .sort((a, b) => (a.guestName || '').localeCompare(b.guestName || '', 'ru'));
 
-  const favCount = allBookings.filter(b => b.isFavorite).length;
-  const checkedCount = allBookings.filter(b => b.isCheckedIn).length;
-  const pendingCount = allBookings.filter(b => !b.isCheckedIn).length;
+  const favCount = allBookings.filter(b => b.isFavorite).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
+  const checkedCount = allBookings.filter(b => b.isCheckedIn).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
+  const pendingCount = allBookings.filter(b => !b.isCheckedIn).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
+  const waitlistPersons = waitlist.reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
 
   let displayList = allBookings;
   const currentFilter = ui.dayGuestFilter || 'all';
@@ -1688,7 +1840,7 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
                 Собрано: <b class="text-ink">${money(paidSum)}</b>
               </span>
               ${activeEv.note ? `<span>· ${esc(activeEv.note)}</span>` : ''}
-              ${waitlist.length ? `<span class="pill text-xs font-semibold" style="color:var(--rent);background:var(--rent-bg)">Резерв: ${waitlist.length}</span>` : ''}
+              ${waitlist.length ? `<span class="pill text-xs font-semibold" style="color:var(--rent);background:var(--rent-bg)">Резерв: ${waitlistPersons} чел.</span>` : ''}
             </div>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
@@ -1701,11 +1853,10 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
           </div>
         </div>
 
-        <!-- Фильтры гостей -->
         <div class="flex items-center justify-between gap-2 flex-wrap" style="margin-top:14px">
           <div class="chips" style="margin:0;gap:6px">
             <button class="chip ${currentFilter==='all'?'on':''}" style="padding:5px 11px;font-size:12px" onclick="setDayGuestFilter('all')">
-              Все <span class="cnt">${allBookings.length}</span>
+              Все <span class="cnt">${booked} чел.</span>
             </button>
             <button class="chip ${currentFilter==='checked'?'on':''}" style="padding:5px 11px;font-size:12px" onclick="setDayGuestFilter('checked')">
               Пришли <span class="cnt">${checkedCount}</span>
@@ -1721,7 +1872,6 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
         </div>
       </div>
 
-      <!-- Список гостей (в алфавитном порядке) -->
       <div>
         ${!displayList.length ? `
           <div class="text-center text-muted" style="padding:28px 16px">
@@ -1730,12 +1880,10 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
           </div>
         ` : displayList.map(b => `
           <div class="guest-row-card" id="guestRow_${b.id}">
-            <!-- Кнопка Чекина -->
             <button class="checkin-btn ${b.isCheckedIn ? 'on' : ''}" onclick="toggleCheckin('${b.id}')" title="Отметить посещение">
               ${b.isCheckedIn ? ic('check') : ''}
             </button>
 
-            <!-- Данные гостя (долгое нажатие для редактирования) -->
             <div class="flex-1 guest-info-block" style="min-width:0"
                  title="Удерживайте для редактирования"
                  onpointerdown="handleGuestPressStart(event, '${b.id}', '${activeEv.id}')"
@@ -1755,21 +1903,17 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
               </div>
             </div>
 
-            <!-- Быстрые действия: Избранное, Telegram, Удалить -->
             <div class="flex items-center gap-1 flex-none" onpointerdown="event.stopPropagation()">
-              <!-- Звездочка Избранное -->
               <button class="star-btn ${b.isFavorite ? 'on' : ''}" onclick="toggleBookingFavorite('${b.id}')" title="Метка «Избранное»">
                 <svg><use href="${b.isFavorite ? '#ic-star' : '#ic-starOutline'}"/></svg>
               </button>
 
-              <!-- Напоминание в Telegram -->
               ${b.telegram ? `
                 <button class="icon-btn sm" onclick="openTgReminder('${b.id}')" title="Напомнить в Telegram" style="color:#2AABEE">
                   ${ic('send')}
                 </button>
               ` : ''}
 
-              <!-- Удалить гостя из записи -->
               <button class="icon-btn sm" onclick="deleteBooking('${b.id}', '${activeEv.id}')" title="Удалить запись">
                 ${ic('trash')}
               </button>
@@ -1778,7 +1922,6 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
         `).join('')}
       </div>
 
-      <!-- Список ожидания (Резерв) -->
       ${waitlist.length ? `
         <div style="border-top:1px dashed var(--line);background:#FCFBF9;padding:12px 16px">
           <div class="text-xs font-bold text-rent uppercase" style="margin-bottom:8px">Лист ожидания / Резерв (${waitlist.length})</div>
@@ -1804,22 +1947,28 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
 function renderMonthView() {
   const { year, month } = ui, weeks = getMonthWeeks(year, month);
   const evs = db.events.filter(e => ui.filter === 'all' || e.presenceType === ui.filter);
+  const isListView = ui.monthViewMode === 'list';
 
   let html = `
     <div class="page-head flex items-center justify-between gap-3 flex-wrap">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
         <button class="icon-btn" onclick="changeMonth(-1)">${ic('chevLeft')}</button>
         <div class="font-bold text-lg text-center" style="min-width:150px">${MONTHS[month]} ${year}</div>
         <button class="icon-btn" onclick="changeMonth(1)">${ic('chevRight')}</button>
         <button class="btn btn-ghost btn-sm" onclick="ui.year=new Date().getFullYear();ui.month=new Date().getMonth();render()">Текущий</button>
       </div>
-      <div class="flex gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
         <button class="btn btn-soft btn-sm" onclick="openAddEventModal()">${ic('plus')} Событие</button>
         <button class="btn btn-primary btn-sm" onclick="openTelegramPostModal()">${ic('send')} В Telegram</button>
       </div>
     </div>
     ${renderFilterChips()}
   `;
+
+  if (isListView) {
+    html += renderEventsListView();
+    return html;
+  }
 
   weeks.forEach((w, wIdx) => {
     html += `
@@ -1925,7 +2074,6 @@ function renderDayView() {
     return html;
   }
 
-  // Горизонтальный селектор мероприятий дня с индикаторами
   html += `
     <div class="day-tabs-scroll" style="max-width:960px">
       ${dayEvs.map(ev => {
@@ -2437,8 +2585,9 @@ function renderAnalyticsView() {
     const eventBookings = db.bookings.filter(b => b.eventId === e.id && !b.isWaitlist);
     
     eventBookings.forEach(b => {
+      const tickets = Math.max(1, Number(b.ticketsCount) || 1);
       if (b.isPaid) {
-        evRev += (b.ticketsCount || 1) * (e.price || 0);
+        evRev += tickets * (e.price || 0);
       }
     });
 
@@ -2448,7 +2597,7 @@ function renderAnalyticsView() {
 
     if (evRev > 0) {
       totalRev += evRev;
-      const peopleCount = eventBookings.reduce((sum, b) => sum + (b.ticketsCount || 1), 0);
+      const peopleCount = eventBookings.reduce((sum, b) => sum + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
       eventAnalyticsMap.set(e.id, {
         id: e.id,
         title: e.title,
@@ -2463,7 +2612,7 @@ function renderAnalyticsView() {
 
   db.bookings.forEach(b => {
     if(evIds.has(b.eventId) && !b.isWaitlist && b.isCheckedIn) {
-      totalCheckins += (b.ticketsCount || 1);
+      totalCheckins += (Math.max(1, Number(b.ticketsCount) || 1));
     }
   });
 
@@ -2475,7 +2624,8 @@ function renderAnalyticsView() {
   db.bookings.forEach(b => {
     if(evIds.has(b.eventId) && !b.isWaitlist && b.isPaid) {
       const ev = db.events.find(x => x.id === b.eventId);
-      const paidAmount = (b.ticketsCount || 1) * (ev?.price || 0);
+      const tickets = Math.max(1, Number(b.ticketsCount) || 1);
+      const paidAmount = tickets * (ev?.price || 0);
 
       if (paidAmount > 0) {
         const cId = b.clientId || getStableClientId(b.telegram, b.guestName);
@@ -2492,7 +2642,7 @@ function renderAnalyticsView() {
         const guestData = guestAnalyticsMap.get(cId);
         guestData.revenue += paidAmount;
         if (b.isCheckedIn) {
-          guestData.visits += (b.ticketsCount || 1);
+          guestData.visits += tickets;
         }
       }
     }
@@ -2500,7 +2650,7 @@ function renderAnalyticsView() {
 
   guestAnalyticsMap.forEach(g => {
     if (g.visits === 0) {
-      const count = db.bookings.filter(b => evIds.has(b.eventId) && !b.isWaitlist && b.isPaid && (b.clientId === g.id || b.guestName === g.name)).reduce((s,b)=>s+(b.ticketsCount||1), 0);
+      const count = db.bookings.filter(b => evIds.has(b.eventId) && !b.isWaitlist && b.isPaid && (b.clientId === g.id || b.guestName === g.name)).reduce((s,b)=>s+(Math.max(1, Number(b.ticketsCount) || 1)), 0);
       g.visits = count || 1;
     }
   });
@@ -2705,7 +2855,7 @@ let acTimer = null;
 function hideGuestSuggestionsWithDelay() {
   clearTimeout(acTimer);
   acTimer = setTimeout(() => {
-    ['acNameBox', 'acTgBox', 'acModalNameBox', 'acModalTgBox'].forEach(boxId => {
+    ['acNameBox', 'acTgBox', 'acModalNameBox', 'acModalTgBox', 'acEvAdminBox', 'acEvRentClientBox'].forEach(boxId => {
       const el = document.getElementById(boxId);
       if (el) el.style.display = 'none';
     });
@@ -2718,13 +2868,18 @@ function showGuestSuggestions(query, targetField) {
   else if (targetField === 'tg') boxId = 'acTgBox';
   else if (targetField === 'modal_name') boxId = 'acModalNameBox';
   else if (targetField === 'modal_tg') boxId = 'acModalTgBox';
+  else if (targetField === 'ev_admin') boxId = 'acEvAdminBox';
+  else if (targetField === 'ev_client') boxId = 'acEvRentClientBox';
 
   const box = document.getElementById(boxId);
   if (!box || !db?.clients?.length) return;
 
-  const isModal = targetField.startsWith('modal_');
-  const otherBox = document.getElementById(isModal ? (targetField === 'modal_name' ? 'acModalTgBox' : 'acModalNameBox') : (targetField === 'name' ? 'acTgBox' : 'acNameBox'));
-  if (otherBox) otherBox.style.display = 'none';
+  ['acNameBox', 'acTgBox', 'acModalNameBox', 'acModalTgBox', 'acEvAdminBox', 'acEvRentClientBox'].forEach(id => {
+    if (id !== boxId) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    }
+  });
 
   const q = String(query || '').toLowerCase().trim().replace(/^@/, '');
   let matches = [];
@@ -2748,7 +2903,7 @@ function showGuestSuggestions(query, targetField) {
   }
 
   box.innerHTML = matches.map(c => `
-    <div class="autocomplete-item" onmousedown="selectGuestSuggestion('${esc(c.id)}', ${isModal})">
+    <div class="autocomplete-item" onmousedown="selectGuestSuggestion('${esc(c.id)}', '${targetField}')">
       <div style="min-width:0;flex:1">
         <div class="font-semibold text-base truncate">${esc(c.name)}</div>
         <div class="text-xs text-muted truncate">${c.telegram ? esc(c.telegram) : 'Без Telegram'}${c.clientNotes ? ' · ' + esc(c.clientNotes) : ''}</div>
@@ -2760,15 +2915,25 @@ function showGuestSuggestions(query, targetField) {
   box.style.display = 'block';
 }
 
-function selectGuestSuggestion(clientId, isModal = false) {
+function selectGuestSuggestion(clientId, targetField = 'name') {
   const c = db.clients.find(x => x.id === clientId);
   if (!c) return;
-  const nameInp = document.getElementById(isModal ? 'mBkName' : 'bkName');
-  const tgInp = document.getElementById(isModal ? 'mBkTg' : 'bkTg');
-  if (nameInp) nameInp.value = c.name || '';
-  if (tgInp) tgInp.value = c.telegram || '';
 
-  ['acNameBox', 'acTgBox', 'acModalNameBox', 'acModalTgBox'].forEach(boxId => {
+  if (targetField === 'ev_admin') {
+    const el = document.getElementById('evAdmin');
+    if (el) el.value = c.name + (c.telegram ? ` (${c.telegram})` : '');
+  } else if (targetField === 'ev_client') {
+    const el = document.getElementById('evRentClient');
+    if (el) el.value = c.name + (c.telegram ? ` (${c.telegram})` : '');
+  } else {
+    const isModal = targetField === 'modal_name' || targetField === 'modal_tg';
+    const nameInp = document.getElementById(isModal ? 'mBkName' : 'bkName');
+    const tgInp = document.getElementById(isModal ? 'mBkTg' : 'bkTg');
+    if (nameInp) nameInp.value = c.name || '';
+    if (tgInp) tgInp.value = c.telegram || '';
+  }
+
+  ['acNameBox', 'acTgBox', 'acModalNameBox', 'acModalTgBox', 'acEvAdminBox', 'acEvRentClientBox'].forEach(boxId => {
     const el = document.getElementById(boxId);
     if (el) el.style.display = 'none';
   });
@@ -2931,7 +3096,7 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
     title: fmt?.title || '', formatId: fmtId, date: preDate || ui.dayDate || TODAY_ISO,
     time: preTime || '19:00', endTime: '21:00', price: fmt?.defaultPrice || 0,
     capacity: fmt?.defaultCapacity || 20, presenceType: fmt?.defaultPresence || 'must', note: '',
-    contactPerson: 'Лена', isPaid: false
+    contactPerson: 'Лена', adminPerson: 'Лена', rentClientPerson: '', isPaid: false
   };
 
   const existingBookings = editId ? db.bookings.filter(b => b.eventId === editId) : [];
@@ -2975,6 +3140,26 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
           <div class="field"><label>Окончание</label><input class="inp" type="time" id="evEnd" required value="${initial.endTime}"></div>
         </div>
 
+        <!-- Поля аренды: Администратор и Клиент (выбор из гостей с автокомплитом) -->
+        <div class="grid2" id="rowRentStaff" style="display:none;margin-bottom:12px">
+          <div class="field" style="position:relative;margin:0">
+            <label>Администратор (из базы)</label>
+            <input class="inp" id="evAdmin" value="${esc(initial.adminPerson || initial.contactPerson || 'Лена')}" placeholder="Лена" autocomplete="off"
+                   onfocus="showGuestSuggestions(this.value, 'ev_admin')"
+                   oninput="showGuestSuggestions(this.value, 'ev_admin')"
+                   onblur="hideGuestSuggestionsWithDelay()">
+            <div class="autocomplete-box" id="acEvAdminBox"></div>
+          </div>
+          <div class="field" style="position:relative;margin:0">
+            <label>Клиент (Арендатор)</label>
+            <input class="inp" id="evRentClient" value="${esc(initial.rentClientPerson || '')}" placeholder="Имя или @ник арендатора" autocomplete="off"
+                   onfocus="showGuestSuggestions(this.value, 'ev_client')"
+                   oninput="showGuestSuggestions(this.value, 'ev_client')"
+                   onblur="hideGuestSuggestionsWithDelay()">
+            <div class="autocomplete-box" id="acEvRentClientBox"></div>
+          </div>
+        </div>
+
         <div class="grid2" id="rowEvFinance">
           <div class="field" id="colEvPrice">
             <label id="lblEvPrice">Цена билета, ₽</label>
@@ -3012,6 +3197,7 @@ function updateEventFormVisibility(presenceType) {
   const colCap = document.getElementById('colEvCapacity');
   const lblPrice = document.getElementById('lblEvPrice');
   const rowRentPaid = document.getElementById('rowEvRentPaid');
+  const rowRentStaff = document.getElementById('rowRentStaff');
   const hintEl = document.getElementById('presenceTypeHint');
   const evP = document.getElementById('evP');
   const evC = document.getElementById('evC');
@@ -3021,6 +3207,7 @@ function updateEventFormVisibility(presenceType) {
   if (presenceType === 'trip') {
     if (rowFmt) rowFmt.style.display = 'none';
     rowFin.style.display = 'none';
+    if (rowRentStaff) rowRentStaff.style.display = 'none';
     if (rowRentPaid) rowRentPaid.style.display = 'none';
     if (evP) evP.disabled = true;
     if (evC) evC.disabled = true;
@@ -3030,6 +3217,7 @@ function updateEventFormVisibility(presenceType) {
   } else if (presenceType === 'rent') {
     if (rowFmt) rowFmt.style.display = '';
     rowFin.style.display = 'grid';
+    if (rowRentStaff) rowRentStaff.style.display = 'grid';
     if (colPrice) colPrice.style.display = '';
     if (colCap) colCap.style.display = 'none';
     if (evP) evP.disabled = false;
@@ -3042,6 +3230,7 @@ function updateEventFormVisibility(presenceType) {
   } else {
     if (rowFmt) rowFmt.style.display = '';
     rowFin.style.display = 'grid';
+    if (rowRentStaff) rowRentStaff.style.display = 'none';
     if (colPrice) {
       colPrice.style.display = '';
       if (lblPrice) lblPrice.textContent = 'Цена билета, ₽';
@@ -3100,6 +3289,8 @@ function handleSaveEvent(e, editId, returnToEventId = null) {
     ? (rentPaidInp ? rentPaidInp.checked : Boolean(existingEv?.isPaid))
     : false;
 
+  const adminPerson = (document.getElementById('evAdmin')?.value || '').trim() || 'Лена';
+  const rentClientPerson = (document.getElementById('evRentClient')?.value || '').trim();
   const note = (document.getElementById('evN')?.value || '').trim();
 
   let startMin = toMin(time), endMin = toMin(endTime);
@@ -3113,7 +3304,9 @@ function handleSaveEvent(e, editId, returnToEventId = null) {
     title, formatId, date, time, endTime,
     price, capacity, presenceType,
     isPaid,
-    contactPerson: 'Лена',
+    adminPerson,
+    rentClientPerson,
+    contactPerson: adminPerson || 'Лена',
     note,
     updatedAt: nowTs()
   };
@@ -3730,7 +3923,6 @@ function openSyncModal() {
         </div>
       </div>
 
-      <!-- Блок обновления и сброса кэша браузера -->
       <div style="margin-top:16px;background:var(--subtle);border:1px solid var(--line2);border-radius:14px;padding:12px 14px">
         <div class="flex items-center justify-between gap-2 flex-wrap">
           <div>
@@ -3842,7 +4034,6 @@ function openNotificationsModal() {
     setupFirebaseRealtime();
   }
 
-  // Проверка версии GitHub при старте
   setTimeout(() => {
     checkForGitHubUpdate(false);
   }, 1500);
