@@ -31,6 +31,9 @@
   --trip-bg: #ECEEF2;
   --star: #E5A118;
   --star-bg: #FEF8EC;
+  --free: #2080C8;
+  --free-bg: #EAF4FD;
+  --free-border: rgba(32, 128, 200, 0.28);
   --sh: 0 4px 20px rgba(32,36,48,.04);
   --sh2: 0 10px 32px rgba(32,36,48,.08);
 }
@@ -79,6 +82,7 @@ button { cursor: pointer; border: none; background: none; }
 .text-team { color: var(--team); }
 .text-must { color: var(--must); }
 .text-rent { color: var(--rent); }
+.text-free { color: var(--free); }
 .bg-subtle { background: var(--subtle); }
 .bg-surface { background: var(--surface); }
 .rounded-lg { border-radius: 8px; }
@@ -309,10 +313,24 @@ main { padding: 18px 0 80px; min-height: calc(100vh - 120px); }
 .pay-pill-btn {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px;
   border-radius: 999px; font-size: 11px; font-weight: 700; cursor: pointer;
-  border: 1px solid transparent; transition: all .14s ease;
+  border: 1px solid transparent; transition: all .14s ease; user-select: none;
 }
+.pay-pill-btn:active { transform: scale(0.96); }
 .pay-pill-btn.paid { background: var(--team-bg); color: var(--team); border-color: rgba(62,148,110,.25); }
 .pay-pill-btn.unpaid { background: var(--rent-bg); color: #B37D14; border-color: rgba(200,148,42,.3); }
+.pay-pill-btn.free { background: var(--free-bg); color: var(--free); border-color: var(--free-border); }
+
+/* Интерактивный переключатель оплаты внутри модальных окон */
+.pay-toggle-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 14px; border-radius: 12px; font-size: 13px; font-weight: 700;
+  cursor: pointer; border: 1.5px solid transparent; transition: all .15s ease;
+  min-height: 42px; user-select: none;
+}
+.pay-toggle-btn:active { transform: scale(0.97); }
+.pay-toggle-btn.paid { background: var(--team-bg); color: var(--team); border-color: rgba(62,148,110,.4); }
+.pay-toggle-btn.unpaid { background: var(--rent-bg); color: #B37D14; border-color: rgba(200,148,42,.45); }
+.pay-toggle-btn.free { background: var(--free-bg); color: var(--free); border-color: var(--free-border); }
 
 .field { margin-bottom: 13px; }
 .field label { display: block; font-size: 12px; font-weight: 700; color: var(--ink2); margin-bottom: 5px; }
@@ -467,6 +485,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
       <circle cx="12" cy="17.2" r="0.8" fill="currentColor"/>
     </symbol>
     <symbol id="ic-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+    <symbol id="ic-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></symbol>
   </defs>
 </svg>
 
@@ -479,7 +498,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
       <div>
         <div class="flex items-center gap-2">
           <div class="font-bold text-base tracking-tight">Пятница.Пульт</div>
-          <span class="version-pill" id="headerVersionPill" title="Текущая версия приложения">v1.2.0</span>
+          <span class="version-pill" id="headerVersionPill" title="Текущая версия приложения">v1.3.0</span>
         </div>
         <div class="text-xs text-muted">центр управления пространством</div>
       </div>
@@ -502,7 +521,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -524,6 +543,52 @@ const NAV = [
   { id:'events', label:'Реестр', icon:'list' }, { id:'clients', label:'Гости', icon:'users' },
   { id:'analytics', label:'Аналитика', icon:'chart' }
 ];
+
+// ============================================================================
+// ТРЕХПОЗИЦИОННЫЙ СТАТУС ОПЛАТЫ ГОСТЯ: unpaid -> paid -> free -> unpaid
+// Гарантируется 100% обратная совместимость со старыми булевыми данными (isPaid)
+// ============================================================================
+const PAYMENT_STATUSES = {
+  unpaid: { id: 'unpaid', label: '⏳ Не оплачено', shortLabel: 'Не оплачено', cssClass: 'unpaid' },
+  paid:   { id: 'paid',   label: '✓ Оплачено',    shortLabel: 'Оплачено',    cssClass: 'paid' },
+  free:   { id: 'free',   label: '🎁 Бесплатно',   shortLabel: 'Бесплатно',   cssClass: 'free' }
+};
+
+function normalizePaymentStatus(val, isPaidLegacy = undefined) {
+  if (val === 'free') return 'free';
+  if (val === 'paid') return 'paid';
+  if (val === 'unpaid') return 'unpaid';
+  if (typeof val === 'boolean') return val ? 'paid' : 'unpaid';
+  if (typeof isPaidLegacy === 'boolean') return isPaidLegacy ? 'paid' : 'unpaid';
+  return 'unpaid';
+}
+
+function getNextPaymentStatus(currentStatus) {
+  const norm = normalizePaymentStatus(currentStatus);
+  if (norm === 'unpaid') return 'paid';
+  if (norm === 'paid') return 'free';
+  return 'unpaid';
+}
+
+function renderPayPillHtml(status, onClickJs) {
+  const norm = normalizePaymentStatus(status);
+  const cfg = PAYMENT_STATUSES[norm] || PAYMENT_STATUSES.unpaid;
+  return `
+    <button type="button" class="pay-pill-btn ${cfg.cssClass}" onclick="event.preventDefault(); event.stopPropagation(); ${onClickJs}" title="Статус оплаты: ${cfg.shortLabel} (нажмите для переключения)">
+      ${cfg.label}
+    </button>
+  `;
+}
+
+function renderPayToggleBtnHtml(status, onToggleJs = 'cycleModalPaymentStatus()', elementId = 'mBkPayStatusBtn') {
+  const norm = normalizePaymentStatus(status);
+  const cfg = PAYMENT_STATUSES[norm] || PAYMENT_STATUSES.unpaid;
+  return `
+    <button type="button" id="${elementId}" class="pay-toggle-btn ${cfg.cssClass} w-full" onclick="${onToggleJs}">
+      ${cfg.label}
+    </button>
+  `;
+}
 
 async function hardResetCacheAndReload(targetSha = null) {
   try {
@@ -883,8 +948,8 @@ function seedDatabase() {
       { id: 'ev-202', formatId: 'fmt-1', title: 'Осенний Квартирник при свечах', date: t, time: '19:00', endTime: '21:30', price: 900, capacity: 25, presenceType: 'must', isPaid: false, contactPerson: 'Лена', note: 'Зажечь свечи', updatedAt: stamp }
     ],
     bookings: [
-      { id: 'bk-1', eventId: 'ev-202', clientId: cl1Id, guestName: 'Марина Соколова', telegram: '@sokol_marina', ticketsCount: 2, isPaid: true, isCheckedIn: true, isWaitlist: false, isFavorite: true, note: 'У камина', eventTitle: 'Осенний Квартирник при свечах', eventDate: t, eventTime: '19:00', eventPrice: 900, updatedAt: stamp },
-      { id: 'bk-2', eventId: 'ev-202', clientId: cl2Id, guestName: 'Алексей Кузнецов', telegram: '@kuznetsov_alex', ticketsCount: 1, isPaid: true, isCheckedIn: false, isWaitlist: false, isFavorite: false, note: 'Опоздает', eventTitle: 'Осенний Квартирник при свечах', eventDate: t, eventTime: '19:00', eventPrice: 900, updatedAt: stamp }
+      { id: 'bk-1', eventId: 'ev-202', clientId: cl1Id, guestName: 'Марина Соколова', telegram: '@sokol_marina', ticketsCount: 2, paymentStatus: 'paid', isPaid: true, isCheckedIn: true, isWaitlist: false, isFavorite: true, note: 'У камина', eventTitle: 'Осенний Квартирник при свечах', eventDate: t, eventTime: '19:00', eventPrice: 900, updatedAt: stamp },
+      { id: 'bk-2', eventId: 'ev-202', clientId: cl2Id, guestName: 'Алексей Кузнецов', telegram: '@kuznetsov_alex', ticketsCount: 1, paymentStatus: 'paid', isPaid: true, isCheckedIn: false, isWaitlist: false, isFavorite: false, note: 'Опоздает', eventTitle: 'Осенний Квартирник при свечах', eventDate: t, eventTime: '19:00', eventPrice: 900, updatedAt: stamp }
     ],
     clients: [
       { id: cl1Id, name: 'Марина Соколова', telegram: '@sokol_marina', visitsCount: 2, totalPaid: 1800, initialVisits: 0, initialPaid: 0, clientNotes: 'Любит травяной чай, ходит на квартирники', firstSeen: t, lastSeen: t, updatedAt: stamp },
@@ -953,6 +1018,9 @@ function cleanupClientDuplicates(d) {
 
   if (Array.isArray(d.bookings)) {
     d.bookings.forEach(b => {
+      b.paymentStatus = normalizePaymentStatus(b.paymentStatus, b.isPaid);
+      b.isPaid = (b.paymentStatus === 'paid');
+
       if (b.clientId && idRemap.has(b.clientId)) {
         b.clientId = idRemap.get(b.clientId);
       } else if (!b.clientId) {
@@ -966,7 +1034,7 @@ function cleanupClientDuplicates(d) {
 
   d.clients.forEach(c => {
     const checkedInBookings = (d.bookings || []).filter(b => b.clientId === c.id && b.isCheckedIn);
-    const paidBookings = (d.bookings || []).filter(b => b.clientId === c.id && b.isPaid);
+    const paidBookings = (d.bookings || []).filter(b => b.clientId === c.id && normalizePaymentStatus(b.paymentStatus, b.isPaid) === 'paid');
     const calcVisits = checkedInBookings.reduce((s, b) => s + (b.ticketsCount || 1), 0);
     const calcPaid = paidBookings.reduce((s, b) => {
       const ev = (d.events || []).find(e => e.id === b.eventId);
@@ -1096,6 +1164,7 @@ function normalizeAndMigrateDB(raw) {
         clientsList.push(client);
       }
       const ev = events.find(e => e.id === b.eventId);
+      const paymentStatus = normalizePaymentStatus(b.paymentStatus, b.isPaid);
       return {
         id: b.id || uid('bk'),
         eventId: b.eventId,
@@ -1103,7 +1172,8 @@ function normalizeAndMigrateDB(raw) {
         guestName: b.guestName || (client ? client.name : 'Гость'),
         telegram: b.telegram !== undefined ? b.telegram : (client ? client.telegram : ''),
         ticketsCount: Math.max(1, Number(b.ticketsCount) || 1),
-        isPaid: Boolean(b.isPaid),
+        paymentStatus,
+        isPaid: (paymentStatus === 'paid'),
         isCheckedIn: Boolean(b.isCheckedIn),
         isWaitlist: Boolean(b.isWaitlist),
         isFavorite: Boolean(b.isFavorite),
@@ -1383,7 +1453,8 @@ function getEventStats(eventId, price = 0) {
   const bk = db.bookings.filter(b => b.eventId === eventId && !b.isWaitlist);
   const booked = bk.reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
   const checked = bk.filter(b => b.isCheckedIn).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
-  const paidSum = bk.filter(b => b.isPaid).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)) * price, 0);
+  const paidSum = bk.filter(b => normalizePaymentStatus(b.paymentStatus, b.isPaid) === 'paid')
+                    .reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)) * price, 0);
   return { booked, checked, paidSum, list: bk };
 }
 
@@ -1408,7 +1479,7 @@ function getClientStats(clientId) {
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   const checkedIn = history.filter(x => x.bk.isCheckedIn);
-  const paid = history.filter(x => x.bk.isPaid);
+  const paid = history.filter(x => normalizePaymentStatus(x.bk.paymentStatus, x.bk.isPaid) === 'paid');
 
   const bookingVisits = checkedIn.reduce((s, x) => s + (Math.max(1, Number(x.bk.ticketsCount) || 1)), 0);
   const totalVisits = (Number(c.initialVisits) || 0) + bookingVisits;
@@ -1505,7 +1576,9 @@ function copyFilteredGuestList(eventId) {
   const lines = list.map(b => {
     const name = (b.guestName || '').trim();
     const tg = b.telegram ? (' ' + b.telegram.trim()) : '';
-    return `${name}${tg}`;
+    const status = normalizePaymentStatus(b.paymentStatus, b.isPaid);
+    const payNote = status === 'paid' ? ' (опл)' : (status === 'free' ? ' (беспл)' : '');
+    return `${name}${tg}${payNote}`;
   });
 
   const textToCopy = lines.join('\n');
@@ -1889,7 +1962,9 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
             <div class="font-semibold text-base text-ink" style="margin-bottom:2px">В этом списке нет гостей</div>
             <div class="text-xs">Нажмите «+ Добавить гостя» чтобы записать участника</div>
           </div>
-        ` : displayList.map(b => `
+        ` : displayList.map(b => {
+          const currentPayStatus = normalizePaymentStatus(b.paymentStatus, b.isPaid);
+          return `
           <div class="guest-row-card" id="guestRow_${b.id}">
             <button class="checkin-btn ${b.isCheckedIn ? 'on' : ''}" onclick="toggleCheckin('${b.id}')" title="Отметить посещение">
               ${b.isCheckedIn ? ic('check') : ''}
@@ -1906,9 +1981,7 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
                 ${esc(b.guestName)} ${b.ticketsCount > 1 ? `<span class="pill text-xs">${b.ticketsCount} чел.</span>` : ''}
               </div>
               <div class="flex items-center gap-2 flex-wrap" style="margin-top:3px" onpointerdown="event.stopPropagation()">
-                <button class="pay-pill-btn ${b.isPaid ? 'paid' : 'unpaid'}" onclick="togglePayment('${b.id}')" title="Изменить статус оплаты">
-                  ${b.isPaid ? '✓ Оплачено' : '⏳ Не оплачено'}
-                </button>
+                ${renderPayPillHtml(currentPayStatus, `togglePayment('${b.id}')`)}
                 ${b.telegram ? `<span class="text-xs text-muted truncate">${esc(b.telegram)}</span>` : ''}
                 ${b.note ? `<span class="text-xs text-ink2 truncate" style="font-style:italic">· ${esc(b.note)}</span>` : ''}
               </div>
@@ -1930,7 +2003,7 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
               </button>
             </div>
           </div>
-        `).join('')}
+        `}).join('')}
       </div>
 
       ${waitlist.length ? `
@@ -2192,11 +2265,25 @@ function handleGuestPressEnd(e) {
   clearTimeout(guestPressTimer);
 }
 
+function cycleModalPaymentStatus() {
+  const hidden = document.getElementById('mBkPaymentStatus');
+  const btn = document.getElementById('mBkPayStatusBtn');
+  if (!hidden || !btn) return;
+
+  const nextStatus = getNextPaymentStatus(hidden.value);
+  hidden.value = nextStatus;
+
+  const cfg = PAYMENT_STATUSES[nextStatus] || PAYMENT_STATUSES.unpaid;
+  btn.className = `pay-toggle-btn ${cfg.cssClass} w-full`;
+  btn.innerHTML = cfg.label;
+}
+
 function openAddGuestModal(eventId) {
   const ev = db.events.find(x => x.id === eventId);
   if (!ev) return;
 
   const returnToModalId = (ui.modal?.type === 'event') ? ui.modal.id : null;
+  const initialStatus = 'unpaid';
 
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
@@ -2232,11 +2319,10 @@ function openAddGuestModal(eventId) {
             <label>Кол-во мест</label>
             <input type="number" id="mBkCount" min="1" value="1" class="inp" required>
           </div>
-          <div style="padding-top:18px">
-            <label class="check">
-              <input type="checkbox" id="mBkPaid">
-              <span>Оплачено</span>
-            </label>
+          <div class="field" style="margin:0">
+            <label>Статус оплаты</label>
+            <input type="hidden" id="mBkPaymentStatus" value="${initialStatus}">
+            ${renderPayToggleBtnHtml(initialStatus, 'cycleModalPaymentStatus()', 'mBkPayStatusBtn')}
           </div>
           <div style="padding-top:18px">
             <label class="check">
@@ -2271,6 +2357,7 @@ function openEditGuestModal(bookingId, eventId) {
   const ev = db.events.find(x => x.id === eventId);
   const isFav = Boolean(b.isFavorite);
   const returnToModalId = (ui.modal?.type === 'event') ? ui.modal.id : null;
+  const currentStatus = normalizePaymentStatus(b.paymentStatus, b.isPaid);
 
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
@@ -2306,11 +2393,10 @@ function openEditGuestModal(bookingId, eventId) {
             <label>Кол-во мест</label>
             <input type="number" id="mBkCount" min="1" value="${b.ticketsCount || 1}" class="inp" required>
           </div>
-          <div style="padding-top:18px">
-            <label class="check">
-              <input type="checkbox" id="mBkPaid" ${b.isPaid ? 'checked' : ''}>
-              <span>Оплачено</span>
-            </label>
+          <div class="field" style="margin:0">
+            <label>Статус оплаты</label>
+            <input type="hidden" id="mBkPaymentStatus" value="${currentStatus}">
+            ${renderPayToggleBtnHtml(currentStatus, 'cycleModalPaymentStatus()', 'mBkPayStatusBtn')}
           </div>
           <div style="padding-top:18px">
             <label class="check">
@@ -2350,7 +2436,10 @@ function handleModalEditGuest(e, bookingId, eventId, returnToModalId = null) {
   let tg = document.getElementById('mBkTg').value.trim();
   if (tg && !tg.startsWith('@') && !tg.startsWith('http')) tg = '@' + tg;
   const count = Math.max(1, parseInt(document.getElementById('mBkCount').value) || 1);
-  const isPaid = document.getElementById('mBkPaid').checked;
+  
+  const paymentStatus = normalizePaymentStatus(document.getElementById('mBkPaymentStatus')?.value);
+  const isPaid = (paymentStatus === 'paid');
+  
   const isWait = document.getElementById('mBkWait').checked;
   const isFav = document.getElementById('mBkFavVal') ? document.getElementById('mBkFavVal').value === '1' : false;
   const note = document.getElementById('mBkNote').value.trim();
@@ -2359,6 +2448,7 @@ function handleModalEditGuest(e, bookingId, eventId, returnToModalId = null) {
   b.guestName = name;
   b.telegram = tg;
   b.ticketsCount = count;
+  b.paymentStatus = paymentStatus;
   b.isPaid = isPaid;
   b.isWaitlist = isWait;
   b.isFavorite = isFav;
@@ -2413,7 +2503,10 @@ function handleModalAddGuest(e, evId, returnToModalId = null) {
   let tg = document.getElementById('mBkTg').value.trim();
   if (tg && !tg.startsWith('@') && !tg.startsWith('http')) tg = '@' + tg;
   const count = Math.max(1, parseInt(document.getElementById('mBkCount').value) || 1);
-  const isPaid = document.getElementById('mBkPaid').checked;
+  
+  const paymentStatus = normalizePaymentStatus(document.getElementById('mBkPaymentStatus')?.value);
+  const isPaid = (paymentStatus === 'paid');
+
   const isWait = document.getElementById('mBkWait').checked;
   const isFav = document.getElementById('mBkFavVal') ? document.getElementById('mBkFavVal').value === '1' : false;
   const note = document.getElementById('mBkNote').value.trim();
@@ -2459,6 +2552,7 @@ function handleModalAddGuest(e, evId, returnToModalId = null) {
     guestName: name,
     telegram: tg,
     ticketsCount: count,
+    paymentStatus,
     isPaid,
     isCheckedIn: false,
     isWaitlist: isWait,
@@ -2597,7 +2691,7 @@ function renderAnalyticsView() {
     
     eventBookings.forEach(b => {
       const tickets = Math.max(1, Number(b.ticketsCount) || 1);
-      if (b.isPaid) {
+      if (normalizePaymentStatus(b.paymentStatus, b.isPaid) === 'paid') {
         evRev += tickets * (e.price || 0);
       }
     });
@@ -2633,7 +2727,7 @@ function renderAnalyticsView() {
   const guestAnalyticsMap = new Map();
 
   db.bookings.forEach(b => {
-    if(evIds.has(b.eventId) && !b.isWaitlist && b.isPaid) {
+    if(evIds.has(b.eventId) && !b.isWaitlist && normalizePaymentStatus(b.paymentStatus, b.isPaid) === 'paid') {
       const ev = db.events.find(x => x.id === b.eventId);
       const tickets = Math.max(1, Number(b.ticketsCount) || 1);
       const paidAmount = tickets * (ev?.price || 0);
@@ -2661,7 +2755,9 @@ function renderAnalyticsView() {
 
   guestAnalyticsMap.forEach(g => {
     if (g.visits === 0) {
-      const count = db.bookings.filter(b => evIds.has(b.eventId) && !b.isWaitlist && b.isPaid && (b.clientId === g.id || b.guestName === g.name)).reduce((s,b)=>s+(Math.max(1, Number(b.ticketsCount) || 1)), 0);
+      const count = db.bookings
+        .filter(b => evIds.has(b.eventId) && !b.isWaitlist && normalizePaymentStatus(b.paymentStatus, b.isPaid) === 'paid' && (b.clientId === g.id || b.guestName === g.name))
+        .reduce((s,b)=>s+(Math.max(1, Number(b.ticketsCount) || 1)), 0);
       g.visits = count || 1;
     }
   });
@@ -2999,6 +3095,7 @@ function toggleCheckin(id) {
   const b = db.bookings.find(x => x.id === id); if(!b) return;
   b.isCheckedIn = !b.isCheckedIn;
   b.updatedAt = nowTs();
+
   const stats = getClientStats(b.clientId);
   const c = db.clients.find(x => x.id === b.clientId);
   if(c) {
@@ -3008,14 +3105,40 @@ function toggleCheckin(id) {
     c.updatedAt = b.updatedAt;
   }
   saveDatabase(true);
-  if(ui.modal?.type==='event') openEventDetailsModal(b.eventId);
-  render();
+
+  // Точечно обновляем состояние кнопки чекина и зачеркивание имени
+  const row = document.getElementById(`guestRow_${b.id}`);
+  if (row) {
+    const btn = row.querySelector('.checkin-btn');
+    if (btn) {
+      if (b.isCheckedIn) {
+        btn.classList.add('on');
+        btn.innerHTML = ic('check');
+      } else {
+        btn.classList.remove('on');
+        btn.innerHTML = '';
+      }
+    }
+    const nameEl = row.querySelector('.guest-info-block .font-bold');
+    if (nameEl) {
+      nameEl.style.textDecoration = b.isCheckedIn ? 'line-through' : '';
+      nameEl.style.opacity = b.isCheckedIn ? '0.65' : '';
+    }
+  } else {
+    render();
+  }
 }
 
 function togglePayment(id) {
   const b = db.bookings.find(x => x.id === id); if(!b) return;
-  b.isPaid = !b.isPaid;
+  
+  const currentStatus = normalizePaymentStatus(b.paymentStatus, b.isPaid);
+  const nextStatus = getNextPaymentStatus(currentStatus);
+  
+  b.paymentStatus = nextStatus;
+  b.isPaid = (nextStatus === 'paid');
   b.updatedAt = nowTs();
+
   const stats = getClientStats(b.clientId);
   const c = db.clients.find(x => x.id === b.clientId);
   if(c) {
@@ -3025,8 +3148,27 @@ function togglePayment(id) {
     c.updatedAt = b.updatedAt;
   }
   saveDatabase(true);
-  if(ui.modal?.type==='event') openEventDetailsModal(b.eventId);
-  render();
+
+  // Точечно обновляем только строку этого гостя в DOM без сброса скролла страницы
+  const row = document.getElementById(`guestRow_${b.id}`);
+  if (row) {
+    const payBtn = row.querySelector('.pay-pill-btn');
+    if (payBtn) {
+      const cfg = PAYMENT_STATUSES[nextStatus] || PAYMENT_STATUSES.unpaid;
+      payBtn.className = `pay-pill-btn ${cfg.cssClass}`;
+      payBtn.textContent = cfg.label;
+      payBtn.title = `Статус оплаты: ${cfg.shortLabel} (нажмите для переключения)`;
+    }
+  } else {
+    render();
+  }
+  
+  const statusLabels = {
+    paid: 'Оплата отмечена (Оплачено)',
+    free: 'Установлен статус: Бесплатно',
+    unpaid: 'Статус сброшен: Не оплачено'
+  };
+  toast(statusLabels[nextStatus] || 'Статус изменен');
 }
 
 function transferFromWaitlist(id) {
@@ -3630,7 +3772,15 @@ function openClientCardModal(clientId) {
       </form>
       <div class="section-title">История визитов и записей (${visitedEvs.length})</div>
       <div class="list-card bg-subtle" style="box-shadow:none">
-        ${!visitedEvs.length ? `<div class="text-center text-muted" style="padding:16px">Записей пока нет</div>` : visitedEvs.map(item => `
+        ${!visitedEvs.length ? `<div class="text-center text-muted" style="padding:16px">Записей пока нет</div>` : visitedEvs.map(item => {
+          const currentPayStatus = normalizePaymentStatus(item.bk.paymentStatus, item.bk.isPaid);
+          const payTagConfig = {
+            paid: { text: 'Оплачено', bg: '#E7F5EE', color: '#3E946E' },
+            free: { text: 'Бесплатно', bg: 'var(--free-bg)', color: 'var(--free)' },
+            unpaid: { text: 'Не оплачено', bg: '#FCF3DE', color: '#B37D14' }
+          }[currentPayStatus] || { text: 'Не оплачено', bg: '#FCF3DE', color: '#B37D14' };
+
+          return `
           <div class="row flex items-center justify-between gap-3" style="padding:9px 14px">
             <div class="flex-1">
               <div class="font-semibold text-base flex items-center gap-2">
@@ -3643,13 +3793,13 @@ function openClientCardModal(clientId) {
               <span class="tag" style="${item.bk.isCheckedIn ? 'background:#E7F5EE;color:#3E946E' : 'background:var(--subtle);color:var(--muted)'}">
                 ${item.bk.isCheckedIn ? 'Был' : 'Записан'}
               </span>
-              <span class="tag" style="${item.bk.isPaid ? 'background:#E7F5EE;color:#3E946E' : 'background:#FCF3DE;color:#B37D14'}">
-                ${item.bk.isPaid ? 'Оплачено' : 'Не оплачено'}
+              <span class="tag" style="background:${payTagConfig.bg};color:${payTagConfig.color}">
+                ${payTagConfig.text}
               </span>
               <button class="icon-btn sm" onclick="deleteBooking('${item.bk.id}')" title="Удалить эту запись">${ic('trash')}</button>
             </div>
           </div>
-        `).join('')}
+        `}).join('')}
       </div>
     </div>
     <div class="modal-foot flex gap-2 justify-between items-center">
