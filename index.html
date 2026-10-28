@@ -525,9 +525,12 @@ const NAV = [
   { id:'analytics', label:'Аналитика', icon:'chart' }
 ];
 
-async function hardResetCacheAndReload() {
+async function hardResetCacheAndReload(targetSha = null) {
   try {
     toast('Сброс кэша и перезагрузка...');
+    if (targetSha) {
+      localStorage.setItem('pyatnitsa_last_seen_sha', targetSha);
+    }
     if ('caches' in window) {
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
@@ -545,6 +548,14 @@ async function hardResetCacheAndReload() {
     url.searchParams.set('_cb', Date.now().toString());
     window.location.replace(url.toString());
   }
+}
+
+function dismissUpdateBanner(sha) {
+  if (sha) {
+    localStorage.setItem('pyatnitsa_last_seen_sha', sha);
+  }
+  const root = document.getElementById('updateBannerRoot');
+  if (root) root.innerHTML = '';
 }
 
 async function checkForGitHubUpdate(manual = false) {
@@ -596,8 +607,8 @@ function showUpdateBanner(newCommitSha) {
   root.innerHTML = `
     <div class="update-banner">
       <span>🔔 <b>Доступна новая версия на GitHub</b> (${newCommitSha}). Рекомендуется обновить страницу.</span>
-      <button onclick="hardResetCacheAndReload()">Обновить сейчас</button>
-      <button style="background:transparent;color:#7A5300;padding:2px 6px" onclick="document.getElementById('updateBannerRoot').innerHTML=''">✕</button>
+      <button onclick="hardResetCacheAndReload('${newCommitSha}')">Обновить сейчас</button>
+      <button style="background:transparent;color:#7A5300;padding:2px 6px" onclick="dismissUpdateBanner('${newCommitSha}')">✕</button>
     </div>
   `;
 }
