@@ -1,0 +1,26 @@
+{
+  "name": "Пятница.Пульт — пульт пространства",
+  "short_name": "Пятница.Пульт",
+  "description": "Центр управления пространством: расписание, гости, брони и оплаты.",
+  "lang": "ru",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F4F2",
+  "theme_color": "#1C1C1C",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

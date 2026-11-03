@@ -13,36 +13,40 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #FAF8F5;
+  --bg: #F4F4F2;
   --surface: #FFFFFF;
-  --subtle: #F4EFE7;
-  --ink: #202430;
-  --ink2: #4E5568;
-  --muted: #858B9C;
-  --line: #EFECE6;
-  --line2: #E3DFD5;
-  --must: #DE6254;
-  --must-bg: #FDEDE9;
-  --team: #3E946E;
-  --team-bg: #E7F5EE;
-  --rent: #C8942A;
-  --rent-bg: #FCF3DE;
-  --trip: #7E8594;
-  --trip-bg: #ECEEF2;
-  --star: #E5A118;
-  --star-bg: #FEF8EC;
-  --free: #2080C8;
-  --free-bg: #EAF4FD;
-  --free-border: rgba(32, 128, 200, 0.28);
-  --sh: 0 4px 20px rgba(32,36,48,.04);
-  --sh2: 0 10px 32px rgba(32,36,48,.08);
+  --subtle: #F1F1EF;
+  --ink: #1C1C1C;
+  --ink2: #454545;
+  --muted: #8B8B8B;
+  --line: #E7E7E5;
+  --line2: #D8D8D6;
+  --accent: #1C1C1C;
+  --accent2: #3C3C3C;
+  --accent-bg: #EDEDEB;
+  --grad: linear-gradient(135deg, #232323 0%, #4A4A4A 100%);
+  --must: #DC2626;
+  --must-bg: #FFEBEB;
+  --team: #059669;
+  --team-bg: #E6FBF2;
+  --rent: #D97706;
+  --rent-bg: #FEF9E7;
+  --trip: #2563EB;
+  --trip-bg: #EDF4FC;
+  --star: #ED9F13;
+  --star-bg: #FEF5E4;
+  --free: #1E86DD;
+  --free-bg: #E6F3FD;
+  --free-border: rgba(30, 134, 221, 0.32);
+  --sh: 0 3px 16px rgba(20, 20, 20, .07);
+  --sh2: 0 10px 30px rgba(20, 20, 20, .13);
 }
 * { box-sizing: border-box; }
 html { overflow-y: scroll; scrollbar-gutter: stable; }
 html, body { margin: 0; padding: 0; min-height: 100%; }
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.45;
+  background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.5;
   -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
 }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -67,12 +71,12 @@ button { cursor: pointer; border: none; background: none; }
 .w-full { width: 100%; }
 .text-center { text-align: center; }
 .text-right { text-align: right; }
-.text-xs { font-size: 11px; }
-.text-sm { font-size: 12.5px; }
-.text-base { font-size: 14px; }
-.text-lg { font-size: 16px; }
-.text-xl { font-size: 18px; }
-.text-2xl { font-size: 24px; }
+.text-xs { font-size: 12px; }
+.text-sm { font-size: 13px; }
+.text-base { font-size: 15px; }
+.text-lg { font-size: 17px; }
+.text-xl { font-size: 20px; }
+.text-2xl { font-size: 26px; }
 .font-medium { font-weight: 500; }
 .font-semibold { font-weight: 600; }
 .font-bold { font-weight: 700; }
@@ -92,16 +96,45 @@ button { cursor: pointer; border: none; background: none; }
 .border-line { border: 1px solid var(--line); }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 16px; }
-.ic { width: 18px; height: 18px; flex: 0 0 auto; display: block; }
-.app-head { position: sticky; top: 0; z-index: 40; background: rgba(250,248,245,.95); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
-.head-inner { height: 62px; }
+.wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.ic { width: 19px; height: 19px; flex: 0 0 auto; display: block; }
+/* ===== САЙДБАР (десктоп) / верхняя шапка (мобила) ===== */
+.app-head {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255,255,255,.92); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 16px; min-height: 60px;
+}
+.head-sub { display: none; }
 .brand { cursor: pointer; user-select: none; }
-.brand-mark { width: 38px; height: 38px; border-radius: 12px; background: var(--ink); color: #fff; font-weight: 700; font-size: 17px; box-shadow: 0 3px 10px rgba(32,36,48,.15); }
-.top-nav { display: flex; gap: 5px; align-items: center; }
-.top-nav button { display: flex; align-items: center; gap: 8px; padding: 8px 13px; border-radius: 12px; font-size: 13.5px; font-weight: 500; color: var(--ink2); transition: all .15s ease; white-space: nowrap; }
-.top-nav button:hover { background: var(--surface); box-shadow: var(--sh); color: var(--ink); }
-.top-nav button.active { background: var(--ink); color: #fff; box-shadow: 0 4px 14px rgba(32,36,48,.16); }
+.brand-mark { width: 40px; height: 40px; border-radius: 13px; background: var(--grad); color: #fff; font-weight: 800; font-size: 18px; box-shadow: 0 5px 16px rgba(20,20,20,.26); }
+.top-nav { display: none; }
+.side-foot { display: flex; align-items: center; gap: 8px; }
+@media (min-width: 901px) {
+  body { padding-left: 244px; }
+  .app-head {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 244px;
+    flex-direction: column; align-items: stretch; justify-content: flex-start;
+    padding: 20px 14px 16px; border-bottom: none; border-right: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .head-sub { display: block; }
+  .top-nav { display: flex; flex-direction: column; gap: 5px; margin-top: 22px; }
+  .top-nav button {
+    display: flex; align-items: center; gap: 11px; padding: 11px 14px;
+    border-radius: 13px; font-size: 14px; font-weight: 600; color: var(--ink2);
+    transition: all .15s ease; white-space: nowrap; text-align: left;
+  }
+  .top-nav button:hover { background: var(--subtle); color: var(--ink); }
+  .top-nav button.active {
+    background: var(--grad); color: #fff;
+    box-shadow: 0 6px 18px rgba(20,20,20,.26);
+  }
+  .top-nav button.active .ic { color: #fff; }
+  .side-foot { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); justify-content: flex-start; }
+  main { padding-top: 24px; }
+}
 
 .version-pill {
   font-size: 11px;
@@ -143,15 +176,15 @@ button { cursor: pointer; border: none; background: none; }
   border-radius: 12px; font-size: 13.5px; font-weight: 600; min-height: 40px; transition: all .15s ease; white-space: nowrap; user-select: none;
 }
 .btn:active { transform: scale(0.98); }
-.btn-primary { background: var(--ink); color: #fff; box-shadow: 0 4px 14px rgba(32,36,48,.18); }
-.btn-primary:hover { background: #12141c; }
+.btn-primary { background: var(--grad); color: #fff; box-shadow: 0 5px 16px rgba(20,20,20,.24); }
+.btn-primary:hover { background: linear-gradient(135deg, #161616 0%, #3A3A3A 100%); }
 .btn-soft { background: var(--surface); box-shadow: var(--sh); color: var(--ink); border: 1px solid var(--line); }
 .btn-soft:hover { box-shadow: var(--sh2); border-color: var(--line2); }
 .btn-ghost { background: transparent; color: var(--ink2); }
 .btn-ghost:hover { background: var(--surface); box-shadow: var(--sh); color: var(--ink); }
 .btn-sm { min-height: 34px; padding: 6px 12px; font-size: 12.5px; border-radius: 10px; }
-.btn-danger { background: var(--must-bg); color: #C63D31; }
-.btn-danger:hover { background: #FCDDD7; }
+.btn-danger { background: var(--must-bg); color: #DC2626; }
+.btn-danger:hover { background: #FFDCDC; }
 
 .icon-btn {
   position: relative; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center;
@@ -160,11 +193,11 @@ button { cursor: pointer; border: none; background: none; }
 .icon-btn:hover { color: var(--ink); box-shadow: var(--sh2); transform: translateY(-1px); }
 .icon-btn.sm { width: 34px; height: 34px; border-radius: 10px; box-shadow: none; background: var(--subtle); border-color: transparent; }
 .icon-btn.sm:hover { background: var(--surface); box-shadow: var(--sh); }
-.icon-btn.danger-icon { color: var(--must); background: var(--must-bg); border-color: rgba(222,98,84,.2); }
-.icon-btn.danger-icon:hover { background: #FCDDD7; color: #B93327; box-shadow: 0 2px 8px rgba(222,98,84,.2); }
+.icon-btn.danger-icon { color: var(--must); background: var(--must-bg); border-color: rgba(220,38,38,.22); }
+.icon-btn.danger-icon:hover { background: #FFDCDC; color: #B91C1C; box-shadow: 0 2px 8px rgba(220,38,38,.22); }
 
-.cloud-status-btn.synced { background: #F2F9F5; border: 1.5px solid #C2E8D4; color: #2E7D56; }
-.cloud-status-btn.not-synced { background: #FFF6F5; border: 1.5px solid #F7C6C0; color: #D64535; }
+.cloud-status-btn.synced { background: #E6FBF2; border: 1.5px solid #A7F3D0; color: #059669; }
+.cloud-status-btn.not-synced { background: #FFEBEB; border: 1.5px solid #FECACA; color: #DC2626; }
 .cloud-status-btn .ic { width: 20px; height: 20px; }
 .notif-badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; background: var(--must); color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
 
@@ -173,28 +206,28 @@ main { padding: 18px 0 80px; min-height: calc(100vh - 120px); }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; min-height: 36px; }
 .chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 999px; background: var(--surface); box-shadow: var(--sh); font-size: 12.5px; font-weight: 600; color: var(--ink2); opacity: .75; border: 1px solid var(--line); transition: all .15s ease; white-space: nowrap; }
 .chip:hover { opacity: .95; }
-.chip.on { opacity: 1; color: var(--ink); border-color: var(--ink2); box-shadow: var(--sh2); }
+.chip.on { opacity: 1; color: var(--ink); border-color: var(--accent); background: var(--accent-bg); box-shadow: 0 4px 14px rgba(20,20,20,.10); }
 .chip .dot { width: 8px; height: 8px; border-radius: 50%; }
-.chip .cnt { font-size: 11px; color: var(--muted); font-weight: 500; background: var(--subtle); padding: 1px 6px; border-radius: 999px; }
+.chip .cnt { font-size: 10.5px; color: var(--muted); font-weight: 500; background: var(--subtle); padding: 1px 5px; border-radius: 999px; }
 .chips-mobile { display: none; }
 
 .list-card { background: var(--surface); border-radius: 20px; box-shadow: var(--sh); overflow: hidden; border: 1px solid var(--line); width: 100%; }
-.row { padding: 13px 18px; border-bottom: 1px solid var(--line); transition: background .14s; }
+.row { padding: 14px 18px; border-bottom: 1px solid var(--line); transition: background .14s; }
 .row:last-child { border-bottom: none; }
-.row:hover { background: #FCFAF6; }
+.row:hover { background: #FAF4EC; }
 .row-click { cursor: pointer; }
-.row-title { font-weight: 700; font-size: 14px; flex-wrap: wrap; }
-.row-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
-.tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.row-title { font-weight: 700; font-size: 15px; flex-wrap: wrap; }
+.row-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 3.5px 10px; border-radius: 999px; white-space: nowrap; }
 .tag .dot { width: 6px; height: 6px; border-radius: 50%; }
-.pill { font-size: 11px; color: var(--ink2); background: var(--subtle); padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+.pill { font-size: 11.5px; color: var(--ink2); background: var(--subtle); padding: 2.5px 9px; border-radius: 999px; font-weight: 700; }
 
 .tt-scroll { overflow-x: auto; margin-bottom: 16px; border-radius: 20px; background: var(--surface); box-shadow: var(--sh); -webkit-overflow-scrolling: touch; }
 .tt-week-card { border-radius: 20px; background: var(--surface); box-shadow: var(--sh); margin-bottom: 16px; overflow: hidden; border: 1px solid var(--line); }
 .tt-week-bar { padding: 10px 18px; background: var(--subtle); border-bottom: 1px solid var(--line); font-size: 12.5px; font-weight: 600; }
 .tt-head, .tt-body { display: flex; width: 100%; position: relative; }
 .tt-head { border-bottom: 1px solid var(--line); background: var(--bg); }
-.tt-time-head, .tt-gutter { position: sticky; left: 0; z-index: 25; flex: 0 0 60px; width: 60px; background: var(--bg); border-right: 1px solid var(--line); box-shadow: 3px 0 8px rgba(32,36,48,.06); }
+.tt-time-head, .tt-gutter { position: sticky; left: 0; z-index: 25; flex: 0 0 60px; width: 60px; background: var(--bg); border-right: 1px solid var(--line); box-shadow: 3px 0 8px rgba(20,20,20,.10); }
 .tt-time-head { padding: 9px 4px; font-size: 11px; font-weight: 700; color: var(--muted); text-align: center; }
 .tt-hour-row { height: 28px; line-height: 28px; text-align: right; padding-right: 9px; font-size: 11px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); }
 .tt-day { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; padding: 8px 4px; gap: 2px; border-left: 1px solid var(--line); cursor: pointer; }
@@ -206,11 +239,12 @@ main { padding: 18px 0 80px; min-height: calc(100vh - 120px); }
 .tt-col { flex: 1 1 0; min-width: 0; position: relative; border-left: 1px solid var(--line); cursor: pointer; }
 .tt-slot-row { height: 28px; border-bottom: 1px solid var(--line); }
 .tt-slot-row.even { background: var(--surface); }
-.tt-slot-row.odd { background: #FAF8F4; }
+.tt-slot-row.odd { background: #F7F7F5; }
 .tt-col:hover .tt-slot-row { background: var(--subtle); }
-.tt-event { position: absolute; border-radius: 8px; padding: 3px 5px; overflow: hidden; background: var(--cbg); border-left: 3.5px solid var(--c); cursor: pointer; transition: transform .14s, box-shadow .14s; display: flex; flex-direction: column; justify-content: space-between; z-index: 5; box-shadow: 0 2px 6px rgba(0,0,0,.04); min-height: 48px; }
-.tt-ev-title { font-size: 11px; font-weight: 700; line-height: 1.16; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-height: 25px; flex-shrink: 0; }
-.tt-ev-footer { margin-top: auto; padding-top: 2px; border-top: 1px solid rgba(0,0,0,.06); font-size: 10px; font-weight: 700; flex-shrink: 0; white-space: nowrap; }
+.tt-event { position: absolute; border-radius: 11px; padding: 4px 7px; overflow: hidden; background: var(--cbg, #E4E4E2); border-left: 4px solid var(--c); border-top: 1px solid rgba(255,255,255,.55); cursor: pointer; transition: transform .14s, box-shadow .14s; display: flex; flex-direction: column; justify-content: space-between; z-index: 5; box-shadow: 0 2px 14px var(--glow, rgba(20,20,20,.12)), 0 1px 3px rgba(20,20,20,.08), inset 0 1px 0 rgba(255,255,255,.45); min-height: 48px; }
+.tt-event:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--glow, rgba(20,20,20,.16)), 0 2px 6px rgba(20,20,20,.10), inset 0 1px 0 rgba(255,255,255,.45); }
+.tt-ev-title { font-size: 12px; font-weight: 800; line-height: 1.18; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-height: 28px; flex-shrink: 0; color: var(--ink); }
+.tt-ev-footer { margin-top: auto; padding-top: 2px; border-top: 1px solid rgba(20,20,20,.12); font-size: 10.5px; font-weight: 700; flex-shrink: 0; white-space: nowrap; color: var(--ink2); }
 
 .badge-triplet { display: inline-flex; align-items: center; gap: 3px; padding: 1px 3px; border-radius: 999px; background: rgba(255,255,255,.9); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
 .badge-bubble { width: 15px; height: 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 800; line-height: 1; }
@@ -231,14 +265,14 @@ main { padding: 18px 0 80px; min-height: calc(100vh - 120px); }
 }
 .day-tab:hover { border-color: var(--line2); transform: translateY(-1px); }
 .day-tab.active {
-  background: var(--ink); border-color: var(--ink); color: #fff;
-  box-shadow: 0 6px 20px rgba(32,36,48,.18);
+  background: var(--grad); border-color: transparent; color: #fff;
+  box-shadow: 0 8px 22px rgba(20,20,20,.26);
 }
 .day-tab .tab-badge {
-  font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 800; padding: 2.5px 7px; border-radius: 999px;
   background: var(--subtle); color: var(--ink2); white-space: nowrap;
 }
-.day-tab.active .tab-badge { background: rgba(255,255,255,.2); color: #fff; }
+.day-tab.active .tab-badge { background: rgba(255,255,255,.22); color: #fff; }
 .day-tab-line { width: 4px; height: 24px; border-radius: 999px; flex-shrink: 0; }
 
 .time-status-pill {
@@ -280,24 +314,24 @@ main { padding: 18px 0 80px; min-height: calc(100vh - 120px); }
 }
 
 .guest-row-card {
-  padding: 11px 14px; border-bottom: 1px solid var(--line);
+  padding: 12px 16px; border-bottom: 1px solid var(--line);
   display: flex; align-items: center; gap: 12px; transition: background .12s ease;
   user-select: none; -webkit-user-select: none;
 }
 .guest-row-card:last-child { border-bottom: none; }
-.guest-row-card:hover { background: #FCFAF6; }
+.guest-row-card:hover { background: #F7F7F5; }
 .guest-info-block { cursor: pointer; }
 
 .checkin-btn {
-  width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--line2);
+  width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--line2);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   color: #fff; transition: all .15s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer;
-  background: #FAF9F6;
+  background: #EFEFED;
 }
 .checkin-btn:hover { border-color: var(--team); }
 .checkin-btn.on {
   background: var(--team); border-color: var(--team);
-  box-shadow: 0 4px 12px rgba(62,148,110,.32);
+  box-shadow: 0 4px 14px rgba(20,158,112,.35);
 }
 .checkin-btn .ic { width: 20px; height: 20px; }
 
@@ -316,8 +350,8 @@ main { padding: 18px 0 80px; min-height: calc(100vh - 120px); }
   border: 1px solid transparent; transition: all .14s ease; user-select: none;
 }
 .pay-pill-btn:active { transform: scale(0.96); }
-.pay-pill-btn.paid { background: var(--team-bg); color: var(--team); border-color: rgba(62,148,110,.25); }
-.pay-pill-btn.unpaid { background: var(--rent-bg); color: #B37D14; border-color: rgba(200,148,42,.3); }
+.pay-pill-btn.paid { background: var(--team-bg); color: var(--team); border-color: rgba(5,150,105,.28); }
+.pay-pill-btn.unpaid { background: var(--rent-bg); color: #B45309; border-color: rgba(217,119,6,.32); }
 .pay-pill-btn.free { background: var(--free-bg); color: var(--free); border-color: var(--free-border); }
 
 /* Интерактивный переключатель оплаты внутри модальных окон */
@@ -328,32 +362,40 @@ main { padding: 18px 0 80px; min-height: calc(100vh - 120px); }
   min-height: 42px; user-select: none;
 }
 .pay-toggle-btn:active { transform: scale(0.97); }
-.pay-toggle-btn.paid { background: var(--team-bg); color: var(--team); border-color: rgba(62,148,110,.4); }
-.pay-toggle-btn.unpaid { background: var(--rent-bg); color: #B37D14; border-color: rgba(200,148,42,.45); }
+.pay-toggle-btn.paid { background: var(--team-bg); color: var(--team); border-color: rgba(5,150,105,.45); }
+.pay-toggle-btn.unpaid { background: var(--rent-bg); color: #B45309; border-color: rgba(217,119,6,.5); }
 .pay-toggle-btn.free { background: var(--free-bg); color: var(--free); border-color: var(--free-border); }
 
 .field { margin-bottom: 13px; }
 .field label { display: block; font-size: 12px; font-weight: 700; color: var(--ink2); margin-bottom: 5px; }
-.inp { width: 100%; padding: 10px 13px; border-radius: 12px; background: #FAF9F6; border: 1.5px solid var(--line2); outline: none; font-size: 13.5px; color: var(--ink); transition: all .15s ease; min-height: 42px; }
-.inp:focus { background: var(--surface); border-color: var(--ink); box-shadow: 0 0 0 3px rgba(32,36,48,.08); }
-select.inp { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234E5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; cursor: pointer; }
+.inp { width: 100%; padding: 11px 14px; border-radius: 13px; background: #F6F6F4; border: 1.5px solid var(--line2); outline: none; font-size: 14px; color: var(--ink); transition: all .15s ease; min-height: 44px; }
+.inp:focus { background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 3.5px rgba(20,20,20,.10); }
+select.inp { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23707070' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; cursor: pointer; }
 textarea.inp { resize: vertical; min-height: 70px; }
 
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
 .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
 .pres-pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .pres-opt { padding: 9px 4px; border-radius: 10px; background: var(--subtle); font-size: 12px; font-weight: 600; text-align: center; color: var(--ink2); cursor: pointer; transition: all .15s ease; }
-.pres-opt.on { color: #fff; font-weight: 700; box-shadow: 0 3px 8px rgba(0,0,0,.12); }
+.pres-opt.on { color: var(--ink); font-weight: 700; box-shadow: 0 3px 8px rgba(0,0,0,.10); }
 .check { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--ink2); cursor: pointer; user-select: none; }
 .check input { width: 17px; height: 17px; accent-color: var(--ink); cursor: pointer; }
 
-.search { background: var(--surface); border-radius: 12px; padding: 10px 14px; box-shadow: var(--sh); margin-bottom: 14px; border: 1px solid var(--line); }
-.search input { border: none; outline: none; background: transparent; flex: 1; font-size: 13.5px; }
+.search { background: var(--surface); border-radius: 13px; padding: 11px 15px; box-shadow: var(--sh); margin-bottom: 14px; border: 1px solid var(--line); }
+.search input { border: none; outline: none; background: transparent; flex: 1; font-size: 14px; }
+.search .ic { color: var(--muted); }
 
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px; }
-.stat { background: var(--surface); border-radius: 18px; box-shadow: var(--sh); padding: 18px; border: 1px solid var(--line); }
-.stat-label { font-size: 11px; color: var(--muted); font-weight: 700; display: flex; align-items: center; gap: 7px; text-transform: uppercase; }
-.stat-val { font-size: 24px; font-weight: 700; margin-top: 6px; }
+.stat { background: var(--surface); border-radius: 18px; box-shadow: var(--sh); padding: 16px 18px; border: 1px solid var(--line); position: relative; overflow: hidden; }
+.stat::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--sc, var(--accent)); border-radius: 0 4px 4px 0; }
+.stat-label { font-size: 11px; color: var(--muted); font-weight: 800; display: flex; align-items: center; gap: 7px; text-transform: uppercase; letter-spacing: .04em; }
+.stat-label .ic { color: var(--sc, var(--accent)); }
+.stat-val { font-size: 25px; font-weight: 800; margin-top: 6px; letter-spacing: -.02em; }
+.stat.sc-must { --sc: var(--must); background: linear-gradient(135deg, var(--must-bg) 0%, #fff 70%); }
+.stat.sc-team { --sc: var(--team); background: linear-gradient(135deg, var(--team-bg) 0%, #fff 70%); }
+.stat.sc-rent { --sc: var(--rent); background: linear-gradient(135deg, var(--rent-bg) 0%, #fff 70%); }
+.stat.sc-free { --sc: var(--free); background: linear-gradient(135deg, var(--free-bg) 0%, #fff 70%); }
+.stat.sc-acc { --sc: var(--accent); background: linear-gradient(135deg, var(--accent-bg) 0%, #fff 70%); }
 
 .bar-name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; }
 .bar-track { flex: 0 0 45%; height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
@@ -363,8 +405,8 @@ textarea.inp { resize: vertical; min-height: 70px; }
 
 #modalRoot { position: fixed; inset: 0; z-index: 100; display: none; }
 #modalRoot.open { display: block; }
-.modal-backdrop { position: absolute; inset: 0; background: rgba(32,36,48,.42); backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; }
-.modal { background: var(--surface); width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto; border-radius: 22px 22px 0 0; box-shadow: 0 -10px 50px rgba(32,36,48,.2); }
+.modal-backdrop { position: absolute; inset: 0; background: rgba(20,20,20,.46); backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; }
+.modal { background: var(--surface); width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto; border-radius: 24px 24px 0 0; box-shadow: 0 -10px 50px rgba(20,20,20,.22); }
 .modal-wide { max-width: 820px; }
 .modal-head { padding: 18px 20px 12px; position: sticky; top: 0; background: var(--surface); z-index: 10; border-bottom: 1px solid var(--line); }
 .modal-title { font-size: 18px; font-weight: 700; }
@@ -376,12 +418,12 @@ textarea.inp { resize: vertical; min-height: 70px; }
 #dialogRoot { position: fixed; inset: 0; z-index: 150; display: none; }
 #dialogRoot.open { display: block; }
 .dialog-backdrop {
-  position: absolute; inset: 0; background: rgba(32,36,48,.52);
+  position: absolute; inset: 0; background: rgba(20,20,20,.55);
   backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 16px;
 }
 .dialog-box {
   background: var(--surface); width: 100%; max-width: 420px; border-radius: 22px;
-  box-shadow: 0 16px 48px rgba(32,36,48,.24); border: 1px solid var(--line);
+  box-shadow: 0 16px 48px rgba(20,20,20,.28); border: 1px solid var(--line);
   padding: 22px 22px 18px; transform: scale(1); animation: dialogPopIn .15s ease-out;
 }
 @keyframes dialogPopIn {
@@ -395,17 +437,18 @@ textarea.inp { resize: vertical; min-height: 70px; }
 .dialog-icon-badge.warn { background: var(--must-bg); color: var(--must); }
 .dialog-icon-badge.info { background: var(--subtle); color: var(--ink); }
 
-.toast { background: var(--ink); color: #fff; font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 12px; box-shadow: 0 10px 30px rgba(32,36,48,.3); display: flex; align-items: center; gap: 8px; transition: all .25s ease; }
+.toast { background: var(--ink); color: #fff; font-size: 13.5px; font-weight: 600; padding: 11px 19px; border-radius: 13px; box-shadow: 0 10px 30px rgba(20,20,20,.32); display: flex; align-items: center; gap: 8px; transition: all .25s ease; }
 .toast.out { opacity: 0; transform: translateY(6px); }
 
 .bottom-nav { display: none; }
 @media (max-width: 900px) {
   .top-nav, .chips-desktop { display: none !important; }
   .chips-mobile { display: flex !important; margin-bottom: 14px; }
-  main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
-  .bottom-nav { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; inset: auto 0 0 0; z-index: 60; background: rgba(255,255,255,.96); backdrop-filter: blur(16px); border-top: 1px solid var(--line); padding: 6px 2px calc(6px + env(safe-area-inset-bottom)); }
-  .bottom-nav button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px; border-radius: 10px; font-size: 10px; font-weight: 600; color: var(--muted); }
-  .bottom-nav button.active { color: var(--ink); }
+  main { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
+  .bottom-nav { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; inset: auto 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px; z-index: 60; background: rgba(255,255,255,.97); backdrop-filter: blur(18px); border: 1px solid var(--line); border-radius: 20px; padding: 7px 6px; box-shadow: 0 12px 34px rgba(20,20,20,.16); }
+  .bottom-nav button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 13px; font-size: 10.5px; font-weight: 700; color: var(--muted); transition: all .15s ease; }
+  .bottom-nav button.active { color: #fff; background: var(--grad); box-shadow: 0 5px 14px rgba(20,20,20,.30); }
+  .bottom-nav button .ic { width: 20px; height: 20px; }
 
   input, select, textarea, .inp {
     font-size: 16px !important;
@@ -422,13 +465,20 @@ textarea.inp { resize: vertical; min-height: 70px; }
   .bar-track { display: none !important; }
   .bar-val { width: auto !important; font-size: 13.5px !important; white-space: nowrap !important; }
   .row { padding: 9px 12px !important; }
+
+  /* «День» на мобильном: максимум воздуха для списка гостей */
+  .guest-row-card { padding: 9px 10px !important; gap: 9px !important; }
+  .icon-btn.sm { width: 32px; height: 32px; border-radius: 9px; }
+  .checkin-btn { width: 38px; height: 38px; }
+  .star-btn { width: 32px; height: 32px; }
+  .day-tab { padding: 7px 11px; border-radius: 12px; }
 }
 @media (min-width: 641px) { .modal-backdrop { align-items: center; padding: 20px; } .modal { border-radius: 22px; } }
 
 .autocomplete-box {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 80;
   background: var(--surface); border: 1.5px solid var(--line2); border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(32,36,48,.16); max-height: 220px; overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(20,20,20,.20); max-height: 220px; overflow-y: auto;
   display: none; -webkit-overflow-scrolling: touch;
 }
 .autocomplete-item {
@@ -438,6 +488,26 @@ textarea.inp { resize: vertical; min-height: 70px; }
 }
 .autocomplete-item:last-child { border-bottom: none; }
 .autocomplete-item:active, .autocomplete-item:hover { background: var(--subtle); }
+
+/* Кебаб-меню действий с событием (⋯) */
+.ev-menu-btn { position: relative; }
+.ev-menu-pop {
+  position: fixed; z-index: 300; min-width: 236px;
+  background: var(--surface); border: 1px solid var(--line2); border-radius: 14px;
+  box-shadow: 0 14px 38px rgba(20,20,20,.20); padding: 6px;
+  display: flex; flex-direction: column; animation: evMenuIn .13s ease-out;
+}
+@keyframes evMenuIn { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: none; } }
+.ev-menu-pop button {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px;
+  font-size: 13.5px; font-weight: 600; color: var(--ink2); text-align: left; white-space: nowrap;
+}
+.ev-menu-pop button:hover { background: var(--subtle); color: var(--ink); }
+.ev-menu-pop button .ic { width: 17px; height: 17px; color: var(--muted); }
+.ev-menu-pop button.danger { color: #DC2626; }
+.ev-menu-pop button.danger .ic { color: #DC2626; }
+.ev-menu-pop button.danger:hover { background: var(--must-bg); }
+.ev-menu-sep { height: 1px; background: var(--line); margin: 5px 6px; }
 </style>
 </head>
 <body>
@@ -486,28 +556,25 @@ textarea.inp { resize: vertical; min-height: 70px; }
     </symbol>
     <symbol id="ic-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
     <symbol id="ic-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></symbol>
+    <symbol id="ic-more" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></symbol>
   </defs>
 </svg>
 
 <div id="updateBannerRoot"></div>
 
 <header class="app-head">
-  <div class="wrap head-inner flex items-center justify-between gap-4">
-    <div class="brand flex items-center gap-3" onclick="navTo('month')" title="На главную сетку месяца">
-      <div class="brand-mark flex items-center justify-center">П</div>
-      <div>
-        <div class="flex items-center gap-2">
-          <div class="font-bold text-base tracking-tight">Пятница.Пульт</div>
-          <span class="version-pill" id="headerVersionPill" title="Текущая версия приложения">v1.3.0</span>
-        </div>
-        <div class="text-xs text-muted">центр управления пространством</div>
-      </div>
+  <div class="brand flex items-center gap-3" onclick="navTo('month')" title="На главную сетку месяца">
+    <div class="brand-mark flex items-center justify-center flex-none">П</div>
+    <div style="min-width:0">
+      <div class="font-bold text-base tracking-tight truncate">Пятница.Пульт</div>
+      <div class="head-sub text-xs text-muted" style="margin-top:1px">центр управления пространством</div>
     </div>
-    <div class="flex items-center gap-2">
-      <nav class="top-nav" id="topNav"></nav>
-      <button class="icon-btn notif-btn" id="notifBtn" onclick="openNotificationsModal()" aria-label="Уведомления" title="Напоминания о событиях"></button>
-      <button class="icon-btn cloud-status-btn" id="settingsBtn" onclick="openSyncModal()" aria-label="Синхронизация" title="Синхронизация и настройки"></button>
-    </div>
+  </div>
+  <nav class="top-nav" id="topNav"></nav>
+  <div class="side-foot">
+    <button class="icon-btn notif-btn" id="notifBtn" onclick="openNotificationsModal()" aria-label="Уведомления" title="Напоминания о событиях"></button>
+    <button class="icon-btn cloud-status-btn" id="settingsBtn" onclick="openSyncModal()" aria-label="Синхронизация" title="Синхронизация и настройки"></button>
+    <span class="head-sub text-xs text-muted" style="margin-left:auto" id="headerVersionPill" title="Текущая версия приложения">v1.4.0</span>
   </div>
 </header>
 <main class="wrap" id="view"></main>
@@ -521,7 +588,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -532,11 +599,14 @@ const MONTHS = ['Январь','Февраль','Март','Апрель','Ма�
 const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
 const DOW = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 const DOW_FULL = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+// Фирменная палитра категорий: bg — сплошная заливка ячеек и меток, color — левая рамка/точки/акцент,
+// glow — мягкое свечение под ячейкой «Месяца» (в тон рамки). Для текста на светлом фоне в CSS
+// используются затемнённые оттенки тех же цветов (--must/--team/--rent/--trip).
 const PRESENCE = {
-  must: { label:'Со мной', color:'#DE6254', bg:'#FDEDE9' },
-  team: { label:'Без меня', color:'#3E946E', bg:'#E7F5EE' },
-  rent: { label:'Аренда', color:'#C8942A', bg:'#FCF3DE' },
-  trip: { label:'Отсутствую', color:'#7E8594', bg:'#ECEEF2' }
+  must: { label:'Со мной', color:'#F87171', bg:'#FFEBEB', glow:'rgba(248,113,113,.32)' },
+  team: { label:'Без меня', color:'#34D399', bg:'#E6FBF2', glow:'rgba(52,211,153,.32)' },
+  rent: { label:'Аренда', color:'#FBBF24', bg:'#FEF9E7', glow:'rgba(251,191,36,.36)' },
+  trip: { label:'Отсутствую', color:'#60A5FA', bg:'#EDF4FC', glow:'rgba(96,165,250,.32)' }
 };
 const NAV = [
   { id:'month', label:'Месяц', icon:'calendar' }, { id:'day', label:'День', icon:'clock' },
@@ -561,6 +631,106 @@ function normalizePaymentStatus(val, isPaidLegacy = undefined) {
   if (typeof val === 'boolean') return val ? 'paid' : 'unpaid';
   if (typeof isPaidLegacy === 'boolean') return isPaidLegacy ? 'paid' : 'unpaid';
   return 'unpaid';
+}
+
+// ============================================================================
+// ДЕНЬГИ: единая точка расчёта суммы по брони.
+// Приоритет: ручная сумма (b.paidAmount) → снимок цены на момент записи
+// (b.eventPrice) → текущая цена события. Так «Собрано» не «уезжает», когда
+// цену события поправили задним числом после того, как гость оплатил.
+// ============================================================================
+function getBookingAmount(b, ev) {
+  if (!b) return 0;
+  const manual = Number(b.paidAmount);
+  if (Number.isFinite(manual) && manual > 0) return manual;
+  let price;
+  if (b.eventPrice === undefined || b.eventPrice === null || b.eventPrice === '') {
+    price = ev ? (Number(ev.price) || 0) : 0;
+  } else {
+    price = Number(b.eventPrice) || 0;
+  }
+  return Math.max(1, Number(b.ticketsCount) || 1) * price;
+}
+
+// Сколько фактически собрано по брони: учитываем только статус «Оплачено»
+function getBookingCollected(b, ev) {
+  if (!b) return 0;
+  if (normalizePaymentStatus(b.paymentStatus, b.isPaid) !== 'paid') return 0;
+  return getBookingAmount(b, ev);
+}
+
+// Парсинг ручной суммы из поля модалки: пусто → undefined (работает авто-расчёт)
+function parseManualAmountInput(elId) {
+  const raw = (document.getElementById(elId)?.value || '').toString().replace(/\s/g, '').replace(',', '.').trim();
+  if (!raw) return undefined;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return undefined;
+  return Math.round(n * 100) / 100;
+}
+
+// Подсказка у поля «Сумма оплаты»: пусто → авто-расчёт, заполнено → пояснение, что это итог за бронь
+function updateAutoAmountHint() {
+  const inp = document.getElementById('mBkPaidAmount');
+  if (!inp) return;
+  const cnt = Math.max(1, parseInt(document.getElementById('mBkCount')?.value) || 1);
+  const price = Number(inp.dataset.price) || 0;
+  const auto = cnt * price;
+  const hint = document.getElementById('mBkPaidHint');
+  const rawVal = (inp.value || '').toString().replace(/\s/g, '').replace(',', '.').trim();
+  const manual = Number(rawVal);
+  if (rawVal && Number.isFinite(manual) && manual > 0) {
+    if (hint) hint.textContent = `Введённая сумма — итог за всю бронь: ${money(manual)} (${cnt} чел.)`;
+  } else {
+    if (hint) hint.textContent = price > 0 ? `Пусто = авто: ${cnt} × ${price} = ${money(auto)}` : 'Пусто = авто (цена события не задана)';
+  }
+  inp.placeholder = price > 0 ? `авто: ${money(auto)}` : 'сумма вручную';
+}
+
+// Живое обновление тега «Собрано» во всех карточках события (день + открытая модалка)
+function refreshCollectedTags(eventId) {
+  try {
+    const ev = db.events.find(x => x.id === eventId);
+    if (!ev) return;
+    const { paidSum } = getEventStats(eventId, ev.price || 0);
+    document.querySelectorAll(`.collected-sum-tag[data-event-id="${eventId}"]`).forEach(el => {
+      el.innerHTML = `Собрано: <b class="text-ink">${money(paidSum)}</b>`;
+    });
+  } catch(e) { console.warn('refreshCollectedTags:', e); }
+}
+
+// Чипсы-фильтры списка гостей дня (вынесено в функцию, чтобы обновлять точечно)
+function renderDayGuestChipsInnerHtml(activeEv) {
+  const { booked } = getEventStats(activeEv.id, activeEv.price || 0);
+  const allBk = db.bookings.filter(b => b.eventId === activeEv.id && !b.isWaitlist);
+  const favCount = allBk.filter(b => b.isFavorite).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
+  const checkedCount = allBk.filter(b => b.isCheckedIn).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
+  const pendingCount = allBk.filter(b => !b.isCheckedIn).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
+  const currentFilter = ui.dayGuestFilter || 'all';
+  return `
+    <button class="chip ${currentFilter==='all'?'on':''}" style="padding:4px 8px;font-size:11px;gap:4px" onclick="setDayGuestFilter('all')">
+      Все <span class="cnt">${booked}</span>
+    </button>
+    <button class="chip ${currentFilter==='checked'?'on':''}" style="padding:4px 8px;font-size:11px;gap:4px" onclick="setDayGuestFilter('checked')">
+      Пришли <span class="cnt">${checkedCount}</span>
+    </button>
+    <button class="chip ${currentFilter==='pending'?'on':''}" style="padding:4px 8px;font-size:11px;gap:4px" onclick="setDayGuestFilter('pending')">
+      Ждём <span class="cnt">${pendingCount}</span>
+    </button>
+    <button class="chip ${currentFilter==='fav'?'on':''}" style="padding:4px 8px;font-size:11px;gap:4px;color:${currentFilter==='fav'?'var(--star)':'var(--ink2)'}" onclick="setDayGuestFilter('fav')">
+      <svg style="width:14px;height:14px;color:var(--star)"><use href="#ic-star"/></svg>
+      <span class="cnt">${favCount}</span>
+    </button>
+  `;
+}
+
+function refreshDayGuestChips(eventId) {
+  try {
+    const ev = db.events.find(x => x.id === eventId);
+    if (!ev) return;
+    document.querySelectorAll(`[id="dayChipsBox_${eventId}"]`).forEach(box => {
+      box.innerHTML = renderDayGuestChipsInnerHtml(ev);
+    });
+  } catch(e) { console.warn('refreshDayGuestChips:', e); }
 }
 
 function getNextPaymentStatus(currentStatus) {
@@ -744,11 +914,23 @@ function stableStringify(o) {
 }
 
 function copySafe(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px';
-  document.body.appendChild(ta); ta.select();
-  const ok = document.execCommand('copy');
-  ta.remove(); return ok;
+  // Современный Clipboard API (HTTPS/localhost) с откатом на execCommand для старых браузеров и file://
+  const fallback = () => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove(); return ok;
+    } catch(e) { return false; }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+    try {
+      navigator.clipboard.writeText(text).catch(() => fallback());
+      return true;
+    } catch(e) { return fallback(); }
+  }
+  return fallback();
 }
 
 function toast(msg) {
@@ -756,6 +938,19 @@ function toast(msg) {
   const el = document.createElement('div'); el.className = 'toast';
   el.innerHTML = `${ic('check')} <span>${esc(msg)}</span>`; r.appendChild(el);
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 260); }, 2200);
+}
+
+// Тост с кнопкой действия (используется для отмены удаления)
+function toastAction(msg, actionLabel, actionFn, ttl = 7000) {
+  const r = document.getElementById('toastRoot'); if(!r) { actionFn(); return; }
+  const el = document.createElement('div'); el.className = 'toast';
+  el.innerHTML = `${ic('check')} <span style="flex:1;min-width:0">${esc(msg)}</span>
+    <button type="button" style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:9px;padding:4px 12px;font-size:12.5px;font-weight:700;margin-left:8px;flex:none;cursor:pointer">${esc(actionLabel)}</button>`;
+  r.appendChild(el);
+  let done = false;
+  const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 260); };
+  el.querySelector('button').onclick = () => { done = true; actionFn(); close(); };
+  setTimeout(() => { if (!done) close(); }, ttl);
 }
 
 function isUserActivelyTyping() {
@@ -914,22 +1109,22 @@ function lockSubmitBtn(e) {
   }
 }
 
-const TODAY_ISO = ymd(new Date());
+function getTodayISO() { return ymd(new Date()); }
 let db = null;
 let ui = {
   view: 'month', year: new Date().getFullYear(), month: new Date().getMonth(),
   monthViewMode: 'grid', // 'grid' | 'list'
   eventSearch: '',
   eventTimeScope: 'upcoming', // 'upcoming' | 'month' | 'all'
-  dayDate: TODAY_ISO, filter: 'all', search: '', analyticsPeriod: 'month', analyticsTab: 'events',
+  dayDate: getTodayISO(), filter: 'all', search: '', analyticsPeriod: 'month', analyticsTab: 'events',
   modal: null, firebaseUrl: '',
   cloudStatus: 'disconnected', quickBookingOpen: false,
   selectedDayEventId: null, dayGuestFilter: 'all',
-  tgPostOpts: { includePrices: true, includeDescriptions: true, includeAddress: true }
+  tgPostOpts: { includePrices: true, includeDescriptions: true, includeAddress: true, includeSeats: true }
 };
 
 function seedDatabase() {
-  const t = TODAY_ISO, stamp = 1700000000000;
+  const t = getTodayISO(), stamp = 1700000000000;
   const cl1Id = 'cl-seed-1', cl2Id = 'cl-seed-2';
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -1096,7 +1291,7 @@ function normalizeAndMigrateDB(raw) {
         initialVisits: c.initialVisits !== undefined ? Number(c.initialVisits) : visits,
         initialPaid: c.initialPaid !== undefined ? Number(c.initialPaid) : (Number(c.totalPaid) || 0),
         clientNotes: c.clientNotes || '',
-        firstSeen: c.firstSeen || TODAY_ISO,
+        firstSeen: c.firstSeen || getTodayISO(),
         lastSeen: visits > 0 ? (c.lastSeen || null) : null,
         initialLastSeen: c.initialLastSeen || null,
         updatedAt: c.updatedAt || stamp
@@ -1116,7 +1311,7 @@ function normalizeAndMigrateDB(raw) {
         initialVisits: visits,
         initialPaid: Number(c.totalPaid) || 0,
         clientNotes: c.clientNotes || '',
-        firstSeen: c.firstSeen || TODAY_ISO,
+        firstSeen: c.firstSeen || getTodayISO(),
         lastSeen: visits > 0 ? (c.lastSeen || null) : null,
         initialLastSeen: null,
         updatedAt: stamp
@@ -1156,7 +1351,7 @@ function normalizeAndMigrateDB(raw) {
           initialVisits: 0,
           initialPaid: 0,
           clientNotes: b.note || '',
-          firstSeen: TODAY_ISO,
+          firstSeen: getTodayISO(),
           lastSeen: isCheck && (ev?.date || b.eventDate) ? (ev?.date || b.eventDate) : null,
           initialLastSeen: null,
           updatedAt: stamp
@@ -1179,9 +1374,10 @@ function normalizeAndMigrateDB(raw) {
         isFavorite: Boolean(b.isFavorite),
         note: b.note || '',
         eventTitle: b.eventTitle || ev?.title || 'Событие',
-        eventDate: b.eventDate || ev?.date || TODAY_ISO,
+        eventDate: b.eventDate || ev?.date || getTodayISO(),
         eventTime: b.eventTime || ev?.time || '19:00',
         eventPrice: b.eventPrice !== undefined ? Math.max(0, Number(b.eventPrice)) : (ev?.price || 0),
+        ...(b.paidAmount !== undefined && b.paidAmount !== null && Number(b.paidAmount) > 0 ? { paidAmount: Math.max(0, Number(b.paidAmount)) } : {}),
         updatedAt: b.updatedAt || stamp
       };
     });
@@ -1194,7 +1390,8 @@ function normalizeAndMigrateDB(raw) {
     formats,
     events,
     bookings,
-    clients: clientsList
+    clients: clientsList,
+    audit: Array.isArray(d.audit) ? d.audit.filter(e => e && e.id).slice(0, AUDIT_LIMIT) : []
   };
 
   return cleanupClientDuplicates(normalized);
@@ -1213,8 +1410,16 @@ function loadDatabase() {
     const s = localStorage.getItem(STORE_KEY) || localStorage.getItem('pyatnitsa_hub_db_v3');
     db = normalizeAndMigrateDB(s ? JSON.parse(s) : seedDatabase());
     db = cleanupClientDuplicates(db);
+    const swept = runArchiveSweep(db); // события старше 90 дней помечаются архивом
+    if (swept > 0) logAct('archive_sweep', `Событий: ${swept}`);
     saveDatabase(false);
   } catch(e) {
+    // Страховка: не молча теряем данные — сохраняем сырую копию в автобэкап перед сбросом
+    console.error('Ошибка загрузки базы:', e);
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw && raw.length > 50) localStorage.setItem(STORE_BACKUP_KEY, raw);
+    } catch(_e) {}
     db = normalizeAndMigrateDB(seedDatabase());
   }
 }
@@ -1261,6 +1466,68 @@ function markAsDeleted(id) {
   db.deletedIds[id] = nowTs();
 }
 
+// ============================================================================
+// ЖУРНАЛ ДЕЙСТВИЙ: фиксирует, кто и что менял в базе (события, записи гостей,
+// отметки прихода, оплаты, синхронизация, импорт/экспорт). Хранится в db.audit,
+// синхронизируется вместе с базой и мерджится по id, максимум AUDIT_LIMIT записей.
+// ============================================================================
+const AUDIT_LIMIT = 300;
+const AUDIT_WHO_KEY = 'pyatnitsa_who';
+const AUDIT_ACTS = {
+  ev_add:        'Создано событие',
+  ev_edit:       'Изменено событие',
+  ev_del:        'Удалено событие',
+  ev_restore:    'Событие возвращено',
+  bk_add:        'Записан гость',
+  bk_edit:       'Изменена запись',
+  bk_del:        'Удалена запись',
+  bk_restore:    'Запись возвращена',
+  checkin:       'Отметка прихода',
+  checkin_all:   'Отмечены все пришедшими',
+  pay:           'Статус оплаты',
+  rent_pay:      'Оплата аренды',
+  waitlist:      'Из резерва в основной',
+  copy_guests:   'Скопирован список гостей',
+  export_xlsx:   'Экспорт в Excel',
+  export_backup: 'Скачан бэкап',
+  import:        'Импорт из файла',
+  restore_backup:'Восстановлена авто-копия',
+  compact:       'База сжата',
+  seed:          'Загружены демо-данные',
+  wipe:          'База очищена',
+  sync_connect:  'Подключена синхронизация',
+  sync_pull:     'Ручная синхронизация',
+  fmt_del:       'Удалён шаблон',
+  archive_sweep: 'События ушли в архив'
+};
+function auditWho() {
+  try { return (localStorage.getItem(AUDIT_WHO_KEY) || '').trim().slice(0, 40); } catch(e) { return ''; }
+}
+function logAct(act, detail = '') {
+  try {
+    if (!db || typeof db !== 'object') return;
+    if (!Array.isArray(db.audit)) db.audit = [];
+    db.audit.unshift({
+      id: uid('lg'),
+      t: nowTs(),
+      who: auditWho(),
+      act,
+      d: String(detail || '').slice(0, 180)
+    });
+    if (db.audit.length > AUDIT_LIMIT) db.audit.length = AUDIT_LIMIT;
+  } catch(e) {}
+}
+function mergeAuditLists(a, b) {
+  const seen = new Set(); const out = [];
+  [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])]
+    .sort((x, y) => (Number(y && y.t) || 0) - (Number(x && x.t) || 0))
+    .forEach(e => {
+      if (!e || !e.id || seen.has(e.id)) return;
+      seen.add(e.id); out.push(e);
+    });
+  return out.slice(0, AUDIT_LIMIT);
+}
+
 function mergeDatabases(local, remote) {
   const normRemote = normalizeAndMigrateDB(remote);
   
@@ -1274,7 +1541,24 @@ function mergeDatabases(local, remote) {
     });
   }
 
-  const mergeList = (localArr, remoteArr) => {
+  // Поштучный мердж брони: «тумблеры» (чекин/избранное/оплата) мерджатся по своим меткам
+  // времени, чтобы параллельные действия двух админов не затирали друг друга
+  const mergeBookingFields = (lb, rb) => {
+    const base = (rb.updatedAt || 0) >= (lb.updatedAt || 0) ? { ...rb } : { ...lb };
+    const lc = Number(lb.checkinAt || 0), rc = Number(rb.checkinAt || 0);
+    if (lc || rc) base.isCheckedIn = Boolean((lc >= rc ? lb : rb).isCheckedIn);
+    const lf = Number(lb.favAt || 0), rf = Number(rb.favAt || 0);
+    if (lf || rf) base.isFavorite = Boolean((lf >= rf ? lb : rb).isFavorite);
+    const lp = Number(lb.payAt || 0), rp = Number(rb.payAt || 0);
+    if (lp || rp) {
+      const win = lp >= rp ? lb : rb;
+      base.paymentStatus = win.paymentStatus;
+      base.isPaid = Boolean(win.isPaid);
+    }
+    return base;
+  };
+
+  const mergeList = (localArr, remoteArr, mergeSame) => {
     const map = new Map();
     localArr.forEach(item => map.set(item.id, item));
     remoteArr.forEach(item => {
@@ -1282,9 +1566,7 @@ function mergeDatabases(local, remote) {
         map.set(item.id, item);
       } else {
         const loc = map.get(item.id);
-        if ((item.updatedAt || 0) >= (loc.updatedAt || 0)) {
-          map.set(item.id, item);
-        }
+        map.set(item.id, mergeSame ? mergeSame(loc, item) : (((item.updatedAt || 0) >= (loc.updatedAt || 0)) ? item : loc));
       }
     });
 
@@ -1298,7 +1580,7 @@ function mergeDatabases(local, remote) {
   };
 
   const mergedClients = mergeList(local.clients || [], normRemote.clients || []);
-  const mergedBookings = mergeList(local.bookings || [], normRemote.bookings || []).filter(b => {
+  const mergedBookings = mergeList(local.bookings || [], normRemote.bookings || [], mergeBookingFields).filter(b => {
     if (b.clientId && mergedDeletedIds[b.clientId] && mergedDeletedIds[b.clientId] >= (b.updatedAt || 0)) {
       return false;
     }
@@ -1313,7 +1595,8 @@ function mergeDatabases(local, remote) {
     formats: mergeList(local.formats || [], normRemote.formats || []),
     events: mergeList(local.events || [], normRemote.events || []),
     bookings: mergedBookings,
-    clients: mergedClients
+    clients: mergedClients,
+    audit: mergeAuditLists(local.audit, normRemote.audit)
   };
 
   return cleanupClientDuplicates(merged);
@@ -1358,7 +1641,7 @@ async function pullFromFirebase(manual = false) {
             else if (ui.modal?.type === 'client') openClientCardModal(ui.modal.id);
           }
         }
-        if (manual) toast('Синхронизировано с облаком');
+        if (manual) { logAct('sync_pull'); saveDatabase(true); toast('Синхронизировано с облаком'); }
       }
       ui.cloudStatus = 'connected';
     } else {
@@ -1450,12 +1733,29 @@ function handleAppResume() {
 }
 
 function getEventStats(eventId, price = 0) {
+  const ev = db.events.find(e => e.id === eventId) || null;
   const bk = db.bookings.filter(b => b.eventId === eventId && !b.isWaitlist);
   const booked = bk.reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
   const checked = bk.filter(b => b.isCheckedIn).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
-  const paidSum = bk.filter(b => normalizePaymentStatus(b.paymentStatus, b.isPaid) === 'paid')
-                    .reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)) * price, 0);
+  const paidSum = bk.reduce((s, b) => s + getBookingCollected(b, ev), 0);
   return { booked, checked, paidSum, list: bk };
+}
+
+// Вместимость события: сколько занято / сколько мест / заполненность
+function getEventCapacityInfo(ev) {
+  const booked = db.bookings.filter(b => b.eventId === ev.id && !b.isWaitlist)
+    .reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
+  const cap = Number(ev.capacity) || 0;
+  return { booked, cap, left: cap > 0 ? cap - booked : null, ratio: cap > 0 ? booked / cap : 0 };
+}
+
+function renderCapacityPillHtml(ev) {
+  const info = getEventCapacityInfo(ev);
+  if (!info.cap) return '';
+  let color = '#059669', bg = '#E6FBF2', text = `Мест: ${info.booked}/${info.cap}`;
+  if (info.left <= 0) { color = '#DC2626'; bg = '#FFEBEB'; text += ' — ЗАПОЛНЕНО'; }
+  else if (info.ratio >= 0.8) { color = '#B45309'; bg = '#FEF9E7'; text += ` — осталось ${info.left}`; }
+  return `<span class="pill text-xs font-semibold" style="color:${color};background:${bg}">${text}</span>`;
 }
 
 function getClientStats(clientId) {
@@ -1472,7 +1772,7 @@ function getClientStats(clientId) {
         title: ev?.title || b.eventTitle || 'Событие',
         date: ev?.date || b.eventDate || '',
         time: ev?.time || b.eventTime || '',
-        price: (ev?.price !== undefined) ? ev.price : (b.eventPrice || 0),
+        price: (b.eventPrice !== undefined && b.eventPrice !== null) ? (Number(b.eventPrice) || 0) : (ev?.price || 0),
         isArchived: !ev
       };
     })
@@ -1484,7 +1784,7 @@ function getClientStats(clientId) {
   const bookingVisits = checkedIn.reduce((s, x) => s + (Math.max(1, Number(x.bk.ticketsCount) || 1)), 0);
   const totalVisits = (Number(c.initialVisits) || 0) + bookingVisits;
 
-  const bookingPaid = paid.reduce((s, x) => s + (Math.max(1, Number(x.bk.ticketsCount) || 1)) * x.price, 0);
+  const bookingPaid = paid.reduce((s, x) => s + getBookingCollected(x.bk, x.ev), 0);
   const totalPaid = (Number(c.initialPaid) || 0) + bookingPaid;
 
   let latestVisitDate = null;
@@ -1509,7 +1809,7 @@ function getMonthWeeks(y, m) {
     const days = [];
     for(let i=0; i<7; i++) {
       const d = new Date(cur); d.setDate(cur.getDate() + i);
-      days.push({ date: d, iso: ymd(d), isCurrentMonth: d.getMonth() === m, isToday: ymd(d) === TODAY_ISO });
+      days.push({ date: d, iso: ymd(d), isCurrentMonth: d.getMonth() === m, isToday: ymd(d) === getTodayISO() });
     }
     weeks.push({ monday: new Date(cur), sunday: new Date(days[6].date), days });
     cur.setDate(cur.getDate() + 7);
@@ -1518,7 +1818,7 @@ function getMonthWeeks(y, m) {
 }
 
 function getEventLiveStatus(ev) {
-  if (!ev || ev.date !== TODAY_ISO) return null;
+  if (!ev || ev.date !== getTodayISO()) return null;
   const now = new Date();
   const curMin = now.getHours() * 60 + now.getMinutes();
   const { start, end } = getEventInterval(ev);
@@ -1529,7 +1829,7 @@ function getEventLiveStatus(ev) {
 
 function findPriorityEventId(dayEvs) {
   if (!dayEvs || !dayEvs.length) return null;
-  if (ui.dayDate === TODAY_ISO) {
+  if (ui.dayDate === getTodayISO()) {
     const now = new Date();
     const curMin = now.getHours() * 60 + now.getMinutes();
     
@@ -1583,7 +1883,61 @@ function copyFilteredGuestList(eventId) {
 
   const textToCopy = lines.join('\n');
   copySafe(textToCopy);
+  logAct('copy_guests', `${ev.title || ''} · гостей: ${list.length}`);
+  saveDatabase(true);
   toast(`Скопировано гостей: ${list.length}`);
+}
+
+// ============================================================================
+// КЕБАБ-МЕНЮ СОБЫТИЯ (⋯): редактирование, повтор и копия списка гостей —
+// спрятаны за одной компактной кнопкой, чтобы не загромождать карточку.
+// ============================================================================
+let evMenuCleanup = null;
+let evMenuBtnEl = null; // кнопка «⋯», открывшая текущее меню — по ней определяем повторный клик
+function closeEventMenu() {
+  const pop = document.getElementById('evMenuPop');
+  if (pop) pop.remove();
+  evMenuBtnEl = null;
+  if (evMenuCleanup) { evMenuCleanup(); evMenuCleanup = null; }
+}
+function openEventMenu(evId, showDelete, btn) {
+  if (typeof event !== 'undefined') { event.stopPropagation(); event.preventDefault(); }
+  const wasOpen = document.getElementById('evMenuPop');
+  const wasSameBtn = Boolean(wasOpen && btn && evMenuBtnEl === btn);
+  closeEventMenu();
+  if (wasSameBtn) return; // повторный клик по той же «⋯» закрывает меню
+  const pop = document.createElement('div');
+  pop.id = 'evMenuPop';
+  pop.className = 'ev-menu-pop';
+  pop.innerHTML = `
+    <button onclick="closeEventMenu();openAddEventModal('','','','${evId}')">${ic('edit')} Редактировать событие</button>
+    <button onclick="closeEventMenu();duplicateEventAction('${evId}')">${ic('copy')} Повторить событие</button>
+    <button onclick="closeEventMenu();copyFilteredGuestList('${evId}')">${ic('list')} Скопировать список гостей</button>
+    ${showDelete ? `<div class="ev-menu-sep"></div><button class="danger" onclick="closeEventMenu();confirmDeleteEventAction('${evId}')">${ic('trash')} Удалить событие</button>` : ''}
+  `;
+  document.body.appendChild(pop);
+  evMenuBtnEl = btn || null;
+  const r = btn.getBoundingClientRect();
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let top = r.bottom + 6;
+  if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 6);
+  let left = Math.min(Math.max(8, r.right - pw), window.innerWidth - pw - 8);
+  pop.style.top = `${top}px`;
+  pop.style.left = `${left}px`;
+  // Клик по самой кнопке «⋯» здесь НЕ закрывает меню: её onclick сам вызовет
+  // openEventMenu и свернёт меню (тоггл). Клик в любом другом месте — закрывает.
+  const onDocClick = e => { if (pop.contains(e.target)) return; if (evMenuBtnEl && evMenuBtnEl.contains(e.target)) return; closeEventMenu(); };
+  const timer = setTimeout(() => {
+    document.addEventListener('click', onDocClick, true);
+    window.addEventListener('resize', closeEventMenu);
+    window.addEventListener('scroll', closeEventMenu, true);
+  }, 0);
+  evMenuCleanup = () => {
+    clearTimeout(timer);
+    document.removeEventListener('click', onDocClick, true);
+    window.removeEventListener('resize', closeEventMenu);
+    window.removeEventListener('scroll', closeEventMenu, true);
+  };
 }
 
 function computeDayEventLayouts(events) {
@@ -1621,9 +1975,9 @@ const saveSnoozed = d => localStorage.setItem(SNOOZE_KEY, JSON.stringify(d));
 
 function getActivePrompts() {
   if(!db?.formats) return [];
-  const now = parseYmd(TODAY_ISO), snoozed = getSnoozed(), warns = [];
+  const now = parseYmd(getTodayISO()), snoozed = getSnoozed(), warns = [];
   db.formats.forEach(f => {
-    if(!f.frequencyDays || f.frequencyDays <= 0 || (snoozed[f.id] && TODAY_ISO < snoozed[f.id])) return;
+    if(!f.frequencyDays || f.frequencyDays <= 0 || (snoozed[f.id] && getTodayISO() < snoozed[f.id])) return;
     const past = db.events.filter(e => e.formatId === f.id).sort((a,b) => new Date(b.date) - new Date(a.date));
     const daysSince = past.length ? daysBetween(new Date(past[0].date), now) : 999;
     if(daysSince >= f.frequencyDays) warns.push({ format: f, daysSince, target: f.frequencyDays });
@@ -1699,7 +2053,7 @@ function filterEventsList() {
   let list = db.events.filter(e => ui.filter === 'all' || e.presenceType === ui.filter);
 
   if (ui.eventTimeScope === 'upcoming') {
-    list = list.filter(e => e.date >= TODAY_ISO);
+    list = list.filter(e => e.date >= getTodayISO());
   } else if (ui.eventTimeScope === 'month') {
     list = list.filter(e => {
       const d = parseYmd(e.date);
@@ -1743,18 +2097,20 @@ function renderEventsListRowsHtml(list) {
     const p = PRESENCE[ev.presenceType] || PRESENCE.team;
     const isRent = ev.presenceType === 'rent';
     const isTrip = ev.presenceType === 'trip';
-    const isToday = ev.date === TODAY_ISO;
+    const isToday = ev.date === getTodayISO();
+    const isArchived = Boolean(ev.isArchived);
     const { booked, checked } = getEventStats(ev.id);
 
     return `
-      <div class="row row-click flex items-center justify-between gap-3" onclick="openEventDetailsModal('${ev.id}')">
+      <div class="row row-click flex items-center justify-between gap-3" onclick="openEventDetailsModal('${ev.id}')" ${isArchived ? 'style="opacity:.62"' : ''}>
         <div class="flex-1" style="min-width:0">
           <div class="row-title flex items-center gap-2">
             <span class="font-bold text-base">${esc(ev.title)}</span>
-            <span class="tag" style="background:${p.bg};color:${p.color}">
+            <span class="tag" style="background:${p.bg};color:var(--ink2)">
               <span class="dot" style="background:${p.color}"></span>${p.label}
             </span>
             ${isToday ? `<span class="pill" style="background:var(--ink);color:#fff">Сегодня</span>` : ''}
+            ${isArchived ? `<span class="pill" style="background:var(--trip-bg);color:var(--trip)">Архив</span>` : ''}
           </div>
           <div class="row-sub flex items-center gap-2 flex-wrap">
             <span class="font-semibold text-ink">${fmtDateFull(ev.date)}</span>
@@ -1780,8 +2136,7 @@ function renderEventsListRowsHtml(list) {
               <span class="badge-bubble bubble-limit">${ev.capacity || '∞'}</span>
             </div>
           `}
-          <button class="icon-btn sm" onclick="openAddEventModal('','','','${ev.id}')" title="Редактировать">${ic('edit')}</button>
-          <button class="icon-btn sm danger-icon" onclick="confirmDeleteEventAction('${ev.id}')" title="Удалить">${ic('trash')}</button>
+          <button class="icon-btn sm" onclick="openEventMenu('${ev.id}', true, this)" title="Действия с событием">${ic('more')}</button>
         </div>
       </div>
     `;
@@ -1837,12 +2192,6 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
   const isTrip = activeEv.presenceType === 'trip';
   const showDeleteBtn = Boolean(opts.isModal);
 
-  const deleteBtnHtml = showDeleteBtn ? `
-    <button class="icon-btn sm danger-icon" onclick="confirmDeleteEventAction('${activeEv.id}')" title="Удалить из графика" aria-label="Удалить из графика">
-      ${ic('trash')}
-    </button>
-  ` : '';
-
   if (isTrip) {
     return `
       <div class="list-card" style="padding:18px 20px;max-width:960px;${opts.isModal ? 'border:none;box-shadow:none;border-radius:0;' : ''}">
@@ -1853,8 +2202,7 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
             ${activeEv.note ? `<div class="text-sm text-ink2" style="margin-top:8px">${esc(activeEv.note)}</div>` : ''}
           </div>
           <div class="flex items-center gap-1.5 flex-none">
-            <button class="icon-btn sm" onclick="openAddEventModal('','','','${activeEv.id}')" title="Редактировать">${ic('edit')}</button>
-            ${deleteBtnHtml}
+            <button class="icon-btn sm" onclick="openEventMenu('${activeEv.id}', ${showDeleteBtn}, this)" title="Действия с событием">${ic('more')}</button>
           </div>
         </div>
       </div>
@@ -1879,8 +2227,7 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
               ${activeEv.isPaid ? '✓ Аренда оплачена' : '⏳ Отметить оплату'}
             </button>
             <div class="flex items-center gap-1.5">
-              <button class="icon-btn sm" onclick="openAddEventModal('','','','${activeEv.id}')" title="Редактировать">${ic('edit')}</button>
-              ${deleteBtnHtml}
+              <button class="icon-btn sm" onclick="openEventMenu('${activeEv.id}', ${showDeleteBtn}, this)" title="Действия с событием">${ic('more')}</button>
             </div>
           </div>
         </div>
@@ -1891,7 +2238,7 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
     `;
   }
 
-  const { booked, checked, paidSum } = getEventStats(activeEv.id, activeEv.price || 0);
+  const { paidSum } = getEventStats(activeEv.id, activeEv.price || 0);
   
   const allBookings = db.bookings
     .filter(b => b.eventId === activeEv.id && !b.isWaitlist)
@@ -1901,9 +2248,6 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
     .filter(b => b.eventId === activeEv.id && b.isWaitlist)
     .sort((a, b) => (a.guestName || '').localeCompare(b.guestName || '', 'ru'));
 
-  const favCount = allBookings.filter(b => b.isFavorite).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
-  const checkedCount = allBookings.filter(b => b.isCheckedIn).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
-  const pendingCount = allBookings.filter(b => !b.isCheckedIn).reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
   const waitlistPersons = waitlist.reduce((s, b) => s + (Math.max(1, Number(b.ticketsCount) || 1)), 0);
 
   let displayList = allBookings;
@@ -1920,39 +2264,23 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
             <div class="font-bold text-xl">${esc(activeEv.title)}</div>
             <div class="flex items-center gap-2 flex-wrap text-sm text-muted" style="margin-top:3px">
               <span>${activeEv.time}–${activeEv.endTime} · ${activeEv.price ? money(activeEv.price) : 'Бесплатно'}</span>
-              <span class="text-xs text-muted font-medium bg-subtle rounded-lg border-line" style="padding:2px 8px">
+              <span class="text-xs text-muted font-medium bg-subtle rounded-lg border-line collected-sum-tag" data-event-id="${activeEv.id}" style="padding:2px 8px">
                 Собрано: <b class="text-ink">${money(paidSum)}</b>
               </span>
+              ${renderCapacityPillHtml(activeEv)}
               ${activeEv.note ? `<span>· ${esc(activeEv.note)}</span>` : ''}
-              ${waitlist.length ? `<span class="pill text-xs font-semibold" style="color:var(--rent);background:var(--rent-bg)">Резерв: ${waitlistPersons} чел.</span>` : ''}
+              ${waitlist.length ? `<span class="pill text-xs font-semibold" style="color:var(--rent);background:var(--rent-bg)">Резерв: ${waitlistPersons}</span>` : ''}
             </div>
           </div>
-          <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-2 flex-none">
             <button class="btn btn-primary btn-sm" onclick="openAddGuestModal('${activeEv.id}')">${ic('plus')} Добавить гостя</button>
-            <button class="btn btn-soft btn-sm" onclick="copyFilteredGuestList('${activeEv.id}')" title="Скопировать отфильтрованный список гостей">${ic('copy')} Список</button>
-            <div class="flex items-center gap-1.5">
-              <button class="icon-btn sm" onclick="openAddEventModal('','','','${activeEv.id}')" title="Редактировать событие">${ic('edit')}</button>
-              ${deleteBtnHtml}
-            </div>
+            <button class="icon-btn sm" onclick="openEventMenu('${activeEv.id}', ${showDeleteBtn}, this)" title="Действия с событием">${ic('more')}</button>
           </div>
         </div>
 
-        <div class="flex items-center justify-between gap-2 flex-wrap" style="margin-top:14px">
-          <div class="chips" style="margin:0;gap:6px">
-            <button class="chip ${currentFilter==='all'?'on':''}" style="padding:5px 11px;font-size:12px" onclick="setDayGuestFilter('all')">
-              Все <span class="cnt">${booked} чел.</span>
-            </button>
-            <button class="chip ${currentFilter==='checked'?'on':''}" style="padding:5px 11px;font-size:12px" onclick="setDayGuestFilter('checked')">
-              Пришли <span class="cnt">${checkedCount}</span>
-            </button>
-            <button class="chip ${currentFilter==='pending'?'on':''}" style="padding:5px 11px;font-size:12px" onclick="setDayGuestFilter('pending')">
-              Ждём <span class="cnt">${pendingCount}</span>
-            </button>
-            <button class="chip ${currentFilter==='fav'?'on':''}" style="padding:5px 11px;font-size:12px;color:${currentFilter==='fav'?'var(--star)':'var(--ink2)'}" onclick="setDayGuestFilter('fav')">
-              <svg style="width:14px;height:14px;color:var(--star)"><use href="#ic-star"/></svg>
-              <span class="cnt">${favCount}</span>
-            </button>
-          </div>
+        <div class="flex items-center justify-between gap-2 flex-wrap" style="margin-top:12px">
+          <div class="chips" id="dayChipsBox_${activeEv.id}" style="margin:0;gap:6px">${renderDayGuestChipsInnerHtml(activeEv)}</div>
+          <button class="btn btn-soft btn-sm" style="height:28px;min-height:28px;padding:3px 10px;font-size:12px" onclick="checkinAllForEvent('${activeEv.id}')" title="Отметить всех гостей пришедшими">✓ Все пришли</button>
         </div>
       </div>
 
@@ -1964,6 +2292,7 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
           </div>
         ` : displayList.map(b => {
           const currentPayStatus = normalizePaymentStatus(b.paymentStatus, b.isPaid);
+          const collectedAmt = getBookingCollected(b, activeEv);
           return `
           <div class="guest-row-card" id="guestRow_${b.id}">
             <button class="checkin-btn ${b.isCheckedIn ? 'on' : ''}" onclick="toggleCheckin('${b.id}')" title="Отметить посещение">
@@ -1978,10 +2307,11 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
                  onpointercancel="handleGuestPressEnd(event)"
                  oncontextmenu="event.preventDefault()">
               <div class="font-bold text-base truncate" style="${b.isCheckedIn ? 'text-decoration:line-through;opacity:.65' : ''}">
-                ${esc(b.guestName)} ${b.ticketsCount > 1 ? `<span class="pill text-xs">${b.ticketsCount} чел.</span>` : ''}
+                ${esc(b.guestName)} ${b.ticketsCount > 1 ? `<span class="pill text-xs" title="Билетов: ${b.ticketsCount}">×${b.ticketsCount}</span>` : ''}
               </div>
               <div class="flex items-center gap-2 flex-wrap" style="margin-top:3px" onpointerdown="event.stopPropagation()">
                 ${renderPayPillHtml(currentPayStatus, `togglePayment('${b.id}')`)}
+                <span class="text-xs font-semibold text-muted" data-bk-sum="${b.id}">${collectedAmt > 0 ? money(collectedAmt) : ''}</span>
                 ${b.telegram ? `<span class="text-xs text-muted truncate">${esc(b.telegram)}</span>` : ''}
                 ${b.note ? `<span class="text-xs text-ink2 truncate" style="font-style:italic">· ${esc(b.note)}</span>` : ''}
               </div>
@@ -2013,7 +2343,7 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
             <div class="flex items-center justify-between gap-3" style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04)">
               <div class="flex-1 truncate">
                 <span class="font-semibold text-base">${esc(b.guestName)}</span>
-                <span class="pill text-xs">${b.ticketsCount} чел.</span>
+                <span class="pill text-xs" title="Билетов: ${b.ticketsCount}">×${b.ticketsCount}</span>
                 <span class="text-xs text-muted" style="margin-left:4px">${b.telegram || ''} ${b.note ? ' · ' + esc(b.note) : ''}</span>
               </div>
               <div class="flex items-center gap-2 flex-none">
@@ -2087,14 +2417,14 @@ function renderMonthView() {
                       const isTrip = ev.presenceType === 'trip';
                       return `
                         <div class="tt-event" onclick="event.stopPropagation();openEventDetailsModal('${ev.id}')"
-                             style="top:${top}px;height:${h-3}px;left:calc(${lPct}% + 1px);width:calc(${wPct}% - 2px);--c:${p.color};--cbg:${p.bg}">
+                             style="top:${top}px;height:${h-3}px;left:calc(${lPct}% + 1px);width:calc(${wPct}% - 2px);--c:${p.color};--cbg:${p.bg};--glow:${p.glow}">
                           <div class="tt-ev-title">${esc(ev.title)}</div>
                           <div class="tt-ev-footer flex items-center justify-between gap-1">
                             <span>${ev.time}</span>
                             ${isTrip ? `
-                              <span class="pill text-xs" style="padding:1px 5px;font-size:9.5px;background:rgba(0,0,0,0.06)">Отлучка</span>
+                              <span class="pill text-xs" style="padding:1px 5px;font-size:9.5px;background:rgba(255,255,255,.72)">Отлучка</span>
                             ` : isRent ? `
-                              <span class="tag" style="padding:1px 6px;font-size:9.5px;${ev.isPaid ? 'background:#E7F5EE;color:#3E946E' : 'background:#FCF3DE;color:#B37D14'}">
+                              <span class="tag" style="padding:1px 6px;font-size:9.5px;${ev.isPaid ? 'background:rgba(255,255,255,.78);color:#059669' : 'background:rgba(255,255,255,.78);color:#B45309'}">
                                 ${ev.isPaid ? '✓ Оплачено' : '⏳ Ждет оплаты'}
                               </span>
                             ` : `
@@ -2142,7 +2472,7 @@ function renderDayView() {
         <button class="icon-btn sm" onclick="changeDayDate(-1)">${ic('chevLeft')}</button>
         <div class="font-bold text-lg text-center" style="min-width:180px">${DOW_FULL[dayOfWeek]}, ${d.getDate()} ${MONTHS_GEN[d.getMonth()]}</div>
         <button class="icon-btn sm" onclick="changeDayDate(1)">${ic('chevRight')}</button>
-        <button class="btn btn-ghost btn-sm" onclick="ui.dayDate=TODAY_ISO;ui.selectedDayEventId=null;render()">Сегодня</button>
+        <button class="btn btn-ghost btn-sm" onclick="ui.dayDate=getTodayISO();ui.selectedDayEventId=null;render()">Сегодня</button>
       </div>
     </div>
   `;
@@ -2172,7 +2502,7 @@ function renderDayView() {
         if (isTrip) {
           rightBadgeHtml = `<span class="tab-badge">отлучка</span>`;
         } else if (isRent) {
-          rightBadgeHtml = `<span class="tab-badge" style="${ev.isPaid ? 'color:#2E7D56' : 'color:#B37D14'}">${ev.isPaid ? 'оплачено' : 'аренда'}</span>`;
+          rightBadgeHtml = `<span class="tab-badge" style="${ev.isPaid ? 'color:#059669' : 'color:#B45309'}">${ev.isPaid ? 'оплачено' : 'аренда'}</span>`;
         } else {
           rightBadgeHtml = `<span class="tab-badge">${checked}/${booked}</span>`;
         }
@@ -2234,7 +2564,8 @@ function toggleBookingFavorite(bookingId) {
   const b = db.bookings.find(x => x.id === bookingId);
   if (!b) return;
   b.isFavorite = !b.isFavorite;
-  b.updatedAt = nowTs();
+  b.favAt = nowTs();
+  b.updatedAt = b.favAt;
   saveDatabase(true);
   if (ui.modal?.type === 'event') {
     openEventDetailsModal(ui.modal.id);
@@ -2282,7 +2613,7 @@ function openAddGuestModal(eventId) {
   const ev = db.events.find(x => x.id === eventId);
   if (!ev) return;
 
-  const returnToModalId = (ui.modal?.type === 'event') ? ui.modal.id : null;
+  const returnToModalId = eventPopupReturnTarget((ui.modal?.type === 'event') ? ui.modal.id : null);
   const initialStatus = 'unpaid';
 
   openModal(`
@@ -2317,7 +2648,7 @@ function openAddGuestModal(eventId) {
         <div class="grid3" style="align-items:center;margin-top:6px;margin-bottom:8px">
           <div class="field" style="margin:0">
             <label>Кол-во мест</label>
-            <input type="number" id="mBkCount" min="1" value="1" class="inp" required>
+            <input type="number" id="mBkCount" min="1" value="1" class="inp" required oninput="updateAutoAmountHint()">
           </div>
           <div class="field" style="margin:0">
             <label>Статус оплаты</label>
@@ -2330,6 +2661,14 @@ function openAddGuestModal(eventId) {
               <span>В резерв</span>
             </label>
           </div>
+        </div>
+
+        <div class="grid2" style="margin-top:2px;align-items:center">
+          <div class="field" style="margin:0">
+            <label>Сумма оплаты, ₽ <span class="text-muted" style="font-weight:400">(необязательно)</span></label>
+            <input type="number" id="mBkPaidAmount" class="inp" min="0" step="any" inputmode="decimal" placeholder="авто" data-price="${ev?.price || 0}" oninput="updateAutoAmountHint()">
+          </div>
+          <div class="text-xs text-muted" id="mBkPaidHint" style="padding-top:22px;line-height:1.4">Пусто = авто: места × цена события</div>
         </div>
 
         <div class="field" style="margin-top:20px;margin-bottom:6px">
@@ -2349,6 +2688,7 @@ function openAddGuestModal(eventId) {
       </div>
     </form>
   `);
+  updateAutoAmountHint();
 }
 
 function openEditGuestModal(bookingId, eventId) {
@@ -2356,7 +2696,7 @@ function openEditGuestModal(bookingId, eventId) {
   if (!b) return;
   const ev = db.events.find(x => x.id === eventId);
   const isFav = Boolean(b.isFavorite);
-  const returnToModalId = (ui.modal?.type === 'event') ? ui.modal.id : null;
+  const returnToModalId = eventPopupReturnTarget((ui.modal?.type === 'event') ? ui.modal.id : null);
   const currentStatus = normalizePaymentStatus(b.paymentStatus, b.isPaid);
 
   openModal(`
@@ -2391,7 +2731,7 @@ function openEditGuestModal(bookingId, eventId) {
         <div class="grid3" style="align-items:center;margin-top:6px;margin-bottom:8px">
           <div class="field" style="margin:0">
             <label>Кол-во мест</label>
-            <input type="number" id="mBkCount" min="1" value="${b.ticketsCount || 1}" class="inp" required>
+            <input type="number" id="mBkCount" min="1" value="${b.ticketsCount || 1}" class="inp" required oninput="updateAutoAmountHint()">
           </div>
           <div class="field" style="margin:0">
             <label>Статус оплаты</label>
@@ -2404,6 +2744,17 @@ function openEditGuestModal(bookingId, eventId) {
               <span>В резерв</span>
             </label>
           </div>
+        </div>
+
+        <div class="grid2" style="margin-top:2px;align-items:center">
+          <div class="field" style="margin:0">
+            <label>Сумма оплаты, ₽ <span class="text-muted" style="font-weight:400">(необязательно)</span></label>
+            <input type="number" id="mBkPaidAmount" class="inp" min="0" step="any" inputmode="decimal"
+                   value="${(b.paidAmount !== undefined && b.paidAmount !== null) ? b.paidAmount : ''}"
+                   placeholder="авто" data-price="${(b.eventPrice !== undefined && b.eventPrice !== null) ? (Number(b.eventPrice) || 0) : (ev?.price || 0)}"
+                   oninput="updateAutoAmountHint()">
+          </div>
+          <div class="text-xs text-muted" id="mBkPaidHint" style="padding-top:22px;line-height:1.4">Пусто = авто: места × цена события</div>
         </div>
 
         <div class="field" style="margin-top:20px;margin-bottom:6px">
@@ -2423,6 +2774,7 @@ function openEditGuestModal(bookingId, eventId) {
       </div>
     </form>
   `);
+  updateAutoAmountHint();
 }
 
 function handleModalEditGuest(e, bookingId, eventId, returnToModalId = null) {
@@ -2444,6 +2796,8 @@ function handleModalEditGuest(e, bookingId, eventId, returnToModalId = null) {
   const isFav = document.getElementById('mBkFavVal') ? document.getElementById('mBkFavVal').value === '1' : false;
   const note = document.getElementById('mBkNote').value.trim();
   const stamp = nowTs();
+  const prevGuestName = b.guestName;
+  const prevPayStatus = normalizePaymentStatus(b.paymentStatus, b.isPaid);
 
   b.guestName = name;
   b.telegram = tg;
@@ -2453,6 +2807,19 @@ function handleModalEditGuest(e, bookingId, eventId, returnToModalId = null) {
   b.isWaitlist = isWait;
   b.isFavorite = isFav;
   b.note = note;
+  // Ручная сумма оплаты: пустое поле → авто-расчёт (снимок цены × места)
+  const manualAmt = parseManualAmountInput('mBkPaidAmount');
+  if (manualAmt === undefined) { delete b.paidAmount; } else { b.paidAmount = manualAmt; }
+  // Переименование гостя обновляет имя во всех его бронях (иначе список «расползается»)
+  if (b.clientId && prevGuestName !== name) {
+    db.bookings.forEach(x => {
+      if (x.clientId === b.clientId && x.id !== b.id && x.guestName !== name) {
+        x.guestName = name;
+        x.updatedAt = stamp;
+      }
+    });
+  }
+  if (prevPayStatus !== paymentStatus) b.payAt = stamp;
   b.updatedAt = stamp;
 
   if (b.clientId) {
@@ -2468,6 +2835,7 @@ function handleModalEditGuest(e, bookingId, eventId, returnToModalId = null) {
     }
   }
 
+  logAct('bk_edit', `${name} · ${b.eventTitle || ''}`);
   saveDatabase(true);
   if (returnToModalId) {
     openEventDetailsModal(returnToModalId);
@@ -2513,6 +2881,7 @@ function handleModalAddGuest(e, evId, returnToModalId = null) {
 
   const ev = db.events.find(x => x.id === evId);
   const stamp = nowTs();
+  const manualAmt = parseManualAmountInput('mBkPaidAmount');
 
   let client = null;
   if (tg) client = db.clients.find(c => c.telegram && c.telegram.toLowerCase() === tg.toLowerCase());
@@ -2532,7 +2901,7 @@ function handleModalAddGuest(e, evId, returnToModalId = null) {
       initialVisits: 0,
       initialPaid: 0,
       clientNotes: note,
-      firstSeen: TODAY_ISO,
+      firstSeen: getTodayISO(),
       lastSeen: null,
       initialLastSeen: null,
       updatedAt: stamp
@@ -2545,7 +2914,7 @@ function handleModalAddGuest(e, evId, returnToModalId = null) {
     delete db.deletedIds[bkId];
   }
 
-  db.bookings.push({
+  const newBooking = {
     id: bkId,
     eventId: evId,
     clientId: client.id,
@@ -2559,11 +2928,13 @@ function handleModalAddGuest(e, evId, returnToModalId = null) {
     isFavorite: isFav,
     note,
     eventTitle: ev?.title || 'Событие',
-    eventDate: ev?.date || TODAY_ISO,
+    eventDate: ev?.date || getTodayISO(),
     eventTime: ev?.time || '19:00',
     eventPrice: ev?.price || 0,
     updatedAt: stamp
-  });
+  };
+  if (manualAmt !== undefined) newBooking.paidAmount = manualAmt;
+  db.bookings.push(newBooking);
 
   const stats = getClientStats(client.id);
   client.visitsCount = stats.visits;
@@ -2571,6 +2942,7 @@ function handleModalAddGuest(e, evId, returnToModalId = null) {
   client.lastSeen = stats.lastSeen;
   client.updatedAt = stamp;
 
+  logAct('bk_add', `${name}${count > 1 ? ` ×${count}` : ''} · ${ev?.title || ''}${isWait ? ' · резерв' : ''}`);
   saveDatabase(true);
   if (returnToModalId) {
     openEventDetailsModal(returnToModalId);
@@ -2578,6 +2950,13 @@ function handleModalAddGuest(e, evId, returnToModalId = null) {
     forceCloseModal();
   }
   render();
+  if (ev && !isWait) {
+    const capInfo = getEventCapacityInfo(ev);
+    if (capInfo.cap > 0 && capInfo.left < 0) {
+      toast(`⚠ Превышена вместимость: ${capInfo.booked}/${capInfo.cap}`);
+      return;
+    }
+  }
   toast(isWait ? 'Добавлено в резерв' : 'Гость успешно записан');
 }
 
@@ -2596,7 +2975,7 @@ function renderFormatsView() {
           <div class="flex-1">
             <div class="row-title flex items-center gap-2">
               ${esc(f.title)}
-              <span class="tag" style="background:${PRESENCE[f.defaultPresence]?.bg};color:${PRESENCE[f.defaultPresence]?.color}">
+              <span class="tag" style="background:${PRESENCE[f.defaultPresence]?.bg};color:var(--ink2)">
                 <span class="dot" style="background:${PRESENCE[f.defaultPresence]?.color}"></span>${PRESENCE[f.defaultPresence]?.label}
               </span>
             </div>
@@ -2635,7 +3014,7 @@ function renderClientsRows(list) {
   if(!list.length) return `<div class="text-center text-muted" style="padding:24px">Гости не найдены</div>`;
   return list.map(c => `
     <div class="row row-click flex items-center justify-between gap-3" onclick="openClientCardModal('${esc(c.id)}')">
-      <div class="flex-1">
+      <div class="flex-1" style="min-width:0">
         <div class="row-title flex items-center gap-2">${esc(c.name)} ${c.telegram ? `<span class="pill">${esc(c.telegram)}</span>` : ''}</div>
         <div class="row-sub">${c.visits} ${plural(c.visits,'визит','визита','визитов')} · ${money(c.total)}${c.visits > 0 && c.lastSeen ? ' · крайний ' + fmtDateRu(c.lastSeen) : ''}</div>
         ${c.notes ? `<div class="row-sub" style="font-style:italic;color:#A88F5E">${esc(c.notes)}</div>` : ''}
@@ -2690,10 +3069,7 @@ function renderAnalyticsView() {
     const eventBookings = db.bookings.filter(b => b.eventId === e.id && !b.isWaitlist);
     
     eventBookings.forEach(b => {
-      const tickets = Math.max(1, Number(b.ticketsCount) || 1);
-      if (normalizePaymentStatus(b.paymentStatus, b.isPaid) === 'paid') {
-        evRev += tickets * (e.price || 0);
-      }
+      evRev += getBookingCollected(b, e);
     });
 
     if (e.presenceType === 'rent' && e.isPaid) {
@@ -2730,7 +3106,7 @@ function renderAnalyticsView() {
     if(evIds.has(b.eventId) && !b.isWaitlist && normalizePaymentStatus(b.paymentStatus, b.isPaid) === 'paid') {
       const ev = db.events.find(x => x.id === b.eventId);
       const tickets = Math.max(1, Number(b.ticketsCount) || 1);
-      const paidAmount = tickets * (ev?.price || 0);
+      const paidAmount = getBookingCollected(b, ev);
 
       if (paidAmount > 0) {
         const cId = b.clientId || getStableClientId(b.telegram, b.guestName);
@@ -2784,17 +3160,18 @@ function renderAnalyticsView() {
           </div>
         ` : `<div class="text-sm text-muted" style="margin-top:3px">За всё время работы (по оплаченным событиям)</div>`}
       </div>
-      <div class="chips" style="margin:0">
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn btn-soft btn-sm" onclick="exportAnalyticsXlsx()" title="Скачать .xlsx: события, гости, оплаты, клиенты">${ic('download')} Excel</button>
         <button class="chip ${isM?'on':''}" onclick="ui.analyticsPeriod='month';render()">Выбранный месяц</button>
         <button class="chip ${!isM?'on':''}" onclick="ui.analyticsPeriod='all';render()">Всё время</button>
       </div>
     </div>
 
     <div class="stats">
-      <div class="stat"><div class="stat-label">${ic('wallet')} Выручка</div><div class="stat-val font-bold">${money(totalRev)}</div></div>
-      <div class="stat"><div class="stat-label">${ic('check')} Чекинов</div><div class="stat-val font-bold">${totalCheckins} чел.</div></div>
-      <div class="stat"><div class="stat-label">${ic('calendar')} С выручкой</div><div class="stat-val font-bold">${revenueEvents.length} из ${evs.length}</div></div>
-      <div class="stat"><div class="stat-label">${ic('users')} Платящих гостей</div><div class="stat-val font-bold">${revenueGuests.length} чел.</div></div>
+      <div class="stat sc-team"><div class="stat-label">${ic('wallet')} Выручка</div><div class="stat-val font-bold">${money(totalRev)}</div></div>
+      <div class="stat sc-free"><div class="stat-label">${ic('check')} Чекинов</div><div class="stat-val font-bold">${totalCheckins} чел.</div></div>
+      <div class="stat sc-rent"><div class="stat-label">${ic('calendar')} С выручкой</div><div class="stat-val font-bold">${revenueEvents.length} из ${evs.length}</div></div>
+      <div class="stat sc-acc"><div class="stat-label">${ic('users')} Платящих гостей</div><div class="stat-val font-bold">${revenueGuests.length} чел.</div></div>
     </div>
 
     <div class="flex items-center justify-between flex-wrap gap-2" style="margin: 14px 0 10px;">
@@ -2824,7 +3201,7 @@ function renderAnalyticsView() {
             <div class="bar-name">
               <div class="flex items-center gap-2 flex-wrap font-semibold">
                 <span>${esc(ev.title)}</span>
-                <span class="tag" style="background:${PRESENCE[ev.presenceType]?.bg};color:${PRESENCE[ev.presenceType]?.color};font-size:10px;padding:2px 7px">
+                <span class="tag" style="background:${PRESENCE[ev.presenceType]?.bg};color:var(--ink2);font-size:10px;padding:2px 7px">
                   ${PRESENCE[ev.presenceType]?.label || ''}
                 </span>
               </div>
@@ -2857,7 +3234,7 @@ function renderAnalyticsView() {
               </div>
             </div>
             <div class="bar-track">
-              <div class="bar-fill" style="width:${Math.round(g.revenue / maxGuestRev * 100)}%;background:var(--ink)"></div>
+              <div class="bar-fill" style="width:${Math.round(g.revenue / maxGuestRev * 100)}%;background:var(--accent)"></div>
             </div>
             <div class="bar-val font-bold text-ink">${money(g.revenue)}</div>
           </div>
@@ -2906,7 +3283,7 @@ function openEventDetailsModal(id) {
     <div class="modal-head flex items-center justify-between gap-3">
       <div class="flex items-center gap-3.5 flex-wrap">
         <div class="modal-title">${fmtDateFull(ev.date)}</div>
-        <span class="tag" style="background:${p.bg};color:${p.color};font-size:12px;padding:3.5px 11px;font-weight:600;margin-left:6px">
+        <span class="tag" style="background:${p.bg};color:var(--ink2);font-size:12px;padding:3.5px 11px;font-weight:600;margin-left:6px">
           <span class="dot" style="background:${p.color}"></span>${p.label}
         </span>
       </div>
@@ -2952,6 +3329,7 @@ function toggleRentPayment(id) {
   if (!ev) return;
   ev.isPaid = !ev.isPaid;
   ev.updatedAt = nowTs();
+  logAct('rent_pay', `${ev.title || ''} — ${ev.isPaid ? 'оплачено' : 'отметка снята'}`);
   saveDatabase(true);
   if (ui.modal?.type === 'event') openEventDetailsModal(id);
   render();
@@ -3094,7 +3472,8 @@ function openTgReminder(bookingId) {
 function toggleCheckin(id) {
   const b = db.bookings.find(x => x.id === id); if(!b) return;
   b.isCheckedIn = !b.isCheckedIn;
-  b.updatedAt = nowTs();
+  b.checkinAt = nowTs();
+  b.updatedAt = b.checkinAt;
 
   const stats = getClientStats(b.clientId);
   const c = db.clients.find(x => x.id === b.clientId);
@@ -3104,26 +3483,30 @@ function toggleCheckin(id) {
     c.lastSeen = stats.lastSeen;
     c.updatedAt = b.updatedAt;
   }
+  logAct('checkin', `${b.guestName || ''} · ${b.eventTitle || ''} — ${b.isCheckedIn ? 'пришёл' : 'отметка снята'}`);
   saveDatabase(true);
 
-  // Точечно обновляем состояние кнопки чекина и зачеркивание имени
-  const row = document.getElementById(`guestRow_${b.id}`);
-  if (row) {
-    const btn = row.querySelector('.checkin-btn');
-    if (btn) {
-      if (b.isCheckedIn) {
-        btn.classList.add('on');
-        btn.innerHTML = ic('check');
-      } else {
-        btn.classList.remove('on');
-        btn.innerHTML = '';
+  // Точечно обновляем все строки гостя (страница + модалка) и счётчики чипсов
+  const rows = document.querySelectorAll(`[id="guestRow_${b.id}"]`);
+  if (rows.length) {
+    rows.forEach(row => {
+      const btn = row.querySelector('.checkin-btn');
+      if (btn) {
+        if (b.isCheckedIn) {
+          btn.classList.add('on');
+          btn.innerHTML = ic('check');
+        } else {
+          btn.classList.remove('on');
+          btn.innerHTML = '';
+        }
       }
-    }
-    const nameEl = row.querySelector('.guest-info-block .font-bold');
-    if (nameEl) {
-      nameEl.style.textDecoration = b.isCheckedIn ? 'line-through' : '';
-      nameEl.style.opacity = b.isCheckedIn ? '0.65' : '';
-    }
+      const nameEl = row.querySelector('.guest-info-block .font-bold');
+      if (nameEl) {
+        nameEl.style.textDecoration = b.isCheckedIn ? 'line-through' : '';
+        nameEl.style.opacity = b.isCheckedIn ? '0.65' : '';
+      }
+    });
+    refreshDayGuestChips(b.eventId);
   } else {
     render();
   }
@@ -3137,7 +3520,8 @@ function togglePayment(id) {
   
   b.paymentStatus = nextStatus;
   b.isPaid = (nextStatus === 'paid');
-  b.updatedAt = nowTs();
+  b.payAt = nowTs();
+  b.updatedAt = b.payAt;
 
   const stats = getClientStats(b.clientId);
   const c = db.clients.find(x => x.id === b.clientId);
@@ -3147,18 +3531,26 @@ function togglePayment(id) {
     c.lastSeen = stats.lastSeen;
     c.updatedAt = b.updatedAt;
   }
+  logAct('pay', `${b.guestName || ''} · ${b.eventTitle || ''} — ${PAYMENT_STATUSES[nextStatus]?.label || nextStatus}`);
   saveDatabase(true);
 
-  // Точечно обновляем только строку этого гостя в DOM без сброса скролла страницы
-  const row = document.getElementById(`guestRow_${b.id}`);
-  if (row) {
-    const payBtn = row.querySelector('.pay-pill-btn');
-    if (payBtn) {
-      const cfg = PAYMENT_STATUSES[nextStatus] || PAYMENT_STATUSES.unpaid;
-      payBtn.className = `pay-pill-btn ${cfg.cssClass}`;
-      payBtn.textContent = cfg.label;
-      payBtn.title = `Статус оплаты: ${cfg.shortLabel} (нажмите для переключения)`;
-    }
+  // Точечно обновляем ВСЕ строки этого гостя (страница + открытая модалка) без сброса скролла
+  const evTp = db.events.find(x => x.id === b.eventId);
+  const rows = document.querySelectorAll(`[id="guestRow_${b.id}"]`);
+  if (rows.length) {
+    const cfg = PAYMENT_STATUSES[nextStatus] || PAYMENT_STATUSES.unpaid;
+    const collectedNow = getBookingCollected(b, evTp);
+    const sumTxt = collectedNow > 0 ? money(collectedNow) : '';
+    rows.forEach(row => {
+      row.querySelectorAll('.pay-pill-btn').forEach(payBtn => {
+        payBtn.className = `pay-pill-btn ${cfg.cssClass}`;
+        payBtn.textContent = cfg.label;
+        payBtn.title = `Статус оплаты: ${cfg.shortLabel} (нажмите для переключения)`;
+      });
+      row.querySelectorAll(`[data-bk-sum="${b.id}"]`).forEach(sumEl => { sumEl.textContent = sumTxt; });
+    });
+    // Мгновенно пересчитываем тег «Собрано» в шапке события (страница + модалка)
+    refreshCollectedTags(b.eventId);
   } else {
     render();
   }
@@ -3176,6 +3568,7 @@ function transferFromWaitlist(id) {
   if(!b) return;
   b.isWaitlist = false;
   b.updatedAt = nowTs();
+  logAct('waitlist', `${b.guestName || ''} · ${b.eventTitle || ''}`);
   saveDatabase(true);
   toast('Переведен в основной состав');
   if(ui.modal?.type === 'event') openEventDetailsModal(b.eventId);
@@ -3185,7 +3578,13 @@ function transferFromWaitlist(id) {
 function deleteFormat(id) {
   confirmAction('Удалить шаблон?','Удалить шаблон из реестра? Ранее созданные события сохранятся.','Удалить', () => {
     markAsDeleted(id);
+    const fmtTitle = db.formats.find(x => x.id === id)?.title || '';
     db.formats = db.formats.filter(x => x.id !== id);
+    // Чистим висячие ссылки на удалённый шаблон, чтобы не ломались фильтры и рендер
+    db.events.forEach(e => {
+      if (e.formatId === id) { e.formatId = ''; e.updatedAt = nowTs(); }
+    });
+    logAct('fmt_del', fmtTitle);
     saveDatabase(true);
     render();
     toast('Шаблон удален');
@@ -3193,23 +3592,42 @@ function deleteFormat(id) {
 }
 
 function deleteEvent(id) {
+  const idx = db.events.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const evSnapshot = JSON.parse(JSON.stringify(db.events[idx]));
   markAsDeleted(id);
   db.events = db.events.filter(x => x.id !== id);
   if (ui.selectedDayEventId === id) {
     ui.selectedDayEventId = null;
   }
+  logAct('ev_del', `${evSnapshot.title} · ${evSnapshot.date || ''}`);
   saveDatabase(true);
   forceCloseModal();
   render();
-  toast('Событие удалено из графика');
+  toastAction('Событие удалено из графика', 'Вернуть', () => undoDeleteEvent(evSnapshot, idx));
+}
+
+function undoDeleteEvent(evSnapshot, index) {
+  if (db.events.some(x => x.id === evSnapshot.id)) { toast('Событие уже в графике'); return; }
+  evSnapshot.updatedAt = nowTs();
+  db.events.splice(Math.min(Math.max(index, 0), db.events.length), 0, evSnapshot);
+  if (db.deletedIds) delete db.deletedIds[evSnapshot.id];
+  logAct('ev_restore', evSnapshot.title || '');
+  saveDatabase(true);
+  render();
+  toast('Событие возвращено в график');
 }
 
 function deleteBooking(id, evId) {
   confirmAction('Удалить запись?', 'Удалить бронь гостя из истории?', 'Удалить', () => {
     const b = db.bookings.find(x => x.id === id);
-    const clientId = b?.clientId;
+    if (!b) return;
+    const clientId = b.clientId;
+    const idx = db.bookings.findIndex(x => x.id === id);
+    const bSnapshot = JSON.parse(JSON.stringify(b));
     markAsDeleted(id);
     db.bookings = db.bookings.filter(x => x.id !== id);
+    logAct('bk_del', `${b.guestName || ''} · ${b.eventTitle || ''}`);
     if (clientId) {
       const stats = getClientStats(clientId);
       const c = db.clients.find(x => x.id === clientId);
@@ -3224,7 +3642,30 @@ function deleteBooking(id, evId) {
     if(evId && ui.modal?.type === 'event') openEventDetailsModal(evId);
     else if(ui.modal?.type === 'client') openClientCardModal(clientId);
     render();
+    toastAction('Запись гостя удалена', 'Вернуть', () => undoDeleteBooking(bSnapshot, idx));
   });
+}
+
+function undoDeleteBooking(bSnapshot, index) {
+  if (db.bookings.some(x => x.id === bSnapshot.id)) { toast('Такая запись уже существует'); return; }
+  bSnapshot.updatedAt = nowTs();
+  db.bookings.splice(Math.min(Math.max(index, 0), db.bookings.length), 0, bSnapshot);
+  if (db.deletedIds) delete db.deletedIds[bSnapshot.id];
+  logAct('bk_restore', `${bSnapshot.guestName || ''} · ${bSnapshot.eventTitle || ''}`);
+  if (bSnapshot.clientId) {
+    const c = db.clients.find(x => x.id === bSnapshot.clientId);
+    if (c) {
+      const stats = getClientStats(bSnapshot.clientId);
+      c.visitsCount = stats.visits;
+      c.totalPaid = stats.total;
+      c.lastSeen = stats.lastSeen;
+      c.updatedAt = nowTs();
+    }
+  }
+  saveDatabase(true);
+  if (bSnapshot.eventId && ui.modal?.type === 'event') openEventDetailsModal(bSnapshot.eventId);
+  render();
+  toast('Удаление отменено — запись восстановлена');
 }
 
 function deleteClient(clientId) {
@@ -3242,11 +3683,77 @@ function deleteClient(clientId) {
   toast('Гость удален');
 }
 
+// ============================================================================
+// РУТИНА ДНЯ: копия события, массовая отметка, напоминание неоплатившим
+// ============================================================================
+function duplicateEventAction(evId) {
+  const ev = db.events.find(x => x.id === evId);
+  if (!ev) return;
+  forceCloseModal();
+  openAddEventModal(ev.formatId || '', '', '', null, {
+    title: ev.title || '', formatId: ev.formatId || '', date: getTodayISO(),
+    time: ev.time || '19:00', endTime: ev.endTime || '21:00',
+    price: ev.price || 0, capacity: ev.capacity || 20,
+    presenceType: ev.presenceType || 'must', note: ev.note || '',
+    contactPerson: ev.contactPerson || 'Лена', adminPerson: ev.adminPerson || 'Лена',
+    rentClientPerson: ev.rentClientPerson || '', isPaid: false
+  });
+  toast('Копия события создана — выберите дату и сохраните');
+}
+
+function checkinAllForEvent(eventId) {
+  const ev = db.events.find(x => x.id === eventId);
+  if (!ev) return;
+  const targets = db.bookings.filter(b => b.eventId === eventId && !b.isWaitlist && !b.isCheckedIn);
+  if (!targets.length) { toast('Все гости уже отмечены как пришедшие'); return; }
+  confirmAction(
+    'Отметить всех пришедшими?',
+    `Событие «${esc(ev.title)}»: будет отмечено записей — <b>${targets.length}</b>. Снять отметку, если кто-то отмечен случайно, можно отдельно по каждой записи.`,
+    'Отметить всех',
+    () => doCheckinAllForEvent(eventId)
+  );
+}
+
+function doCheckinAllForEvent(eventId) {
+  const ev = db.events.find(x => x.id === eventId);
+  if (!ev) return;
+  const targets = db.bookings.filter(b => b.eventId === eventId && !b.isWaitlist && !b.isCheckedIn);
+  if (!targets.length) return;
+  const stamp = nowTs();
+  targets.forEach(b => { b.isCheckedIn = true; b.updatedAt = stamp; });
+  const clientIds = [...new Set(targets.map(b => b.clientId).filter(Boolean))];
+  clientIds.forEach(cid => {
+    const c = db.clients.find(x => x.id === cid);
+    if (c) {
+      const stats = getClientStats(cid);
+      c.visitsCount = stats.visits;
+      c.totalPaid = stats.total;
+      c.lastSeen = stats.lastSeen;
+      c.updatedAt = stamp;
+    }
+  });
+  logAct('checkin_all', `${ev.title || ''} · ${ev.date || ''} — записей: ${targets.length}`);
+  saveDatabase(true);
+  if (ui.modal?.type === 'event') openEventDetailsModal(eventId);
+  render();
+  toast(`Отмечены пришедшими: ${targets.length} ${targets.length === 1 ? 'запись' : 'записей'}`);
+}
+
+// Куда возвращаться после закрытия формы события: только если попап события был
+// реально открыт. На вкладке «День» попап не показываем — событие уже видно карточкой,
+// иначе после редактирования модалка события висит поверх той же карточки (дубль).
+function eventPopupReturnTarget(candidateId) {
+  if (!candidateId) return null;
+  if (ui.modal?.type !== 'event') return null;
+  if (ui.view === 'day' && ui.selectedDayEventId === candidateId) return null;
+  return candidateId;
+}
+
 function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null, draft = null) {
   const ex = editId ? db.events.find(e => e.id === editId) : null;
   const fmt = fmtId ? db.formats.find(f => f.id === fmtId) : null;
   const initial = draft || ex || {
-    title: fmt?.title || '', formatId: fmtId, date: preDate || ui.dayDate || TODAY_ISO,
+    title: fmt?.title || '', formatId: fmtId, date: preDate || ui.dayDate || getTodayISO(),
     time: preTime || '19:00', endTime: '21:00', price: fmt?.defaultPrice || 0,
     capacity: fmt?.defaultCapacity || 20, presenceType: fmt?.defaultPresence || 'must', note: '',
     contactPerson: 'Лена', adminPerson: 'Лена', rentClientPerson: '', isPaid: false
@@ -3254,7 +3761,7 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
 
   const existingBookings = editId ? db.bookings.filter(b => b.eventId === editId) : [];
   const hasBookings = existingBookings.length > 0;
-  const returnToEventId = editId || (ui.modal?.type === 'event' ? ui.modal.id : null);
+  const returnToEventId = eventPopupReturnTarget(editId || (ui.modal?.type === 'event' ? ui.modal.id : null));
 
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3">
@@ -3271,7 +3778,7 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
           <input type="hidden" id="evPresence" value="${initial.presenceType}">
           <div class="pres-pick" id="presencePicker">
             ${Object.keys(PRESENCE).map(k => `
-              <div class="pres-opt ${k===initial.presenceType?'on':''}" style="${k===initial.presenceType?`background:${PRESENCE[k].color}`:''}" onclick="setPresencePicker('${k}')">${PRESENCE[k].label}</div>
+              <div class="pres-opt ${k===initial.presenceType?'on':''}" style="${k===initial.presenceType?`background:${PRESENCE[k].bg};box-shadow:inset 0 0 0 1.5px ${PRESENCE[k].color}`:''}" onclick="setPresencePicker('${k}')">${PRESENCE[k].label}</div>
             `).join('')}
           </div>
           <div id="presenceTypeHint" style="margin-top:8px;font-size:12px;line-height:1.45" class="text-ink2"></div>
@@ -3365,7 +3872,7 @@ function updateEventFormVisibility(presenceType) {
     if (evP) evP.disabled = true;
     if (evC) evC.disabled = true;
     if (hintEl) {
-      hintEl.innerHTML = `<span class="tag" style="background:var(--trip-bg);color:var(--trip)">Отлучка</span> Время блокируется в расписании. Запись гостей отключена.`;
+      hintEl.innerHTML = `<span class="tag" style="background:${PRESENCE.trip.bg};color:var(--ink2)"><span class="dot" style="background:${PRESENCE.trip.color}"></span>Отлучка</span> Время блокируется в расписании. Запись гостей отключена.`;
     }
   } else if (presenceType === 'rent') {
     if (rowFmt) rowFmt.style.display = '';
@@ -3378,7 +3885,7 @@ function updateEventFormVisibility(presenceType) {
     if (lblPrice) lblPrice.textContent = 'Стоимость аренды, ₽';
     if (rowRentPaid) rowRentPaid.style.display = 'block';
     if (hintEl) {
-      hintEl.innerHTML = `<span class="tag" style="background:var(--rent-bg);color:var(--rent)">Аренда</span> За гостей отвечает арендатор. Доход учитывается в аналитике.`;
+      hintEl.innerHTML = `<span class="tag" style="background:${PRESENCE.rent.bg};color:var(--ink2)"><span class="dot" style="background:${PRESENCE.rent.color}"></span>Аренда</span> За гостей отвечает арендатор. Доход учитывается в аналитике.`;
     }
   } else {
     if (rowFmt) rowFmt.style.display = '';
@@ -3393,7 +3900,7 @@ function updateEventFormVisibility(presenceType) {
     if (evC) evC.disabled = false;
     if (rowRentPaid) rowRentPaid.style.display = 'none';
     if (hintEl) {
-      hintEl.innerHTML = `<span class="tag" style="background:${PRESENCE[presenceType]?.bg};color:${PRESENCE[presenceType]?.color}">${PRESENCE[presenceType]?.label}</span> Регулярное мероприятие с записью и чекинами гостей.`;
+      hintEl.innerHTML = `<span class="tag" style="background:${PRESENCE[presenceType]?.bg};color:var(--ink2)"><span class="dot" style="background:${PRESENCE[presenceType]?.color}"></span>${PRESENCE[presenceType]?.label}</span> Регулярное мероприятие с записью и чекинами гостей.`;
     }
   }
 }
@@ -3405,7 +3912,8 @@ function setPresencePicker(k, inpId = 'evPresence', pickerId = 'presencePicker')
     const key = Object.keys(PRESENCE)[idx];
     const isCur = key === k;
     el.className = `pres-opt ${isCur?'on':''}`;
-    el.style.background = isCur ? PRESENCE[key].color : '';
+    el.style.background = isCur ? PRESENCE[key].bg : '';
+    el.style.boxShadow = isCur ? `inset 0 0 0 1.5px ${PRESENCE[key].color}` : '';
   });
 
   if (inpId === 'evPresence') {
@@ -3424,7 +3932,7 @@ function handleSaveEvent(e, editId, returnToEventId = null) {
     return;
   }
 
-  const date = document.getElementById('evD')?.value || ui.dayDate || TODAY_ISO;
+  const date = document.getElementById('evD')?.value || ui.dayDate || getTodayISO();
   const time = document.getElementById('evStart')?.value || '19:00';
   let endTime = document.getElementById('evEnd')?.value || '21:00';
   const formatId = document.getElementById('evFmtSel') ? document.getElementById('evFmtSel').value : '';
@@ -3510,6 +4018,7 @@ function handleSaveEvent(e, editId, returnToEventId = null) {
       savedId = newEvId;
     }
 
+    logAct(editId ? 'ev_edit' : 'ev_add', `${payload.title} · ${payload.date}${clearBookings ? ' · гости откреплены' : ''}`);
     saveDatabase(true);
     if (returnToEventId && savedId) {
       openEventDetailsModal(savedId);
@@ -3615,7 +4124,7 @@ function openFormatFormModal(editId = null) {
           <input type="hidden" id="fPresence" value="${initial.defaultPresence}">
           <div class="pres-pick" id="formatPresencePicker">
             ${Object.keys(PRESENCE).map(k => `
-              <div class="pres-opt ${k===initial.defaultPresence?'on':''}" style="${k===initial.defaultPresence?`background:${PRESENCE[k].color}`:''}" onclick="setPresencePicker('${k}', 'fPresence', 'formatPresencePicker')">${PRESENCE[k].label}</div>
+              <div class="pres-opt ${k===initial.defaultPresence?'on':''}" style="${k===initial.defaultPresence?`background:${PRESENCE[k].bg};box-shadow:inset 0 0 0 1.5px ${PRESENCE[k].color}`:''}" onclick="setPresencePicker('${k}', 'fPresence', 'formatPresencePicker')">${PRESENCE[k].label}</div>
             `).join('')}
           </div>
         </div>
@@ -3714,7 +4223,7 @@ function handleCreateClient(e) {
       initialVisits: 0,
       initialPaid: 0,
       clientNotes: notes,
-      firstSeen: TODAY_ISO,
+      firstSeen: getTodayISO(),
       lastSeen: null,
       initialLastSeen: null,
       updatedAt: stamp
@@ -3775,10 +4284,10 @@ function openClientCardModal(clientId) {
         ${!visitedEvs.length ? `<div class="text-center text-muted" style="padding:16px">Записей пока нет</div>` : visitedEvs.map(item => {
           const currentPayStatus = normalizePaymentStatus(item.bk.paymentStatus, item.bk.isPaid);
           const payTagConfig = {
-            paid: { text: 'Оплачено', bg: '#E7F5EE', color: '#3E946E' },
+            paid: { text: 'Оплачено', bg: '#E6FBF2', color: '#059669' },
             free: { text: 'Бесплатно', bg: 'var(--free-bg)', color: 'var(--free)' },
-            unpaid: { text: 'Не оплачено', bg: '#FCF3DE', color: '#B37D14' }
-          }[currentPayStatus] || { text: 'Не оплачено', bg: '#FCF3DE', color: '#B37D14' };
+            unpaid: { text: 'Не оплачено', bg: '#FEF9E7', color: '#B45309' }
+          }[currentPayStatus] || { text: 'Не оплачено', bg: '#FEF9E7', color: '#B45309' };
 
           return `
           <div class="row flex items-center justify-between gap-3" style="padding:9px 14px">
@@ -3790,7 +4299,7 @@ function openClientCardModal(clientId) {
               <div class="text-xs text-muted">${item.date ? fmtDateRu(item.date) : ''} · ${item.bk.ticketsCount} мест · ${money((item.bk.ticketsCount || 1) * item.price)}</div>
             </div>
             <div class="flex items-center gap-2 flex-none">
-              <span class="tag" style="${item.bk.isCheckedIn ? 'background:#E7F5EE;color:#3E946E' : 'background:var(--subtle);color:var(--muted)'}">
+              <span class="tag" style="${item.bk.isCheckedIn ? 'background:#E6FBF2;color:#059669' : 'background:var(--subtle);color:var(--muted)'}">
                 ${item.bk.isCheckedIn ? 'Был' : 'Записан'}
               </span>
               <span class="tag" style="background:${payTagConfig.bg};color:${payTagConfig.color}">
@@ -3840,28 +4349,6 @@ function handleSaveClientCard(e, clientId) {
   }
 }
 
-function generateTgText() {
-  const evs = db.events.filter(e => {
-    const d = parseYmd(e.date); return d.getFullYear() === ui.year && d.getMonth() === ui.month && e.presenceType !== 'trip';
-  }).sort((a,b)=>new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
-
-  let text = `🕯 РАСПИСАНИЕ НА ${MONTHS[ui.month].toUpperCase()} • Пространство «Пятница»\n\n`;
-  evs.forEach(e => {
-    const d = parseYmd(e.date);
-    const dow = DOW[(d.getDay() + 6) % 7];
-    const fmt = db.formats.find(f => f.id === e.formatId);
-    const desc = fmt?.shortDescription || e.note;
-    text += `📅 ${d.getDate()} ${MONTHS_GEN[d.getMonth()]} (${dow}), ${e.time} — ${e.title}\n`;
-    if(ui.tgPostOpts.includeDescriptions && desc) text += `   ${desc}\n`;
-    if(ui.tgPostOpts.includePrices) text += `   Билет: ${e.price ? e.price + ' ₽' : 'Вход свободный'}\n`;
-    text += `\n`;
-  });
-  if(ui.tgPostOpts.includeAddress) {
-    text += `📍 ул. Тургенева, 14/1\n💌 Запись: @lena_timinova`;
-  }
-  return text.trim();
-}
-
 function openTelegramPostModal() {
   const text = generateTgText();
   openModal(`
@@ -3876,6 +4363,7 @@ function openTelegramPostModal() {
       <div class="flex gap-3 flex-wrap" style="margin-bottom:12px">
         <label class="check"><input type="checkbox" ${ui.tgPostOpts.includePrices?'checked':''} onchange="ui.tgPostOpts.includePrices=this.checked;updateTgPostUI()"> Цены</label>
         <label class="check"><input type="checkbox" ${ui.tgPostOpts.includeDescriptions?'checked':''} onchange="ui.tgPostOpts.includeDescriptions=this.checked;updateTgPostUI()"> Описания</label>
+        <label class="check"><input type="checkbox" ${ui.tgPostOpts.includeSeats?'checked':''} onchange="ui.tgPostOpts.includeSeats=this.checked;updateTgPostUI()"> Свободные места</label>
         <label class="check"><input type="checkbox" ${ui.tgPostOpts.includeAddress?'checked':''} onchange="ui.tgPostOpts.includeAddress=this.checked;updateTgPostUI()"> Адрес и контакты</label>
       </div>
       <div class="post-box" id="tgT">${esc(text)}</div>
@@ -4044,7 +4532,7 @@ function executeImport() {
             visitsCount: 0,
             totalPaid: 0,
             clientNotes: c.notes,
-            firstSeen: TODAY_ISO,
+            firstSeen: getTodayISO(),
             lastSeen: null,
             updatedAt: stamp
           });
@@ -4069,10 +4557,10 @@ function openSyncModal() {
   openModal(`
     <div class="modal-head flex items-start justify-between gap-3"><div class="modal-title">Синхронизация и данные</div><button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button></div>
     <div class="modal-body">
-      <div class="flex items-center gap-3 rounded-2xl" style="background:${isConn?'#E7F5EE':'#FFF7F6'};border:1px solid ${isConn?'#C4EBD7':'#F8C8C2'};padding:12px 14px;margin-bottom:14px">
-        <div style="color:${isConn?'#2E7D56':'#DE6254'}">${isConn?ic('cloudOk'):ic('cloudWarn')}</div>
+      <div class="flex items-center gap-3 rounded-2xl" style="background:${isConn?'#E6FBF2':'#FFEBEB'};border:1px solid ${isConn?'#A7F3D0':'#FECACA'};padding:12px 14px;margin-bottom:14px">
+        <div style="color:${isConn?'#059669':'#DC2626'}">${isConn?ic('cloudOk'):ic('cloudWarn')}</div>
         <div>
-          <div class="font-bold text-base" style="color:${isConn?'#2E7D56':'#C63D31'}">${isConn?'Синхронизация активна':'Связь с базой не установлена'}</div>
+          <div class="font-bold text-base" style="color:${isConn?'#059669':'#DC2626'}">${isConn?'Синхронизация активна':'Связь с базой не установлена'}</div>
           <div class="text-sm text-ink2">${isConn?'Изменения сохраняются и объединяются по времени.':'Укажите URL базы Firebase Realtime Database для работы на всех устройствах.'}</div>
         </div>
       </div>
@@ -4080,7 +4568,17 @@ function openSyncModal() {
         <label>URL базы Firebase Realtime Database</label>
         <div class="flex gap-2">
           <input class="inp flex-1" id="fbU" value="${esc(ui.firebaseUrl)}" placeholder="https://....firebasedatabase.app/data.json">
-          <button class="btn btn-primary btn-sm flex-none" onclick="ui.firebaseUrl=normalizeFirebaseUrl(document.getElementById('fbU').value);localStorage.setItem(FIREBASE_URL_KEY,ui.firebaseUrl);pullFromFirebase(true);setupFirebaseRealtime();toast('URL сохранен')">${ic('check')} Подключить</button>
+          <button class="btn btn-primary btn-sm flex-none" onclick="ui.firebaseUrl=normalizeFirebaseUrl(document.getElementById('fbU').value);localStorage.setItem(FIREBASE_URL_KEY,ui.firebaseUrl);logAct('sync_connect');saveDatabase(true);pullFromFirebase(true);setupFirebaseRealtime();toast('URL сохранен')">${ic('check')} Подключить</button>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;background:var(--subtle);border:1px solid var(--line2);border-radius:14px;padding:12px 14px">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div>
+            <div class="font-bold text-sm text-ink">Журнал действий</div>
+            <div class="text-xs text-muted" style="margin-top:2px">Кто и что менял: записи, отметки, оплаты, правки. Ваше имя здесь: <b class="text-ink">${esc(auditWho()) || 'не задано'}</b></div>
+          </div>
+          <button class="btn btn-soft btn-sm" onclick="openAuditLogModal()">${ic('list')} Открыть журнал</button>
         </div>
       </div>
 
@@ -4101,12 +4599,30 @@ function openSyncModal() {
         </div>
       </div>
 
+      <div style="margin-top:16px;background:var(--subtle);border:1px solid var(--line2);border-radius:14px;padding:12px 14px">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div>
+            <div class="font-bold text-sm text-ink">Архив и размер базы</div>
+            <div class="text-xs text-muted" style="margin-top:2px">
+              В архиве: <b class="text-ink">${db.events.filter(e => e.isArchived).length}</b> из ${db.events.length} событий (автоматом, старше 90 дней) ·
+              размер базы: <b class="text-ink">${Math.round((JSON.stringify(db).length / 1024))} КБ</b>
+            </div>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <button class="btn btn-soft btn-sm" onclick="exportAnalyticsXlsx()" title="Скачать .xlsx со всеми данными">${ic('download')} Excel</button>
+            <button class="btn btn-soft btn-sm" onclick="compactDatabaseAction()" title="Удалить метки удалений старше 30 дней — база весит меньше, синхронизация быстрее">${ic('refresh')} Сжать базу</button>
+          </div>
+        </div>
+      </div>
+
       <details style="margin-top:16px;border-top:1px solid var(--line);padding-top:10px">
         <summary class="flex justify-between items-center text-xs text-muted font-semibold" style="cursor:pointer;user-select:none;padding:4px 0;outline:none">
           <span>Файлы резервной копии (.json)</span>
           <span style="font-size:10px;opacity:.7">▾</span>
         </summary>
         <div class="flex gap-2 flex-wrap" style="padding:10px 0 4px">
+          ${localStorage.getItem(STORE_BACKUP_KEY) ? `
+          <button class="btn btn-primary btn-sm" onclick="restoreAutoBackup()">${ic('refresh')} Восстановить авто-копию</button>` : ''}
           <button class="btn btn-soft btn-sm" onclick="exportBackup()">${ic('download')} Скачать файл бэкапа</button>
           <button class="btn btn-soft btn-sm" onclick="document.getElementById('bInp').click()">${ic('upload')} Загрузить из файла</button>
           <input type="file" id="bInp" accept=".json" style="display:none" onchange="importBackup(event)">
@@ -4119,27 +4635,417 @@ function openSyncModal() {
           <span style="font-size:10px;opacity:.7">▾</span>
         </summary>
         <div class="flex gap-2 flex-wrap" style="padding:10px 0 4px">
-          <button class="btn btn-soft btn-sm" onclick="confirmAction('Сбросить до демо?','Заменить данные демо-набором «Пятницы»? Будет сохранен резервный файл.','Сбросить',()=>{ exportBackup(); db=normalizeAndMigrateDB(seedDatabase()); saveDatabase(); render(); toast('Демо-данные восстановлены'); })">Вернуть демо-данные</button>
-          <button class="btn btn-ghost btn-sm text-must" onclick="confirmAction('Очистить всё?','Безвозвратно стереть все события, шаблоны и контакты? Будет сохранен резервный файл.','Очистить',()=>{ exportBackup(); db={schemaVersion:SCHEMA_VERSION,updatedAt:nowTs(),deletedIds:{},formats:[],events:[],bookings:[],clients:[]}; saveDatabase(); render(); toast('База очищена'); })">Полная очистка</button>
+          <button class="btn btn-soft btn-sm" onclick="confirmAction('Сбросить до демо?','Заменить данные демо-набором «Пятницы»? Будет сохранен резервный файл.','Сбросить',()=>{ exportBackup(); db=normalizeAndMigrateDB(seedDatabase()); logAct('seed'); saveDatabase(); render(); toast('Демо-данные восстановлены'); })">Вернуть демо-данные</button>
+          <button class="btn btn-ghost btn-sm text-must" onclick="confirmAction('Очистить всё?','Безвозвратно стереть все события, шаблоны и контакты? Будет сохранен резервный файл.','Очистить',()=>{ exportBackup(); db={schemaVersion:SCHEMA_VERSION,updatedAt:nowTs(),deletedIds:{},formats:[],events:[],bookings:[],clients:[],audit:[]}; logAct('wipe'); saveDatabase(); render(); toast('База очищена'); })">Полная очистка</button>
         </div>
       </details>
     </div>
   `);
 }
 
+// ============================================================================
+// МОДАЛКА ЖУРНАЛА ДЕЙСТВИЙ: группировка по дням, имя автора, очистка.
+// ============================================================================
+function openAuditLogModal() {
+  const items = (Array.isArray(db.audit) ? db.audit : []).slice(0, 150);
+  const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const dayTitle = t => {
+    const d = new Date(Number(t)), today = new Date();
+    const yd = new Date(); yd.setDate(today.getDate() - 1);
+    if (sameDay(d, today)) return 'Сегодня';
+    if (sameDay(d, yd)) return 'Вчера';
+    return fmtDateFull(ymd(d));
+  };
+
+  let listHtml = '';
+  if (!items.length) {
+    listHtml = `<div class="text-center text-muted" style="padding:28px 12px">Пока пусто. Здесь появятся действия с базой: записи гостей, отметки прихода, оплаты, правки событий, синхронизация.</div>`;
+  } else {
+    let lastDay = '';
+    items.forEach(it => {
+      const dk = new Date(Number(it.t)).toDateString();
+      if (dk !== lastDay) {
+        listHtml += `<div class="section-title" style="margin:16px 0 4px">${dayTitle(it.t)}</div>`;
+        lastDay = dk;
+      }
+      const time = new Date(Number(it.t)).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const who = it.who ? `<span class="pill text-xs flex-none" style="background:var(--accent-bg);color:var(--ink);font-weight:600">${esc(it.who)}</span>` : '';
+      listHtml += `
+        <div class="flex items-start gap-2" style="padding:7px 0;border-bottom:1px solid var(--line)">
+          <span class="text-xs text-muted font-semibold flex-none" style="width:36px;padding-top:2px">${time}</span>
+          <div class="flex-1 text-sm text-ink2" style="min-width:0;line-height:1.45">
+            <b class="text-ink">${esc(AUDIT_ACTS[it.act] || it.act || 'Действие')}</b>${it.d ? ` — ${esc(it.d)}` : ''}
+          </div>
+          ${who}
+        </div>`;
+    });
+  }
+
+  openModal(`
+    <div class="modal-head flex items-start justify-between gap-3">
+      <div>
+        <div class="modal-title">Журнал действий</div>
+        <div class="modal-sub">Хранятся последние ${AUDIT_LIMIT} записей · синхронизируются между устройствами</div>
+      </div>
+      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
+    </div>
+    <div class="modal-body">
+      <div class="field" style="margin-bottom:6px">
+        <label>Ваше имя в журнале (на этом устройстве)</label>
+        <input class="inp" value="${esc(auditWho())}" placeholder="Например: Лена" maxlength="40"
+               onchange="localStorage.setItem(AUDIT_WHO_KEY,this.value.trim());toast('Имя сохранено')">
+      </div>
+      ${listHtml}
+      ${items.length ? `
+      <div class="flex justify-end" style="margin-top:16px">
+        <button class="btn btn-ghost btn-sm text-must" onclick="confirmAction('Очистить журнал?','Удалить все записи журнала на этом устройстве и в облаке?','Очистить', clearAuditLog)">${ic('trash')} Очистить журнал</button>
+      </div>` : ''}
+    </div>
+  `, { wide: true });
+}
+
+function clearAuditLog() {
+  db.audit = [];
+  saveDatabase(true);
+  closeDialog();
+  openAuditLogModal();
+  toast('Журнал очищен');
+}
+
 function exportBackup() {
   const blob = new Blob([JSON.stringify(db, null, 2)], { type:'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup_pyatnitsa_${TODAY_ISO}.json`;
-  a.click(); URL.revokeObjectURL(a.href); toast('Бэкап сохранен');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup_pyatnitsa_${getTodayISO()}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+  logAct('export_backup');
+  saveDatabase(true);
+  toast('Бэкап сохранен');
+}
+
+// ============================================================================
+// ЭКСПОРТ В EXCEL (.xlsx) без внешних библиотек.
+// xlsx — это ZIP из XML. Собираем минимальный ZIP (метод store, без сжатия)
+// и 4 листа: Сводка, События, Гости и оплаты, Клиенты.
+// ============================================================================
+const _crcTable = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; }
+  return t;
+})();
+function _crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = _crcTable[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+const _xmlEsc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[ch]));
+function _colName(n) { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+
+// rows: массив строк; ячейка — число (число), строка (текст) или {v, wrap:true}
+function _sheetXml(rows) {
+  let body = '';
+  rows.forEach((cells, ri) => {
+    let rowXml = '';
+    (cells || []).forEach((val, ci) => {
+      const ref = `${_colName(ci + 1)}${ri + 1}`;
+      if (val === null || val === undefined || val === '') return;
+      if (typeof val === 'number' && Number.isFinite(val)) {
+        rowXml += `<c r="${ref}"><v>${val}</v></c>`;
+      } else {
+        const t = _xmlEsc(typeof val === 'object' ? val.v : val);
+        rowXml += `<c r="${ref}" t="inlineStr" s="0"><is><t xml:space="preserve">${t}</t></is></c>`;
+      }
+    });
+    if (rowXml) body += `<row r="${ri + 1}">${rowXml}</row>`;
+  });
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${body}</sheetData></worksheet>`;
+}
+
+function _zipStore(files) {
+  const enc = new TextEncoder();
+  const u16 = v => new Uint8Array([v & 255, (v >> 8) & 255]);
+  const u32 = v => new Uint8Array([v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255]);
+  const parts = [], central = [];
+  let offset = 0;
+  const dosTime = u16(0), dosDate = u16(((2024 - 1980) << 9) | (1 << 5) | 1);
+  files.forEach(f => {
+    const nameB = enc.encode(f.name), data = enc.encode(f.data);
+    const crc = _crc32(data), size = data.length;
+    const lfh = new Uint8Array(30);
+    lfh.set(u32(0x04034b50), 0); lfh.set(u16(20), 4); lfh.set(u16(0x0800), 6);
+    lfh.set(u16(0), 8); lfh.set(dosTime, 10); lfh.set(dosDate, 12);
+    lfh.set(u32(crc), 14); lfh.set(u32(size), 18); lfh.set(u32(size), 22);
+    lfh.set(u16(nameB.length), 26); lfh.set(u16(0), 28);
+    const cdh = new Uint8Array(46);
+    cdh.set(u32(0x02014b50), 0); cdh.set(u16(20), 4); cdh.set(u16(20), 6); cdh.set(u16(0x0800), 8);
+    cdh.set(u16(0), 10); cdh.set(dosTime, 12); cdh.set(dosDate, 14);
+    cdh.set(u32(crc), 16); cdh.set(u32(size), 20); cdh.set(u32(size), 24);
+    cdh.set(u16(nameB.length), 28); cdh.set(u32(offset), 42);
+    central.push({ hdr: cdh, nameB });
+    parts.push(lfh, nameB, data);
+    offset += 30 + nameB.length + size;
+  });
+  let cdSize = 0;
+  central.forEach(c => cdSize += c.hdr.length + c.nameB.length);
+  const eocd = new Uint8Array(22);
+  eocd.set(u32(0x06054b50), 0);
+  eocd.set(u16(central.length), 8); eocd.set(u16(central.length), 10);
+  eocd.set(u32(cdSize), 12); eocd.set(u32(offset), 16);
+  const out = new Uint8Array(offset + cdSize + 22);
+  let p = 0;
+  parts.forEach(b => { out.set(b, p); p += b.length; });
+  central.forEach(c => { out.set(c.hdr, p); out.set(c.nameB, p + c.hdr.length); p += c.hdr.length + c.nameB.length; });
+  out.set(eocd, p);
+  return out;
+}
+
+function buildWorkbookXlsx(sheets) {
+  // sheets: [{name, rows}]
+  const ct = [`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>`];
+  const wbSheets = [], wbRels = [], files = [];
+  sheets.forEach((s, i) => {
+    const n = i + 1;
+    ct.push(`<Override PartName="/xl/worksheets/sheet${n}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`);
+    wbSheets.push(`<sheet name="${_xmlEsc(s.name.slice(0, 31))}" sheetId="${n}" r:id="rId${n}"/>`);
+    wbRels.push(`<Relationship Id="rId${n}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${n}.xml"/>`);
+    files.push({ name: `xl/worksheets/sheet${n}.xml`, data: _sheetXml(s.rows) });
+  });
+  ct.push(`</Types>`);
+  wbRels.push(`<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`);
+  files.unshift(
+    { name: '[Content_Types].xml', data: ct.join('') },
+    { name: '_rels/.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+    { name: 'xl/workbook.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${wbSheets.join('')}</sheets></workbook>` },
+    { name: 'xl/_rels/workbook.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${wbRels.join('')}</Relationships>` },
+    { name: 'xl/styles.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="1"><xf/></cellXfs></styleSheet>` }
+  );
+  return _zipStore(files);
+}
+
+const STATUS_LABEL_RU = { paid: 'Оплачено', unpaid: 'Не оплачено', free: 'Бесплатно' };
+
+function exportAnalyticsXlsx() {
+  try {
+    if (!db) { toast('База ещё не загружена'); return; }
+    logAct('export_xlsx');
+    saveDatabase(true);
+    const isM = ui.analyticsPeriod !== 'all';
+    const evs = db.events.filter(e => {
+      if (!isM) return true;
+      const d = parseYmd(e.date);
+      return d.getFullYear() === ui.year && d.getMonth() === ui.month;
+    }).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+    const evIds = new Set(evs.map(e => e.id));
+    const evById = new Map(db.events.map(e => [e.id, e]));
+    const periodLabel = isM ? `${MONTHS[ui.month]} ${ui.year}` : 'Всё время';
+
+    // События
+    const evRows = [['Дата', 'Время', 'Событие', 'Тип', 'Цена билета', 'Мест', 'Записано чел.', 'Пришло чел.', 'Собрано, ₽']];
+    let totalRev = 0;
+    evs.forEach(e => {
+      const { booked, checked, paidSum } = getEventStats(e.id, e.price || 0);
+      const rev = paidSum + (e.presenceType === 'rent' && e.isPaid ? (Number(e.price) || 0) : 0);
+      totalRev += rev;
+      evRows.push([
+        e.date, e.time, e.title || '',
+        PRESENCE[e.presenceType]?.label || e.presenceType || '',
+        Number(e.price) || 0,
+        e.presenceType === 'trip' ? '' : (Number(e.capacity) || 0),
+        e.presenceType === 'trip' ? '' : booked,
+        e.presenceType === 'trip' ? '' : checked,
+        rev
+      ]);
+    });
+
+    // Гости и оплаты
+    const bkRows = [['Дата события', 'Событие', 'Гость', 'Telegram', 'Мест', 'Статус оплаты', 'Сумма, ₽', 'Пришёл', 'Заметка']];
+    let paidBookings = 0;
+    db.bookings.filter(b => evIds.has(b.eventId) && !b.isWaitlist)
+      .sort((a, b) => (a.eventDate || '').localeCompare(b.eventDate || '') || (a.guestName || '').localeCompare(b.guestName || '', 'ru'))
+      .forEach(b => {
+        const ev = evById.get(b.eventId) || {};
+        const status = normalizePaymentStatus(b.paymentStatus, b.isPaid);
+        const amt = getBookingCollected(b, ev);
+        if (status === 'paid') { paidBookings++; }
+        bkRows.push([
+          b.eventDate || ev.date || '', ev.title || b.eventTitle || '', b.guestName || '', b.telegram || '',
+          Math.max(1, Number(b.ticketsCount) || 1),
+          STATUS_LABEL_RU[status] || status,
+          status === 'paid' ? amt : 0,
+          b.isCheckedIn ? 'да' : '',
+          b.note || ''
+        ]);
+      });
+
+    // Клиенты
+    const clRows = [['Гость', 'Telegram', 'Визитов', 'Оплачено всего, ₽', 'Крайний визит', 'Заметки']];
+    buildClientList().sort((a, b) => b.total - a.total).forEach(c => {
+      clRows.push([c.name || '', c.telegram || '', c.visits, c.total, c.lastSeen ? fmtDateRu(c.lastSeen) : '', c.notes || '']);
+    });
+
+    // Сводка
+    const nowStr = new Date().toLocaleString('ru-RU');
+    const sumRows = [
+      ['Пятница.Пульт — экспорт данных'],
+      ['Период', periodLabel],
+      ['Сформировано', nowStr],
+      [],
+      ['Событий в периоде', evs.length],
+      ['Записей гостей (броней)', bkRows.length - 1],
+      ['Оплаченных броней', paidBookings],
+      ['Собрано, ₽', Math.round(totalRev)],
+      ['Гостей в базе', db.clients.length],
+      ['Событий в архиве (старше 90 дней)', db.events.filter(e => e.isArchived).length]
+    ];
+
+    const bytes = buildWorkbookXlsx([
+      { name: 'Сводка', rows: sumRows },
+      { name: 'События', rows: evRows },
+      { name: 'Гости и оплаты', rows: bkRows },
+      { name: 'Клиенты', rows: clRows }
+    ]);
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `pyatnitsa_${isM ? `${ui.year}-${String(ui.month + 1).padStart(2, '0')}` : 'all'}_${getTodayISO()}.xlsx`;
+    a.click(); URL.revokeObjectURL(a.href);
+    toast(`Excel сохранён: ${evs.length} соб., ${bkRows.length - 1} броней`);
+  } catch (err) {
+    console.error('exportAnalyticsXlsx:', err);
+    toast('Не удалось сформировать Excel');
+  }
+}
+
+// ============================================================================
+// АРХИВАЦИЯ: события старше ARCHIVE_AFTER_DAYS дней помечаются isArchived.
+// Архив остаётся в базе и в аналитике, но помечается в списках («Все / Архив»),
+// а надгробия deletedIds старше месяца удаляются — база не пухнет.
+// ============================================================================
+const ARCHIVE_AFTER_DAYS = 90;
+const DELETED_TOMBSTONE_DAYS = 30;
+
+function runArchiveSweep(d) {
+  if (!d || !Array.isArray(d.events)) return 0;
+  const border = ymd(new Date(Date.now() - ARCHIVE_AFTER_DAYS * 86400000));
+  let changed = 0;
+  d.events.forEach(e => {
+    if (e && e.date && e.date < border && !e.isArchived) {
+      e.isArchived = true;
+      e.archivedAt = nowTs();
+      changed++;
+    }
+  });
+  return changed;
+}
+
+function pruneDeletedIds(d) {
+  if (!d || !d.deletedIds) return 0;
+  const border = Date.now() - DELETED_TOMBSTONE_DAYS * 86400000;
+  let removed = 0;
+  Object.keys(d.deletedIds).forEach(id => {
+    const t = Number(d.deletedIds[id]) || 0;
+    if (t && t < border) { delete d.deletedIds[id]; removed++; }
+  });
+  return removed;
+}
+
+function compactDatabaseAction() {
+  const removed = pruneDeletedIds(db);
+  if (removed > 0) { logAct('compact', `Удалено меток удалений: ${removed}`); saveDatabase(true); }
+  toast(removed > 0 ? `База сжата: удалено меток удаления — ${removed}` : 'Чистить нечего — база уже компактна');
+  render();
+}
+
+// ============================================================================
+// TELEGRAM-ПОСТ v2: группировка по дням, эмодзи типов, свободные места
+// ============================================================================
+const TG_EMOJI = { must: '🎙', team: '🧩', rent: '🔑' };
+
+function generateTgText() {
+  const o = ui.tgPostOpts;
+  const evs = db.events.filter(e => {
+    const d = parseYmd(e.date);
+    return d.getFullYear() === ui.year && d.getMonth() === ui.month && e.presenceType !== 'trip';
+  }).sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+  let text = `🕯 РАСПИСАНИЕ НА ${MONTHS[ui.month].toUpperCase()}\nПространство «Пятница»\n`;
+  let lastDate = '';
+  evs.forEach(e => {
+    const d = parseYmd(e.date);
+    const dow = DOW[(d.getDay() + 6) % 7];
+    const fmt = db.formats.find(f => f.id === e.formatId);
+    const desc = fmt?.shortDescription || e.note;
+    if (e.date !== lastDate) {
+      text += `\n———
+
+📅 ${d.getDate()} ${MONTHS_GEN[d.getMonth()]}, ${dow.toLowerCase()}\n`;
+      lastDate = e.date;
+    }
+    const emoji = TG_EMOJI[e.presenceType] || '🎟';
+    text += `${emoji} ${e.time} — ${e.title}\n`;
+    if (o.includeDescriptions && desc) text += `   ${desc}\n`;
+    if (o.includePrices) text += `   💰 ${e.price ? e.price + ' ₽' : 'вход свободный'}\n`;
+    if (o.includeSeats && e.presenceType !== 'rent' && e.capacity > 0) {
+      const { booked } = getEventStats(e.id);
+      const left = Math.max(0, e.capacity - booked);
+      text += left > 0
+        ? `   🪑 Свободно мест: ${left} из ${e.capacity}\n`
+        : `   🔥 Мест не осталось — запись в резерв\n`;
+    }
+  });
+  if (!evs.length) text += `\nАфиша формируется — следите за обновлениями\n`;
+  if (o.includeAddress) {
+    text += `\n—————————\n📍 ул. Тургенева, 14/1\n💌 Запись: @lena_timinova`;
+  }
+  return text.trim();
+}
+
+// Восстановление автоматической копии (создаётся перед импортом/сбоем загрузки)
+function restoreAutoBackup() {
+  const raw = localStorage.getItem(STORE_BACKUP_KEY);
+  if (!raw) { toast('Авто-копия не найдена'); return; }
+  let parsed = null;
+  try { parsed = JSON.parse(raw); } catch(e) { toast('Авто-копия повреждена'); return; }
+  const when = parsed && parsed.updatedAt ? new Date(Number(parsed.updatedAt)).toLocaleString('ru-RU') : 'неизвестно';
+  confirmAction('Восстановить авто-копию?', `Текущие данные будут заменены копией от ${when}.\n\nСначала будет скачан бэкап текущего состояния — на всякий случай.`, 'Восстановить', () => {
+    try { exportBackup(); } catch(e) {}
+    try {
+      db = normalizeAndMigrateDB(parsed);
+      db = cleanupClientDuplicates(db);
+      logAct('restore_backup');
+      saveDatabase(false);
+      forceCloseModal();
+      render();
+      toast('Авто-копия восстановлена');
+    } catch(e) {
+      console.error('restoreAutoBackup:', e);
+      toast('Ошибка восстановления');
+    }
+  });
 }
 
 function importBackup(e) {
   const file = e.target.files?.[0]; if(!file) return;
   const r = new FileReader(); r.onload = () => {
-    try {
-      db = cleanupClientDuplicates(normalizeAndMigrateDB(JSON.parse(r.result)));
-      saveDatabase(true); render(); toast('Данные успешно восстановлены');
-    } catch(err){ toast('Ошибка чтения файла бэкапа'); }
+    let parsed = null;
+    try { parsed = JSON.parse(r.result); } catch(err) { toast('Файл не является корректным JSON'); return; }
+    if (!parsed || (!Array.isArray(parsed.events) && !Array.isArray(parsed.clients) && !Array.isArray(parsed.bookings))) {
+      toast('В файле нет данных приложения (события/гости/брони)'); return;
+    }
+    const counts = `события: ${Array.isArray(parsed.events) ? parsed.events.length : 0} · брони: ${Array.isArray(parsed.bookings) ? parsed.bookings.length : 0} · гости: ${Array.isArray(parsed.clients) ? parsed.clients.length : 0}`;
+    confirmAction('Заменить базу из файла?', `Файл: ${file.name}\nВ нём: ${counts}.\n\nТекущие данные будут заменены. Сначала автоматически скачается бэкап текущего состояния.`, 'Заменить', () => {
+      try { exportBackup(); } catch(err) {}
+      try {
+        db = cleanupClientDuplicates(normalizeAndMigrateDB(parsed));
+        runArchiveSweep(db);
+        logAct('import', `${file.name || 'бэкап'} (${counts})`);
+        saveDatabase(true);
+        forceCloseModal();
+        render();
+        toast('Данные успешно восстановлены из файла');
+      } catch(err){
+        console.error('importBackup:', err);
+        toast('Ошибка чтения файла бэкапа');
+      }
+    });
   };
   r.readAsText(file);
 }
@@ -4165,7 +5071,7 @@ function openNotificationsModal() {
               <div class="flex-1">
                 <div class="font-bold text-base">${esc(w.format.title)}</div>
                 <div class="text-sm text-muted" style="margin-top:2px">
-                  <span class="tag" style="background:#FDEDE9;color:#DE6254">${w.daysSince === 999 ? 'Еще не проводилось' : `Пауза ${w.daysSince} дн.`}</span>
+                  <span class="tag" style="background:#FFEBEB;color:#DC2626">${w.daysSince === 999 ? 'Еще не проводилось' : `Пауза ${w.daysSince} дн.`}</span>
                   раз в ${w.target} дн.
                 </div>
               </div>
@@ -4184,6 +5090,35 @@ function openNotificationsModal() {
     </div>
   `);
 }
+
+// ============================================================================
+// PWA-lite: манифест и тема инжектятся на лету (работает даже без manifest.json),
+// service worker регистрируется, если рядом лежит sw.js (файл из поставки).
+// ============================================================================
+(function setupPwaLite() {
+  try {
+    const iconSvg = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#232323"/><stop offset="1" stop-color="#4A4A4A"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#g)"/><circle cx="256" cy="256" r="132" fill="none" stroke="#FFFFFF" stroke-width="28"/><circle cx="256" cy="256" r="34" fill="#FFFFFF"/></svg>');
+    const manifest = {
+      name: 'Пятница.Пульт — управление пространством',
+      short_name: 'Пятница.Пульт',
+      description: 'Расписание, гости и оплаты пространства',
+      start_url: '.', scope: '.', display: 'standalone', orientation: 'portrait',
+      background_color: '#F4F4F2', theme_color: '#1C1C1C',
+      icons: [{ src: iconSvg, sizes: 'any', type: 'image/svg+xml', purpose: 'any' }]
+    };
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+    document.head.appendChild(link);
+    const meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.content = '#1C1C1C';
+    document.head.appendChild(meta);
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  } catch(e) { console.warn('PWA-lite:', e); }
+})();
 
 (function init() {
   loadDatabase();
@@ -4204,6 +5139,19 @@ function openNotificationsModal() {
   });
   window.addEventListener('focus', handleAppResume);
   window.addEventListener('online', handleAppResume);
+  // Дата «сегодня» обновляется сама — планшет на входе живёт сутками без перезагрузки
+  let __lastToday = getTodayISO();
+  setInterval(() => {
+    try {
+      const t = getTodayISO();
+      if (t !== __lastToday) {
+        __lastToday = t;
+        if (typeof updateNotifButton === 'function') updateNotifButton();
+        render();
+        toast('Наступил новый день — календарь обновлён');
+      }
+    } catch(e) {}
+  }, 30000);
   window.addEventListener('pageshow', (event) => {
     try {
       if (!db || !Array.isArray(db.events)) loadDatabase();
