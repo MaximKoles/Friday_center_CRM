@@ -588,7 +588,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.4.1';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -1443,17 +1443,25 @@ function openQuotaWarningModal() {
   `);
 }
 
+// Единая точка записи базы в localStorage: перехватывает переполнение квоты и сбои,
+// чтобы ошибка сохранения не роняла вызывающий код (особенно важно в iOS Safari).
+function persistDb() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(db));
+  } catch(e) {
+    if (e && (e.name === 'QuotaExceededError' || e.code === 22)) {
+      openQuotaWarningModal();
+    } else {
+      console.warn('persistDb:', e);
+    }
+  }
+}
+
 function saveDatabase(sync = true) {
   if (!db) return;
   db.updatedAt = nowTs();
   db.isInitialSeed = false;
-  try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(db));
-  } catch(e) {
-    if (e.name === 'QuotaExceededError' || e.code === 22) {
-      openQuotaWarningModal();
-    }
-  }
+  persistDb();
   if (sync && ui.firebaseUrl) {
     clearTimeout(cloudTimer);
     cloudTimer = setTimeout(pushToFirebase, 150);
@@ -1624,17 +1632,27 @@ async function pushToFirebase() {
 async function pullFromFirebase(manual = false) {
   if (!ui.firebaseUrl) { if(manual) toast('Укажите URL базы данных'); return; }
   try {
-    const res = await fetch(ui.firebaseUrl);
+    // no-store: Safari агрессивно кэширует GET и может отдать устаревшую копию базы
+    const res = await fetch(ui.firebaseUrl, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       if (!data) {
         if (db && !db.isInitialSeed) pushToFirebase();
       } else if (data && (data.events || data.formats || data.clients || data.deletedIds)) {
+        // КЛЮЧЕВОЙ ФИКС (Safari/iPhone): если прямо сейчас уходит наш push (на медленной
+        // мобильной сети PUT может выполняться несколько секунд), раньше ответ облака
+        // молча выбрасывался по флагу isLocalPushing, а тост всё равно говорил
+        // «Синхронизировано». Теперь дожидаемся завершения push и применяем данные всегда.
+        let waitedMs = 0;
+        while (isLocalPushing && waitedMs < 8000) {
+          await new Promise(r => setTimeout(r, 120));
+          waitedMs += 120;
+        }
         const merged = mergeDatabases(db, data);
         const ns = stableStringify(merged);
-        if (ns !== stableStringify(db) && !isLocalPushing) {
+        if (ns !== stableStringify(db)) {
           db = merged;
-          localStorage.setItem(STORE_KEY, JSON.stringify(db));
+          persistDb();
           if (!isUserActivelyTyping() && !FormGuard.isDirty()) {
             render();
             if (ui.modal?.type === 'event') openEventDetailsModal(ui.modal.id);
@@ -1656,13 +1674,19 @@ async function pullFromFirebase(manual = false) {
 }
 
 function handleRemoteDataUpdate(remoteData) {
-  if (!remoteData || typeof remoteData !== 'object' || isLocalPushing) return;
+  if (!remoteData || typeof remoteData !== 'object') return;
+  // Эхо собственного push игнорируем. А вот чужие изменения применяем даже во время
+  // нашего push: раньше обновление с другого устройства молча терялось, пока уходил
+  // медленный PUT (типично для Safari на iPhone).
+  try {
+    if (isLocalPushing && lastPushedStr === stableStringify(remoteData)) return;
+  } catch(e) {}
   const merged = mergeDatabases(db, remoteData);
   const curStr = stableStringify(db);
   const newStr = stableStringify(merged);
   if (curStr !== newStr) {
     db = merged;
-    localStorage.setItem(STORE_KEY, JSON.stringify(db));
+    persistDb();
     if (!isUserActivelyTyping() && !FormGuard.isDirty()) {
       render();
       if (ui.modal?.type === 'event') openEventDetailsModal(ui.modal.id);
@@ -1712,6 +1736,22 @@ function setupFirebaseRealtime() {
   } catch(e) {
     pollTimer = setInterval(() => { if (!isLocalPushing) pullFromFirebase(false); }, 7000);
   }
+}
+
+// Подключение базы по ссылке: сначала ЗАГРУЗКА облака, и только потом реальный
+// поток и отправка локальных изменений. Прежний порядок (saveDatabase(true) до pull)
+// ставил в очередь PUT, который на iPhone успевал затереть облако локальной пустой
+// базой, а ответ загрузки отбрасывался — «показывает, что загружено, а по факту нет».
+async function connectFirebaseAction(rawUrl) {
+  const url = normalizeFirebaseUrl(rawUrl);
+  if (!url) { toast('Укажите URL базы данных'); return; }
+  ui.firebaseUrl = url;
+  try { localStorage.setItem(FIREBASE_URL_KEY, url); } catch(e) {}
+  logAct('sync_connect');
+  saveDatabase(false);            // сохранить локально, НЕ ставя push в очередь
+  toast('Загружаю базу из облака...');
+  await pullFromFirebase(true);   // сначала применяем данные облака
+  setupFirebaseRealtime();        // затем включаем поток реального времени
 }
 
 function handleAppResume() {
@@ -4568,7 +4608,7 @@ function openSyncModal() {
         <label>URL базы Firebase Realtime Database</label>
         <div class="flex gap-2">
           <input class="inp flex-1" id="fbU" value="${esc(ui.firebaseUrl)}" placeholder="https://....firebasedatabase.app/data.json">
-          <button class="btn btn-primary btn-sm flex-none" onclick="ui.firebaseUrl=normalizeFirebaseUrl(document.getElementById('fbU').value);localStorage.setItem(FIREBASE_URL_KEY,ui.firebaseUrl);logAct('sync_connect');saveDatabase(true);pullFromFirebase(true);setupFirebaseRealtime();toast('URL сохранен')">${ic('check')} Подключить</button>
+          <button class="btn btn-primary btn-sm flex-none" onclick="connectFirebaseAction(document.getElementById('fbU').value)">${ic('check')} Подключить</button>
         </div>
       </div>
 
