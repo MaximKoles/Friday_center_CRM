@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <!-- HTTP-метатеги запрета кэширования браузером (Safari, Chrome, Firefox) -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
@@ -406,7 +406,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 #modalRoot { position: fixed; inset: 0; z-index: 100; display: none; }
 #modalRoot.open { display: block; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(20,20,20,.46); backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; }
-.modal { background: var(--surface); width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto; border-radius: 24px 24px 0 0; box-shadow: 0 -10px 50px rgba(20,20,20,.22); }
+.modal { background: var(--surface); width: 100%; max-width: 640px; max-height: 92vh; max-height: min(92vh, calc(100% - 24px)); overflow-y: auto; border-radius: 24px 24px 0 0; box-shadow: 0 -10px 50px rgba(20,20,20,.22); }
 .modal-wide { max-width: 820px; }
 .modal-head { padding: 18px 20px 12px; position: sticky; top: 0; background: var(--surface); z-index: 10; border-bottom: 1px solid var(--line); }
 .modal-title { font-size: 18px; font-weight: 700; }
@@ -473,7 +473,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
   .star-btn { width: 32px; height: 32px; }
   .day-tab { padding: 7px 11px; border-radius: 12px; }
 }
-@media (min-width: 641px) { .modal-backdrop { align-items: center; padding: 20px; } .modal { border-radius: 22px; } }
+@media (min-width: 641px) { .modal-backdrop { align-items: center; padding: 20px; } .modal { border-radius: 22px; margin: auto; } }
 
 .autocomplete-box {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 80;
@@ -588,7 +588,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.4.1';
+const APP_VERSION = '1.4.3';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -992,6 +992,18 @@ const FormGuard = {
 
 const MODAL_ROOT = document.getElementById('modalRoot');
 const DIALOG_ROOT = document.getElementById('dialogRoot');
+// Клавиатура/панели браузера не должны сдвигать модалку за экран: подгоняем
+// подложку под реально видимую область (Chrome на телефоне, iOS WebKit).
+if (window.visualViewport) {
+  const vv = window.visualViewport;
+  const fitModalViewport = () => {
+    MODAL_ROOT.style.height = vv.height + 'px';
+    MODAL_ROOT.style.top = vv.offsetTop + 'px';
+  };
+  vv.addEventListener('resize', fitModalViewport);
+  vv.addEventListener('scroll', fitModalViewport);
+  fitModalViewport();
+}
 
 function openModal(html, opts = {}) {
   MODAL_ROOT.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)requestCloseModal()"><div class="modal ${opts.wide?'modal-wide':''}">${html}</div></div>`;
@@ -3878,7 +3890,7 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
           </label>
         </div>
 
-        <div class="field"><label>Заметка / детали</label><input class="inp" id="evN" value="${esc(initial.note)}"></div>
+        <div class="field"><label>Заметка / детали</label><textarea class="inp" id="evN" rows="3" placeholder="Детали события: что взять, нюансы площадки, контакты..." style="resize:vertical;min-height:72px;max-height:150px;overflow-y:auto;line-height:1.45">${esc(initial.note)}</textarea></div>
       </div>
       <div class="modal-foot flex gap-2 justify-end">
         <button type="button" class="btn btn-ghost" onclick="${returnToEventId ? `openEventDetailsModal('${returnToEventId}')` : 'requestCloseModal()'}">Отмена</button>
