@@ -3405,9 +3405,12 @@ function toggleRentPayment(id) {
 // какая доп. информация попадёт на картинку. Вертикальный формат под телефон,
 // монохромная «типографическая» вёрстка в стиле логотипа: белое непрозрачное
 // полотно (в Telegram фон и так белеет), двойная рамка отрывного билета,
-// нарисованные дырочки перфорации. Единственный цветовой акцент — дата.
+// нарисованные дырочки перфорации. Цветовой акцент — только число даты.
 // ============================================================================
 const RENT_TICKET_W = 1000, RENT_TICKET_H = 1680;
+
+// Краткие дни недели для строки даты «14 ноября (сб)» (индекс с понедельника)
+const RENT_TICKET_DOW = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
 // Логотип «ПЯТНИЦА · центр притяжения» (чёрные чернила на прозрачном фоне),
 // вшит строкой, чтобы билет рисовался мгновенно и работал офлайн без кэша
@@ -3426,18 +3429,6 @@ function rtLogoImage() {
 
 // Межбуквенный интервал: поддерживается не во всех браузерах — просто пропускаем
 function rtSetLS(ctx, v) { if ('letterSpacing' in ctx) ctx.letterSpacing = v; }
-
-// Пятиконечная звезда — как звёздочка в логотипе
-function rtStar(ctx, cx, cy, r) {
-  ctx.beginPath();
-  for (let i = 0; i < 10; i++) {
-    const a = -Math.PI / 2 + i * Math.PI / 5;
-    const rad = i % 2 === 0 ? r : r * 0.45;
-    const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.closePath(); ctx.fill();
-}
 
 // Перенос текста на строки (не более maxLines, хвост — с многоточием)
 function rtWrap(ctx, text, maxW, maxLines = 2) {
@@ -3563,11 +3554,10 @@ async function drawRentTicket() {
   // Ждём шрифты, чтобы Inter не подменялся системным при первом рендере
   try {
     await Promise.all([
-      document.fonts.load('800 106px Inter'),
-      document.fonts.load('800 94px Inter'),
+      document.fonts.load('800 112px Inter'),
+      document.fonts.load('800 70px Inter'),
       document.fonts.load('700 44px Inter'),
       document.fonts.load('700 42px Inter'),
-      document.fonts.load('700 34px Inter'),
       document.fonts.load('700 30px Inter'),
       document.fonts.load('600 22px Inter'),
       document.fonts.load('500 30px Inter'),
@@ -3622,11 +3612,9 @@ async function drawRentTicket() {
   const headL = (W - headW) / 2, headR = (W + headW) / 2, lineY = 329;
   ctx.strokeStyle = LINE; ctx.lineWidth = 2; ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(118, lineY); ctx.lineTo(headL - 38, lineY);
-  ctx.moveTo(headR + 38, lineY); ctx.lineTo(W - 118, lineY);
+  ctx.moveTo(118, lineY); ctx.lineTo(headL - 26, lineY);
+  ctx.moveTo(headR + 26, lineY); ctx.lineTo(W - 118, lineY);
   ctx.stroke();
-  ctx.fillStyle = INK;
-  rtStar(ctx, headL - 21, lineY, 9); rtStar(ctx, headR + 21, lineY, 9);
 
   // Название события (по чипсу «Название»)
   if (fields.title && ev.title) {
@@ -3634,49 +3622,58 @@ async function drawRentTicket() {
     ctx.fillText(rtTruncate(ctx, ev.title, W - 220), W / 2, 406);
   }
 
-  // ---- Герой: один плотный блок «день недели / дата / время» ----
+  // ---- Герой: «14 ноября (сб)» + время под ним ----
   const d = parseYmd(ev.date);
-  const weekday = (DOW_FULL[(d.getDay() + 6) % 7] || '').toUpperCase();
-  ctx.font = '700 34px Inter, sans-serif'; ctx.fillStyle = INK; rtSetLS(ctx, '6px');
-  ctx.fillText(weekday, W / 2, 506); rtSetLS(ctx, '0px');
+  const dowShort = RENT_TICKET_DOW[(d.getDay() + 6) % 7] || '';
+  const dateNum = String(d.getDate());
+  const dateMon = ` ${MONTHS_GEN[d.getMonth()]}`;
+  const dowPart = dowShort ? ` (${dowShort.toLowerCase()})` : '';
 
-  const dateMain = `${d.getDate()} ${MONTHS_GEN[d.getMonth()]}`;
-  let df = 106;
-  ctx.font = `800 ${df}px Inter, sans-serif`;
-  const w1a = ctx.measureText(dateMain).width;
-  ctx.font = '700 44px Inter, sans-serif';
-  const w2 = ctx.measureText(String(d.getFullYear())).width;
-  if (w1a + 24 + w2 > W - 150) {
-    df = Math.max(60, Math.floor(df * (W - 150) / (w1a + 24 + w2)));
+  // Число даты — единственный цветной элемент билета
+  let df = 112;
+  const fitDate = () => {
     ctx.font = `800 ${df}px Inter, sans-serif`;
+    const wNum = ctx.measureText(dateNum).width;
+    const wMon = ctx.measureText(dateMon).width;
+    ctx.font = '700 44px Inter, sans-serif';
+    const wDow = ctx.measureText(dowPart).width;
+    return { wNum, wMon, wDow };
+  };
+  let m = fitDate();
+  if (m.wNum + m.wMon + m.wDow > W - 140) {
+    df = Math.max(64, Math.floor(df * (W - 140) / (m.wNum + m.wMon + m.wDow)));
+    m = fitDate();
   }
-  const w1 = ctx.measureText(dateMain).width;
-  const dateTotal = w1 + 24 + w2, dateX = (W - dateTotal) / 2;
+  const dateX = (W - (m.wNum + m.wMon + m.wDow)) / 2;
   ctx.textAlign = 'left';
-  ctx.fillStyle = AMBER; // единственный цвет на билете — дата, взгляд цепляется за неё
-  ctx.fillText(dateMain, dateX, 642);
-  ctx.font = '700 44px Inter, sans-serif'; ctx.fillStyle = MUT2;
-  ctx.fillText(String(d.getFullYear()), dateX + w1 + 24, 642);
+  ctx.font = `800 ${df}px Inter, sans-serif`;
+  ctx.fillStyle = AMBER;
+  ctx.fillText(dateNum, dateX, 628);
+  ctx.fillStyle = INK;
+  ctx.fillText(dateMon, dateX + m.wNum, 628);
+  ctx.font = '700 44px Inter, sans-serif';
+  ctx.fillStyle = MUT2;
+  ctx.fillText(dowPart, dateX + m.wNum + m.wMon, 628);
   ctx.textAlign = 'center';
 
+  // Время — заметно меньше даты, но по-прежнему крупно
   const endT = ev.endTime && toMin(ev.endTime) > toMin(ev.time) ? ev.endTime : '';
   const timeText = endT ? `${ev.time} — ${endT}` : (ev.time || '');
   if (timeText) {
-    let tf = 94;
+    let tf = 70;
     ctx.font = `800 ${tf}px Inter, sans-serif`;
     let tw = ctx.measureText(timeText).width;
-    while (tw > W - 200 && tf > 40) {
+    while (tw > W - 200 && tf > 34) {
       tf -= 4; ctx.font = `800 ${tf}px Inter, sans-serif`;
       tw = ctx.measureText(timeText).width;
     }
     ctx.fillStyle = INK;
-    ctx.fillText(timeText, W / 2, 768);
+    ctx.fillText(timeText, W / 2, 734);
   }
 
   // Короткая черта под временем — точка завершения герой-блока
   ctx.fillStyle = INK;
-  rtRoundRect(ctx, W / 2 - 60, 800, 120, 7, 3.5); ctx.fill();
-
+  rtRoundRect(ctx, W / 2 - 60, 764, 120, 7, 3.5); ctx.fill();
   // ---- Перфорация: пунктир + нарисованные «дырочки» (фон непрозрачный) ----
   const perfY = 902;
   ctx.strokeStyle = '#C4C4C4'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.setLineDash([3, 16]);
