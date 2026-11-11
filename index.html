@@ -10,7 +10,7 @@
 <title>Пятница.Пульт — Центр управления пространством</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #F4F4F2;
@@ -210,6 +210,7 @@ main { padding: 18px 0 80px; min-height: calc(100vh - 120px); }
 .chip .dot { width: 8px; height: 8px; border-radius: 50%; }
 .chip .cnt { font-size: 10.5px; color: var(--muted); font-weight: 500; background: var(--subtle); padding: 1px 5px; border-radius: 999px; }
 .chips-mobile { display: none; }
+.chip:disabled { opacity: .3; cursor: not-allowed; pointer-events: none; }
 
 .list-card { background: var(--surface); border-radius: 20px; box-shadow: var(--sh); overflow: hidden; border: 1px solid var(--line); width: 100%; }
 .row { padding: 14px 18px; border-bottom: 1px solid var(--line); transition: background .14s; }
@@ -413,6 +414,10 @@ textarea.inp { resize: vertical; min-height: 70px; }
 .modal-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .modal-body { padding: 16px 20px; }
 .modal-foot { padding: 14px 20px 18px; position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); z-index: 10; }
+
+/* Билет аренды: превью картинки */
+.ticket-preview-wrap { border-radius: 16px; padding: 14px; background: repeating-conic-gradient(#F1F1EF 0% 25%, #FFFFFF 0% 50%) 0 0/22px 22px; border: 1px solid var(--line); }
+.ticket-preview-wrap canvas { display: block; width: 100%; height: auto; }
 .post-box { background: var(--bg); border-radius: 14px; padding: 16px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; max-height: 48vh; overflow-y: auto; font-family: monospace; border: 1px solid var(--line); }
 
 #dialogRoot { position: fixed; inset: 0; z-index: 150; display: none; }
@@ -528,6 +533,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
     <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
     <symbol id="ic-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
     <symbol id="ic-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="ic-ticket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2" stroke-dasharray="2 2"/><path d="M13 17v2" stroke-dasharray="2 2"/><path d="M13 11v2" stroke-dasharray="2 2"/></symbol>
     <symbol id="ic-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
     <symbol id="ic-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
     <symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
@@ -1958,12 +1964,14 @@ function openEventMenu(evId, showDelete, btn) {
   const wasSameBtn = Boolean(wasOpen && btn && evMenuBtnEl === btn);
   closeEventMenu();
   if (wasSameBtn) return; // повторный клик по той же «⋯» закрывает меню
+  const isRentEv = db.events.find(e => e.id === evId)?.presenceType === 'rent';
   const pop = document.createElement('div');
   pop.id = 'evMenuPop';
   pop.className = 'ev-menu-pop';
   pop.innerHTML = `
     <button onclick="closeEventMenu();openAddEventModal('','','','${evId}')">${ic('edit')} Редактировать событие</button>
     <button onclick="closeEventMenu();duplicateEventAction('${evId}')">${ic('copy')} Повторить событие</button>
+    ${isRentEv ? `<button onclick="closeEventMenu();openRentTicketModal('${evId}')">${ic('ticket')} Билет для арендатора</button>` : ''}
     <button onclick="closeEventMenu();copyFilteredGuestList('${evId}')">${ic('list')} Скопировать список гостей</button>
     ${showDelete ? `<div class="ev-menu-sep"></div><button class="danger" onclick="closeEventMenu();confirmDeleteEventAction('${evId}')">${ic('trash')} Удалить событие</button>` : ''}
   `;
@@ -2275,6 +2283,9 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
             ${activeEv.note ? `<div class="text-sm text-ink2" style="margin-top:8px">${esc(activeEv.note)}</div>` : ''}
           </div>
           <div class="flex items-center gap-2 flex-wrap">
+            <button class="btn btn-soft btn-sm" style="height:34px;min-height:34px;padding:4px 13px" onclick="openRentTicketModal('${activeEv.id}')" title="Картинка-билет с датой и временем — отправить арендатору на подтверждение">
+              ${ic('ticket')} Билет для арендатора
+            </button>
             <button class="pay-pill-btn ${activeEv.isPaid ? 'paid' : 'unpaid'}" style="padding:7px 14px;font-size:12.5px" onclick="toggleRentPayment('${activeEv.id}')">
               ${activeEv.isPaid ? '✓ Аренда оплачена' : '⏳ Отметить оплату'}
             </button>
@@ -3387,6 +3398,292 @@ function toggleRentPayment(id) {
   render();
   toast(ev.isPaid ? 'Оплата аренды получена' : 'Отметка оплаты аренды снята');
 }
+
+// ============================================================================
+// БИЛЕТ ДЛЯ АРЕНДАТОРА: генерация PNG-картинки аренды, которую админ отправляет
+// клиенту для подтверждения даты и времени. Перед генерацией чипсами отмечается,
+// какая доп. информация попадёт на картинку. Стиль — светлый минималистичный
+// «билет»: крупная дата и время, перфорация, прозрачные углы для мессенджеров.
+// ============================================================================
+const RENT_TICKET_W = 1200, RENT_TICKET_H = 800;
+const RENT_TICKET_FIELDS_KEY = 'pyatnitsa_rent_ticket_fields_v1';
+const RENT_TICKET_FIELDS = [
+  { id: 'title',  label: 'Название',      def: true },
+  { id: 'price',  label: 'Сумма',         def: true },
+  { id: 'admin',  label: 'Администратор', def: true },
+  { id: 'client', label: 'Арендатор',     def: true },
+  { id: 'paid',   label: 'Статус оплаты', def: false },
+  { id: 'note',   label: 'Заметка',       def: false }
+];
+
+function getRentTicketFields() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(RENT_TICKET_FIELDS_KEY) || '{}') || {}; } catch (e) {}
+  const res = {};
+  RENT_TICKET_FIELDS.forEach(f => { res[f.id] = saved[f.id] === undefined ? f.def : Boolean(saved[f.id]); });
+  return res;
+}
+
+// Есть ли в событии данные для поля: пустое поле на билете не рисуем
+function rentTicketFieldHasData(ev, id) {
+  if (!ev) return false;
+  switch (id) {
+    case 'title':  return Boolean(ev.title);
+    case 'price':  return Number(ev.price) > 0;
+    case 'admin':  return Boolean(ev.adminPerson);
+    case 'client': return Boolean(ev.rentClientPerson);
+    case 'paid':   return true;
+    case 'note':   return Boolean(ev.note);
+    default:       return false;
+  }
+}
+
+function toggleRentTicketField(id) {
+  const fields = getRentTicketFields();
+  fields[id] = !fields[id];
+  try { localStorage.setItem(RENT_TICKET_FIELDS_KEY, JSON.stringify(fields)); } catch (e) {}
+  const chip = document.getElementById(`rtChip_${id}`);
+  if (chip) chip.classList.toggle('on', fields[id]);
+  drawRentTicket();
+}
+
+function openRentTicketModal(evId) {
+  const ev = db.events.find(e => e.id === evId);
+  if (!ev || ev.presenceType !== 'rent') return;
+  ui.modal = { type: 'rentTicket', id: evId };
+
+  const fields = getRentTicketFields();
+  const chipsHtml = RENT_TICKET_FIELDS.map(f => {
+    const has = rentTicketFieldHasData(ev, f.id);
+    return `<button class="chip ${fields[f.id] && has ? 'on' : ''}" id="rtChip_${f.id}" ${has ? '' : 'disabled'} title="${has ? 'Показать или скрыть на билете' : 'В этом событии не заполнено'}" onclick="toggleRentTicketField('${f.id}')">${f.label}</button>`;
+  }).join('');
+  const canShare = typeof navigator.canShare === 'function';
+
+  openModal(`
+    <div class="modal-head flex items-center justify-between gap-3">
+      <div>
+        <div class="modal-title">Билет для арендатора</div>
+        <div class="modal-sub">Картинка для отправки клиенту: он сверит дату и время</div>
+      </div>
+      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
+    </div>
+    <div class="modal-body">
+      <div class="ticket-preview-wrap">
+        <canvas id="rentTicketCanvas" width="${RENT_TICKET_W * 2}" height="${RENT_TICKET_H * 2}"></canvas>
+      </div>
+      <div class="field" style="margin-top:16px;margin-bottom:0">
+        <label>Дополнительная информация на билете</label>
+        <div class="chips" style="margin:0;gap:6px">${chipsHtml}</div>
+      </div>
+    </div>
+    <div class="modal-foot flex gap-2 justify-end flex-wrap">
+      <button class="btn btn-soft btn-sm" id="rtShareBtn" style="display:${canShare ? '' : 'none'}" onclick="shareRentTicket()">${ic('send')} Отправить…</button>
+      <button class="btn btn-primary btn-sm" onclick="downloadRentTicket()">${ic('download')} Скачать PNG</button>
+    </div>
+  `);
+
+  drawRentTicket();
+}
+
+function rtRoundRect(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function rtTruncate(ctx, text, maxW) {
+  let t = String(text ?? '');
+  if (ctx.measureText(t).width <= maxW) return t;
+  while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+  return t + '…';
+}
+
+async function drawRentTicket() {
+  const canvas = document.getElementById('rentTicketCanvas');
+  if (!canvas) return;
+  const ev = db.events.find(e => e.id === ui.modal?.id);
+  if (!ev) return;
+  const fields = getRentTicketFields();
+
+  // Ждём шрифты, чтобы Inter не подменялся системным при первом рендере
+  try {
+    await Promise.all([
+      document.fonts.load('800 100px Inter'),
+      document.fonts.load('700 68px Inter'),
+      document.fonts.load('700 30px Inter'),
+      document.fonts.load('600 26px Inter'),
+      document.fonts.load('500 20px Inter'),
+      document.fonts.load('400 22px Inter')
+    ]);
+  } catch (e) {}
+
+  if (!document.getElementById('rentTicketCanvas')) return; // модалку успели закрыть
+
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
+  ctx.clearRect(0, 0, RENT_TICKET_W, RENT_TICKET_H);
+
+  const W = RENT_TICKET_W, H = RENT_TICKET_H, PAD = 64;
+  const INK = '#1C1C1C', INK2 = '#454545', MUT = '#8B8B8B', LINE = '#D8D8D6';
+  const AMBER = '#D97706', AMBER_D = '#B45309', AMBER_BG = '#FEF9E7';
+
+  // Белый лист со скруглёнными углами: за пределами скругления PNG прозрачен
+  ctx.save();
+  rtRoundRect(ctx, 0, 0, W, H, 40);
+  ctx.clip();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, W, H);
+
+  // Фирменная янтарная полоса по верхней кромке
+  ctx.fillStyle = AMBER;
+  ctx.fillRect(0, 0, W, 14);
+
+  // ---- Шапка: метка «АРЕНДА» + название (справа) ----
+  const headY = 74;
+  ctx.font = '700 24px Inter, sans-serif';
+  const tagText = 'АРЕНДА';
+  const tagW = Math.ceil(ctx.measureText(tagText).width) + 52;
+  ctx.fillStyle = AMBER_BG;
+  rtRoundRect(ctx, PAD, headY, tagW, 48, 24); ctx.fill();
+  ctx.strokeStyle = 'rgba(217,119,6,.38)'; ctx.lineWidth = 2;
+  rtRoundRect(ctx, PAD, headY, tagW, 48, 24); ctx.stroke();
+  ctx.fillStyle = AMBER_D;
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.fillText(tagText, PAD + 26, headY + 25);
+
+  if (fields.title && ev.title) {
+    ctx.font = '700 30px Inter, sans-serif';
+    ctx.fillStyle = INK;
+    ctx.textAlign = 'right';
+    const maxTitleW = W - (PAD + tagW + 20) - PAD - 24;
+    ctx.fillText(rtTruncate(ctx, ev.title, Math.max(120, maxTitleW)), W - PAD, headY + 26);
+  }
+  ctx.textBaseline = 'alphabetic';
+
+  // ---- Герой: день недели, дата, время (главное на билете) ----
+  const d = parseYmd(ev.date);
+  const weekday = (DOW_FULL[(d.getDay() + 6) % 7] || '').toUpperCase();
+  const dateMain = `${d.getDate()} ${MONTHS_GEN[d.getMonth()]} ${d.getFullYear()}`;
+  const endT = ev.endTime && toMin(ev.endTime) > toMin(ev.time) ? ev.endTime : '';
+  const timeText = endT ? `${ev.time} — ${endT}` : (ev.time || '');
+
+  ctx.textAlign = 'center';
+  ctx.font = '700 24px Inter, sans-serif';
+  ctx.fillStyle = AMBER_D;
+  ctx.fillText(weekday.split('').join(' '), W / 2, 212);
+
+  ctx.font = '700 68px Inter, sans-serif';
+  ctx.fillStyle = INK;
+  ctx.fillText(dateMain, W / 2, 292);
+
+  ctx.font = `800 ${timeText.length > 14 ? 84 : 100}px Inter, sans-serif`;
+  ctx.fillText(timeText, W / 2, 400);
+
+  ctx.fillStyle = AMBER;
+  rtRoundRect(ctx, W / 2 - 70, 428, 140, 8, 4); ctx.fill();
+
+  // ---- Перфорация: пунктир + прозрачные «проколы» по краям ----
+  const perfY = 512;
+  ctx.strokeStyle = LINE; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.setLineDash([2, 14]);
+  ctx.beginPath(); ctx.moveTo(PAD, perfY); ctx.lineTo(W - PAD, perfY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.globalCompositeOperation = 'destination-out';
+  [0, W].forEach(x => { ctx.beginPath(); ctx.arc(x, perfY, 20, 0, Math.PI * 2); ctx.fill(); });
+  ctx.globalCompositeOperation = 'source-over';
+
+  // ---- Детали аренды: сетка 2 колонки + заметка на всю ширину ----
+  const main = [];
+  if (fields.price && Number(ev.price) > 0) main.push({ l: 'Сумма', v: money(ev.price), b: true });
+  if (fields.client && ev.rentClientPerson) main.push({ l: 'Арендатор', v: ev.rentClientPerson });
+  if (fields.admin && ev.adminPerson) main.push({ l: 'Администратор', v: ev.adminPerson });
+  if (fields.paid) main.push({ l: 'Оплата', v: ev.isPaid ? 'Оплачено' : 'Оплата при встрече', c: ev.isPaid ? '#059669' : AMBER_D, b: true });
+
+  const colW = (W - PAD * 2 - 48) / 2;
+  const rowH = 56;
+  let ry = perfY + 62;
+  main.forEach((r, i) => {
+    const x = PAD + (i % 2) * (colW + 48);
+    const yBase = ry + Math.floor(i / 2) * rowH;
+    ctx.textAlign = 'left';
+    ctx.font = '500 20px Inter, sans-serif';
+    ctx.fillStyle = MUT;
+    ctx.fillText(r.l, x, yBase - 26);
+    ctx.font = `${r.b ? '700' : '600'} 26px Inter, sans-serif`;
+    ctx.fillStyle = r.c || INK;
+    ctx.fillText(rtTruncate(ctx, r.v, colW), x, yBase);
+  });
+
+  if (fields.note && ev.note) {
+    const ny = ry + Math.ceil(main.length / 2) * rowH + 8;
+    ctx.textAlign = 'left';
+    ctx.font = '500 20px Inter, sans-serif';
+    ctx.fillStyle = MUT;
+    ctx.fillText('Заметка', PAD, ny - 26);
+    ctx.font = '400 22px Inter, sans-serif';
+    ctx.fillStyle = INK2;
+    ctx.fillText(rtTruncate(ctx, ev.note, W - PAD * 2), PAD, ny);
+  }
+
+  // ---- Призыв подтвердить дату и время ----
+  ctx.textAlign = 'center';
+  ctx.font = '500 20px Inter, sans-serif';
+  ctx.fillStyle = MUT;
+  ctx.fillText('Проверьте, пожалуйста, дату и время — если всё верно, просто подтвердите', W / 2, H - 42);
+
+  ctx.restore();
+}
+
+function rentTicketFileName(ev) {
+  return `bilet_arendy_${ev.date || ''}${ev.time ? '_' + String(ev.time).replace(':', '-') : ''}.png`;
+}
+
+function rentTicketCanvasBlob() {
+  const canvas = document.getElementById('rentTicketCanvas');
+  if (!canvas) return Promise.resolve(null);
+  return new Promise(res => canvas.toBlob(res, 'image/png'));
+}
+
+function downloadRentTicket() {
+  const ev = db.events.find(e => e.id === ui.modal?.id);
+  if (!ev) return;
+  rentTicketCanvasBlob().then(blob => {
+    if (!blob) { toast('Не удалось создать PNG'); return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = rentTicketFileName(ev);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    toast('Билет сохранён — отправьте его арендатору');
+  });
+}
+
+async function shareRentTicket() {
+  const ev = db.events.find(e => e.id === ui.modal?.id);
+  if (!ev) return;
+  const blob = await rentTicketCanvasBlob();
+  if (!blob) { toast('Не удалось создать PNG'); return; }
+  const file = new File([blob], rentTicketFileName(ev), { type: 'image/png' });
+  if (!(navigator.canShare && navigator.canShare({ files: [file] }))) {
+    toast('Отправка недоступна — скачайте PNG');
+    return;
+  }
+  try {
+    await navigator.share({
+      files: [file],
+      title: ev.title || 'Аренда',
+      text: `Аренда: ${fmtDateFull(ev.date)}, ${ev.time}${ev.endTime ? '–' + ev.endTime : ''}. Проверьте, пожалуйста, дату и время.`
+    });
+  } catch (e) { /* пользователь закрыл окно «Поделиться» — это не ошибка */ }
+}
+
 
 let acTimer = null;
 function hideGuestSuggestionsWithDelay() {
