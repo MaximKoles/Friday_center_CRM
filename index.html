@@ -418,6 +418,17 @@ textarea.inp { resize: vertical; min-height: 70px; }
 /* Билет аренды: превью картинки */
 .ticket-preview-wrap { border-radius: 16px; padding: 14px; background: repeating-conic-gradient(#F1F1EF 0% 25%, #FFFFFF 0% 50%) 0 0/22px 22px; border: 1px solid var(--line); }
 .ticket-preview-wrap canvas { display: block; width: 100%; height: auto; }
+
+/* Модалка билета: на телефоне превью сверху, чипсы под ним; на компьютере —
+   два столбца, чтобы чипсы и кнопки были видны без прокрутки */
+.rt-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.rt-side { min-width: 0; }
+.rt-fields-block { margin-top: 14px; margin-bottom: 0; }
+@media (min-width: 700px) {
+  .modal.rt-modal { max-width: 780px; }
+  .rt-body { grid-template-columns: 300px minmax(0, 1fr); gap: 22px; align-items: start; }
+  .rt-fields-block { margin-top: 2px; }
+}
 .post-box { background: var(--bg); border-radius: 14px; padding: 16px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; max-height: 48vh; overflow-y: auto; font-family: monospace; border: 1px solid var(--line); }
 
 #dialogRoot { position: fixed; inset: 0; z-index: 150; display: none; }
@@ -1012,7 +1023,8 @@ if (window.visualViewport) {
 }
 
 function openModal(html, opts = {}) {
-  MODAL_ROOT.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)requestCloseModal()"><div class="modal ${opts.wide?'modal-wide':''}">${html}</div></div>`;
+  const mCls = ['modal', opts.wide ? 'modal-wide' : '', opts.modalClass || ''].filter(Boolean).join(' ');
+  MODAL_ROOT.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)requestCloseModal()"><div class="${mCls}">${html}</div></div>`;
   MODAL_ROOT.classList.add('open');
   document.body.style.overflow = 'hidden';
   setTimeout(() => { FormGuard.watch(); }, 25);
@@ -3508,20 +3520,22 @@ function openRentTicketModal(evId) {
       </div>
       <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body rt-body">
       <div class="ticket-preview-wrap">
         <canvas id="rentTicketCanvas" width="${RENT_TICKET_W * 2}" height="${RENT_TICKET_H * 2}" style="width:min(100%,340px);margin:0 auto"></canvas>
       </div>
-      <div class="field" style="margin-top:16px;margin-bottom:0">
-        <label>Дополнительная информация на билете</label>
-        <div class="chips" style="margin:0;gap:6px">${chipsHtml}</div>
+      <div class="rt-side">
+        <div class="field rt-fields-block">
+          <label>Дополнительная информация на билете</label>
+          <div class="chips" style="margin:0;gap:6px">${chipsHtml}</div>
+        </div>
       </div>
     </div>
     <div class="modal-foot flex gap-2 justify-end flex-wrap">
       <button class="btn btn-soft btn-sm" id="rtShareBtn" style="display:${canShare ? '' : 'none'}" onclick="shareRentTicket()">${ic('send')} Отправить…</button>
       <button class="btn btn-primary btn-sm" onclick="downloadRentTicket()">${ic('download')} Скачать PNG</button>
     </div>
-  `);
+  `, { modalClass: 'rt-modal' });
 
   drawRentTicket();
 }
@@ -5556,7 +5570,24 @@ function openNotificationsModal() {
     meta.content = '#1C1C1C';
     document.head.appendChild(meta);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      // Если страницу контролирует старый SW — при обновлении перезагрузимся
+      const hadController = Boolean(navigator.serviceWorker.controller);
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        // Проверяем обновления: при запуске, при возврате в приложение и раз в час.
+        // Без этого установленное PWA, открытое из памяти, никогда не узнаёт о новой версии
+        const checkUpdate = () => { try { reg.update().catch(() => {}); } catch (e) {} };
+        checkUpdate();
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
+        setInterval(checkUpdate, 60 * 60 * 1000);
+      }).catch(() => {});
+      // Новый service worker перехватил страницу — значит код устарел:
+      // тихо перезагружаемся один раз, чтобы заработала свежая версия
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadController) return; // первая установка — релоад не нужен
+        if (window.__swAutoReloaded) return;
+        window.__swAutoReloaded = true;
+        setTimeout(() => location.reload(), 300);
+      });
     }
   } catch(e) { console.warn('PWA-lite:', e); }
 })();
