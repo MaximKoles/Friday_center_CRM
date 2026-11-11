@@ -4,7 +4,7 @@
    Кэш обновляется автоматически: страница всегда тянется по сети,
    офлайн работает из кэша, база Firebase — всегда напрямую по сети.
    ============================================================ */
-const CACHE = 'pyatnitsa-pult-v22';
+const CACHE = 'pyatnitsa-pult-v23';
 const SHELL = ['./', './index.html'];
 
 self.addEventListener('install', (e) => {
