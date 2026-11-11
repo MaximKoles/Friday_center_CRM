@@ -3402,10 +3402,59 @@ function toggleRentPayment(id) {
 // ============================================================================
 // БИЛЕТ ДЛЯ АРЕНДАТОРА: генерация PNG-картинки аренды, которую админ отправляет
 // клиенту для подтверждения даты и времени. Перед генерацией чипсами отмечается,
-// какая доп. информация попадёт на картинку. Стиль — светлый минималистичный
-// «билет»: крупная дата и время, перфорация, прозрачные углы для мессенджеров.
+// какая доп. информация попадёт на картинку. Вертикальный формат под телефон,
+// светлая «отрывная» рамка с перфорацией, логотип «ПЯТНИЦА», крупная дата и
+// время, прозрачные углы и проколы — красиво смотрится в чате мессенджера.
 // ============================================================================
-const RENT_TICKET_W = 1200, RENT_TICKET_H = 800;
+const RENT_TICKET_W = 1000, RENT_TICKET_H = 1680;
+
+// Логотип «ПЯТНИЦА · центр притяжения» (чёрные чернила на прозрачном фоне),
+// вшит строкой, чтобы билет рисовался мгновенно и работал офлайн без кэша
+const RT_LOGO_SRC = 'data:image/png;base64,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';
+let rtLogoImg = null, rtLogoTried = false;
+function rtLogoImage() {
+  return new Promise(res => {
+    if (rtLogoTried) return res(rtLogoImg);
+    rtLogoTried = true;
+    const img = new Image();
+    img.onload = () => { rtLogoImg = img; res(img); };
+    img.onerror = () => res(null);
+    img.src = RT_LOGO_SRC;
+  });
+}
+
+// Межбуквенный интервал: поддерживается не во всех браузерах — просто пропускаем
+function rtSetLS(ctx, v) { if ('letterSpacing' in ctx) ctx.letterSpacing = v; }
+
+// Пятиконечная звезда — как звёздочка в логотипе
+function rtStar(ctx, cx, cy, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5;
+    const rad = i % 2 === 0 ? r : r * 0.45;
+    const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath(); ctx.fill();
+}
+
+// Перенос текста на строки (не более maxLines, хвост — с многоточием)
+function rtWrap(ctx, text, maxW, maxLines = 2) {
+  const words = String(text ?? '').split(/\s+/).filter(Boolean);
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (cur && ctx.measureText(t).width > maxW) { lines.push(cur); cur = w; }
+    else cur = t;
+  }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    lines[maxLines - 1] = lines[maxLines - 1].trimEnd().replace(/\s+\S*$/, '') + ' …';
+  }
+  return lines;
+}
 const RENT_TICKET_FIELDS_KEY = 'pyatnitsa_rent_ticket_fields_v1';
 const RENT_TICKET_FIELDS = [
   { id: 'title',  label: 'Название',      def: true },
@@ -3469,7 +3518,7 @@ function openRentTicketModal(evId) {
     </div>
     <div class="modal-body">
       <div class="ticket-preview-wrap">
-        <canvas id="rentTicketCanvas" width="${RENT_TICKET_W * 2}" height="${RENT_TICKET_H * 2}"></canvas>
+        <canvas id="rentTicketCanvas" width="${RENT_TICKET_W * 2}" height="${RENT_TICKET_H * 2}" style="width:min(100%,340px);margin:0 auto"></canvas>
       </div>
       <div class="field" style="margin-top:16px;margin-bottom:0">
         <label>Дополнительная информация на билете</label>
@@ -3500,7 +3549,7 @@ function rtTruncate(ctx, text, maxW) {
   let t = String(text ?? '');
   if (ctx.measureText(t).width <= maxW) return t;
   while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
-  return t + '…';
+  return t.trimEnd() + '…';
 }
 
 async function drawRentTicket() {
@@ -3513,12 +3562,15 @@ async function drawRentTicket() {
   // Ждём шрифты, чтобы Inter не подменялся системным при первом рендере
   try {
     await Promise.all([
-      document.fonts.load('800 100px Inter'),
-      document.fonts.load('700 68px Inter'),
-      document.fonts.load('700 30px Inter'),
+      document.fonts.load('800 118px Inter'),
+      document.fonts.load('800 60px Inter'),
+      document.fonts.load('700 44px Inter'),
+      document.fonts.load('700 40px Inter'),
+      document.fonts.load('700 36px Inter'),
+      document.fonts.load('600 30px Inter'),
       document.fonts.load('600 26px Inter'),
-      document.fonts.load('500 20px Inter'),
-      document.fonts.load('400 22px Inter')
+      document.fonts.load('600 23px Inter'),
+      document.fonts.load('400 30px Inter')
     ]);
   } catch (e) {}
 
@@ -3528,9 +3580,9 @@ async function drawRentTicket() {
   ctx.setTransform(2, 0, 0, 2, 0, 0);
   ctx.clearRect(0, 0, RENT_TICKET_W, RENT_TICKET_H);
 
-  const W = RENT_TICKET_W, H = RENT_TICKET_H, PAD = 64;
-  const INK = '#1C1C1C', INK2 = '#454545', MUT = '#8B8B8B', LINE = '#D8D8D6';
-  const AMBER = '#D97706', AMBER_D = '#B45309', AMBER_BG = '#FEF9E7';
+  const W = RENT_TICKET_W, H = RENT_TICKET_H;
+  const INK = '#1C1C1C', INK2 = '#454545', MUT = '#8B8B8B', LINE = '#D0D0CD';
+  const AMBER = '#D97706', AMBER_D = '#B45309', GREEN = '#059669';
 
   // Белый лист со скруглёнными углами: за пределами скругления PNG прозрачен
   ctx.save();
@@ -3542,99 +3594,146 @@ async function drawRentTicket() {
 
   // Фирменная янтарная полоса по верхней кромке
   ctx.fillStyle = AMBER;
-  ctx.fillRect(0, 0, W, 14);
+  ctx.fillRect(0, 0, W, 12);
 
-  // ---- Шапка: метка «АРЕНДА» + название (справа) ----
-  const headY = 74;
-  ctx.font = '700 24px Inter, sans-serif';
-  const tagText = 'АРЕНДА';
-  const tagW = Math.ceil(ctx.measureText(tagText).width) + 52;
-  ctx.fillStyle = AMBER_BG;
-  rtRoundRect(ctx, PAD, headY, tagW, 48, 24); ctx.fill();
-  ctx.strokeStyle = 'rgba(217,119,6,.38)'; ctx.lineWidth = 2;
-  rtRoundRect(ctx, PAD, headY, tagW, 48, 24); ctx.stroke();
-  ctx.fillStyle = AMBER_D;
-  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  ctx.fillText(tagText, PAD + 26, headY + 25);
+  // Двойная рамка «отрывного билета»: внешняя сплошная + внутренняя пунктирная
+  ctx.strokeStyle = INK; ctx.lineWidth = 3;
+  rtRoundRect(ctx, 26, 30, W - 52, H - 60, 28); ctx.stroke();
+  ctx.strokeStyle = LINE; ctx.lineWidth = 1.5; ctx.setLineDash([9, 9]);
+  rtRoundRect(ctx, 38, 42, W - 76, H - 84, 20); ctx.stroke();
+  ctx.setLineDash([]);
 
-  if (fields.title && ev.title) {
-    ctx.font = '700 30px Inter, sans-serif';
-    ctx.fillStyle = INK;
-    ctx.textAlign = 'right';
-    const maxTitleW = W - (PAD + tagW + 20) - PAD - 24;
-    ctx.fillText(rtTruncate(ctx, ev.title, Math.max(120, maxTitleW)), W - PAD, headY + 26);
+  // ---- Логотип «ПЯТНИЦА» ----
+  const logo = await rtLogoImage();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  if (logo && logo.width) {
+    const LW = 500, LH = LW * logo.height / logo.width;
+    ctx.drawImage(logo, (W - LW) / 2, 116, LW, LH);
+  } else {
+    // Запасной вариант, если логотип вдруг не загрузился
+    ctx.font = '800 46px Inter, sans-serif'; ctx.fillStyle = INK;
+    ctx.fillText('ПЯТНИЦА', W / 2, 168);
+    ctx.font = '600 17px Inter, sans-serif'; ctx.fillStyle = INK2; rtSetLS(ctx, '4px');
+    ctx.fillText('ЦЕНТР ПРИТЯЖЕНИЯ', W / 2, 200); rtSetLS(ctx, '0px');
   }
-  ctx.textBaseline = 'alphabetic';
 
-  // ---- Герой: день недели, дата, время (главное на билете) ----
+  // ---- Заголовок билета: линии со звёздами + «ВАША АРЕНДА» ----
+  ctx.font = '700 36px Inter, sans-serif';
+  ctx.fillStyle = AMBER_D; rtSetLS(ctx, '8px');
+  const headText = 'ВАША АРЕНДА';
+  const headW = ctx.measureText(headText).width;
+  ctx.fillText(headText, W / 2, 356);
+  rtSetLS(ctx, '0px');
+  const headL = (W - headW) / 2, headR = (W + headW) / 2, lineY = 344;
+  ctx.strokeStyle = LINE; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(110, lineY); ctx.lineTo(headL - 36, lineY);
+  ctx.moveTo(headR + 36, lineY); ctx.lineTo(W - 110, lineY);
+  ctx.stroke();
+  ctx.fillStyle = AMBER;
+  rtStar(ctx, headL - 20, lineY, 9); rtStar(ctx, headR + 20, lineY, 9);
+
+  // Название события (по чипсу «Название»)
+  if (fields.title && ev.title) {
+    ctx.font = '600 30px Inter, sans-serif'; ctx.fillStyle = INK2;
+    ctx.fillText(rtTruncate(ctx, ev.title, W - 220), W / 2, 428);
+  }
+
+  // ---- Дата: день недели, число с месяцем (главный акцент), год ----
   const d = parseYmd(ev.date);
   const weekday = (DOW_FULL[(d.getDay() + 6) % 7] || '').toUpperCase();
-  const dateMain = `${d.getDate()} ${MONTHS_GEN[d.getMonth()]} ${d.getFullYear()}`;
+  ctx.font = '700 40px Inter, sans-serif'; ctx.fillStyle = AMBER_D; rtSetLS(ctx, '5px');
+  ctx.fillText(weekday, W / 2, 512); rtSetLS(ctx, '0px');
+
+  const dateMain = `${d.getDate()} ${MONTHS_GEN[d.getMonth()]}`;
+  let df = 118;
+  ctx.font = `800 ${df}px Inter, sans-serif`;
+  const w1a = ctx.measureText(dateMain).width;
+  ctx.font = '700 44px Inter, sans-serif';
+  const w2 = ctx.measureText(String(d.getFullYear())).width;
+  if (w1a + 22 + w2 > W - 120) {
+    df = Math.max(64, Math.floor(df * (W - 120) / (w1a + 22 + w2)));
+    ctx.font = `800 ${df}px Inter, sans-serif`;
+  }
+  const w1 = ctx.measureText(dateMain).width;
+  const dateTotal = w1 + 22 + w2, dateX = (W - dateTotal) / 2;
+  ctx.textAlign = 'left'; ctx.fillStyle = INK;
+  ctx.fillText(dateMain, dateX, 646);
+  ctx.font = '700 44px Inter, sans-serif'; ctx.fillStyle = MUT;
+  ctx.fillText(String(d.getFullYear()), dateX + w1 + 22, 646);
+  ctx.textAlign = 'center';
+
+  // ---- Время: крупная янтарная плашка ----
   const endT = ev.endTime && toMin(ev.endTime) > toMin(ev.time) ? ev.endTime : '';
   const timeText = endT ? `${ev.time} — ${endT}` : (ev.time || '');
-
-  ctx.textAlign = 'center';
-  ctx.font = '700 24px Inter, sans-serif';
-  ctx.fillStyle = AMBER_D;
-  ctx.fillText(weekday.split('').join(' '), W / 2, 212);
-
-  ctx.font = '700 68px Inter, sans-serif';
-  ctx.fillStyle = INK;
-  ctx.fillText(dateMain, W / 2, 292);
-
-  ctx.font = `800 ${timeText.length > 14 ? 84 : 100}px Inter, sans-serif`;
-  ctx.fillText(timeText, W / 2, 400);
-
-  ctx.fillStyle = AMBER;
-  rtRoundRect(ctx, W / 2 - 70, 428, 140, 8, 4); ctx.fill();
+  if (timeText) {
+    let tf = timeText.length > 13 ? 48 : 60;
+    ctx.font = `800 ${tf}px Inter, sans-serif`;
+    let tw = ctx.measureText(timeText).width;
+    while (tw + 110 > W - 176 && tf > 34) {
+      tf -= 4; ctx.font = `800 ${tf}px Inter, sans-serif`;
+      tw = ctx.measureText(timeText).width;
+    }
+    const bandW = Math.max(340, tw + 110);
+    ctx.fillStyle = AMBER;
+    rtRoundRect(ctx, (W - bandW) / 2, 716, bandW, 116, 28); ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(timeText, W / 2, 795);
+  }
 
   // ---- Перфорация: пунктир + прозрачные «проколы» по краям ----
-  const perfY = 512;
-  ctx.strokeStyle = LINE; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.setLineDash([2, 14]);
-  ctx.beginPath(); ctx.moveTo(PAD, perfY); ctx.lineTo(W - PAD, perfY); ctx.stroke();
+  const perfY = 902;
+  ctx.strokeStyle = '#C9C9C6'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.setLineDash([3, 16]);
+  ctx.beginPath(); ctx.moveTo(14, perfY); ctx.lineTo(W - 14, perfY); ctx.stroke();
   ctx.setLineDash([]);
   ctx.globalCompositeOperation = 'destination-out';
-  [0, W].forEach(x => { ctx.beginPath(); ctx.arc(x, perfY, 20, 0, Math.PI * 2); ctx.fill(); });
+  [0, W].forEach(x => { ctx.beginPath(); ctx.arc(x, perfY, 27, 0, Math.PI * 2); ctx.fill(); });
   ctx.globalCompositeOperation = 'source-over';
 
-  // ---- Детали аренды: сетка 2 колонки + заметка на всю ширину ----
-  const main = [];
-  if (fields.price && Number(ev.price) > 0) main.push({ l: 'Сумма', v: money(ev.price), b: true });
-  if (fields.client && ev.rentClientPerson) main.push({ l: 'Арендатор', v: ev.rentClientPerson });
-  if (fields.admin && ev.adminPerson) main.push({ l: 'Администратор', v: ev.adminPerson });
-  if (fields.paid) main.push({ l: 'Оплата', v: ev.isPaid ? 'Оплачено' : 'Оплата при встрече', c: ev.isPaid ? '#059669' : AMBER_D, b: true });
+  // ---- Отрывной корешок: детали аренды крупно, читаемо с телефона ----
+  const grid = [];
+  if (fields.price && Number(ev.price) > 0) grid.push({ l: 'Сумма', v: money(ev.price), b: true });
+  if (fields.client && ev.rentClientPerson) grid.push({ l: 'Арендатор', v: ev.rentClientPerson });
+  if (fields.admin && ev.adminPerson) grid.push({ l: 'Администратор', v: ev.adminPerson });
 
-  const colW = (W - PAD * 2 - 48) / 2;
-  const rowH = 56;
-  let ry = perfY + 62;
-  main.forEach((r, i) => {
-    const x = PAD + (i % 2) * (colW + 48);
-    const yBase = ry + Math.floor(i / 2) * rowH;
-    ctx.textAlign = 'left';
-    ctx.font = '500 20px Inter, sans-serif';
-    ctx.fillStyle = MUT;
-    ctx.fillText(r.l, x, yBase - 26);
-    ctx.font = `${r.b ? '700' : '600'} 26px Inter, sans-serif`;
-    ctx.fillStyle = r.c || INK;
-    ctx.fillText(rtTruncate(ctx, r.v, colW), x, yBase);
+  const PADX = 88, colW = (W - PADX * 2 - 44) / 2, col2X = W - PADX - colW, rowH = 124, startY = 992;
+  ctx.textAlign = 'left';
+  grid.forEach((r, i) => {
+    const x = PADX + (i % 2) * (colW + 44);
+    const labelY = startY + Math.floor(i / 2) * rowH;
+    ctx.font = '600 23px Inter, sans-serif'; ctx.fillStyle = MUT; rtSetLS(ctx, '2px');
+    ctx.fillText(r.l.toUpperCase(), x, labelY); rtSetLS(ctx, '0px');
+    ctx.font = '700 42px Inter, sans-serif'; ctx.fillStyle = INK;
+    ctx.fillText(rtTruncate(ctx, r.v, colW), x, labelY + 48);
   });
 
+  let rowsUsed = Math.ceil(grid.length / 2);
+
+  if (fields.paid) {
+    const labelY = startY + rowsUsed * rowH;
+    ctx.font = '600 23px Inter, sans-serif'; ctx.fillStyle = MUT; rtSetLS(ctx, '2px');
+    ctx.fillText('ОПЛАТА', PADX, labelY); rtSetLS(ctx, '0px');
+    ctx.font = '700 42px Inter, sans-serif';
+    ctx.fillStyle = ev.isPaid ? GREEN : AMBER_D;
+    ctx.fillText(rtTruncate(ctx, ev.isPaid ? 'Оплачено' : 'Оплата при встрече', W - PADX * 2), PADX, labelY + 48);
+    rowsUsed++;
+  }
+
   if (fields.note && ev.note) {
-    const ny = ry + Math.ceil(main.length / 2) * rowH + 8;
-    ctx.textAlign = 'left';
-    ctx.font = '500 20px Inter, sans-serif';
-    ctx.fillStyle = MUT;
-    ctx.fillText('Заметка', PAD, ny - 26);
-    ctx.font = '400 22px Inter, sans-serif';
-    ctx.fillStyle = INK2;
-    ctx.fillText(rtTruncate(ctx, ev.note, W - PAD * 2), PAD, ny);
+    const labelY = startY + rowsUsed * rowH + 10;
+    ctx.font = '600 23px Inter, sans-serif'; ctx.fillStyle = MUT; rtSetLS(ctx, '2px');
+    ctx.fillText('ЗАМЕТКА', PADX, labelY); rtSetLS(ctx, '0px');
+    ctx.font = '400 30px Inter, sans-serif'; ctx.fillStyle = INK2;
+    rtWrap(ctx, ev.note, W - PADX * 2, 2).forEach((line, i) => {
+      ctx.fillText(line, PADX, labelY + 46 + i * 40);
+    });
   }
 
   // ---- Призыв подтвердить дату и время ----
-  ctx.textAlign = 'center';
-  ctx.font = '500 20px Inter, sans-serif';
-  ctx.fillStyle = MUT;
-  ctx.fillText('Проверьте, пожалуйста, дату и время — если всё верно, просто подтвердите', W / 2, H - 42);
+  ctx.textAlign = 'center'; ctx.fillStyle = INK2;
+  ctx.font = '600 26px Inter, sans-serif';
+  ctx.fillText('Проверьте, пожалуйста, дату и время —', W / 2, H - 160);
+  ctx.fillText('если всё верно, просто подтвердите', W / 2, H - 124);
 
   ctx.restore();
 }
