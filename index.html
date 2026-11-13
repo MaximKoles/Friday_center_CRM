@@ -160,6 +160,20 @@ button { cursor: pointer; border: none; background: none; }
 }
 
 /* ===== Свободные слоты под аренду ===== */
+/* Настройки слотов: сетка полей + крупные переключатели (44px тач-цели, 16px — без зума на iOS) */
+.slot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 16px; margin-bottom: 14px; }
+.slot-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.slot-field > label { font-size: 12px; font-weight: 600; color: var(--ink2); }
+.slot-field .inp { width: 100%; min-height: 44px; font-size: 16px; padding: 8px 12px; }
+.slot-field .hint { font-size: 11.5px; line-height: 1.35; color: var(--muted); }
+.slot-field .flex .inp { min-width: 0; }
+.slot-switches { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.slot-switch { display: flex; align-items: flex-start; gap: 10px; padding: 11px 13px; background: var(--subtle); border-radius: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.slot-switch:active { opacity: .8; }
+.slot-switch input[type=checkbox] { width: 20px; height: 20px; flex: none; margin: 1px 0 0; }
+.slot-switch > span { flex: 1; min-width: 0; }
+.slot-switch b { font-size: 13.5px; font-weight: 600; }
+.slot-switch .hint { display: block; font-size: 11.5px; line-height: 1.35; color: var(--ink2); margin-top: 2px; }
 .slot-day-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; margin-bottom: 8px; }
 .slot-day-card.today { border-color: rgba(217,119,6,.4); }
 .slot-pill {
@@ -647,7 +661,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.4.6';
+const APP_VERSION = '1.4.7';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -1194,7 +1208,7 @@ let ui = {
   cloudStatus: 'disconnected', quickBookingOpen: false,
   selectedDayEventId: null, dayGuestFilter: 'all',
   tgPostOpts: { includePrices: true, includeDescriptions: true, includeAddress: true, includeSeats: true },
-  slots: { durH: 2, days: 14, from: getTodayISO(), wStart: '10:00', wEnd: '22:00', gapH: 1, useTrip: false, weekendsOnly: false, merge: true, showInGrid: true }
+  slots: { durH: 2, days: 14, from: getTodayISO(), wStart: '10:00', wEnd: '22:00', gapH: 1, useTrip: false, weekendsOnly: false, merge: true, showInGrid: false }
 };
 
 function seedDatabase() {
@@ -2494,7 +2508,7 @@ function renderMonthView() {
         <div class="flex items-center gap-2 flex-wrap">
           <button class="btn btn-soft btn-sm" onclick="openAddEventModal()">${ic('plus')} Событие</button>
           <button class="btn btn-primary btn-sm" onclick="openFreeSlotsModal()" title="Свободные окна под аренду для клиентов">${ic('clock')} Слоты</button>
-          <button class="btn btn-primary btn-sm" onclick="openTelegramPostModal()">${ic('send')} В Telegram</button>
+          <button class="btn btn-soft btn-sm" onclick="openTelegramPostModal()">${ic('send')} В Telegram</button>
         </div>
       </div>
       ${renderFilterChips()}
@@ -4265,7 +4279,9 @@ function openAddEventModal(fmtId = '', preDate = '', preTime = '', editId = null
   const fmt = fmtId ? db.formats.find(f => f.id === fmtId) : null;
   const initial = draft || ex || {
     title: fmt?.title || '', formatId: fmtId, date: preDate || ui.dayDate || getTodayISO(),
-    time: preTime || '19:00', endTime: '21:00', price: fmt?.defaultPrice || 0,
+    time: preTime || '19:00',
+    endTime: (() => { const [h, m] = (preTime || '19:00').split(':').map(Number); const e = Math.min(h * 60 + m + 120, 23 * 60 + 59); return `${String(Math.floor(e / 60)).padStart(2, '0')}:${String(e % 60).padStart(2, '0')}`; })(),
+    price: fmt?.defaultPrice || 0,
     capacity: fmt?.defaultCapacity || 20, presenceType: fmt?.defaultPresence || 'must', note: '',
     contactPerson: 'Лена', adminPerson: 'Лена', rentClientPerson: '', isPaid: false
   };
@@ -4990,41 +5006,59 @@ function openFreeSlotsModal() {
       <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
     <div class="modal-body">
-      <div class="flex gap-3 flex-wrap" style="margin-bottom:12px">
-        <label class="check" style="gap:6px">Длительность
-          <select class="inp" style="min-height:34px;padding:2px 8px;width:84px" onchange="ui.slots.durH=parseInt(this.value)||2;updateFreeSlotsUI()">
+      <div class="slot-grid">
+        <div class="slot-field">
+          <label>Длительность окна</label>
+          <select class="inp" onchange="ui.slots.durH=parseInt(this.value)||2;updateFreeSlotsUI()">
             ${[2,3,4,5,6,8,10,12].map(h => `<option value="${h}" ${s.durH===h?'selected':''}>${h} ч</option>`).join('')}
           </select>
-        </label>
-        <label class="check" style="gap:6px">Период
-          <select class="inp" style="min-height:34px;padding:2px 8px;width:118px" onchange="ui.slots.days=parseInt(this.value)||14;updateFreeSlotsUI()">
-            ${[7,14,30].map(dd => `<option value="${dd}" ${s.days===dd?'selected':''}>${dd} дней</option>`).join('')}
-          </select>
-        </label>
-        <label class="check" style="gap:6px">С даты
-          <input class="inp" type="date" value="${s.from}" style="min-height:34px;padding:2px 6px;width:146px" onchange="ui.slots.from=this.value||getTodayISO();updateFreeSlotsUI()">
-        </label>
-        <label class="check" style="gap:6px">Часы
-          <input class="inp" type="time" value="${s.wStart}" style="min-height:34px;padding:2px 6px;width:104px" onchange="ui.slots.wStart=this.value||'10:00';updateFreeSlotsUI()">
-          <span class="text-muted">–</span>
-          <input class="inp" type="time" value="${s.wEnd}" style="min-height:34px;padding:2px 6px;width:104px" onchange="ui.slots.wEnd=this.value||'22:00';updateFreeSlotsUI()">
-        </label>
-        <label class="check" style="gap:6px">Перерыв
-          <select class="inp" style="min-height:34px;padding:2px 8px;width:84px" onchange="ui.slots.gapH=parseFloat(this.value);updateFreeSlotsUI()">
+          <span class="hint">Минимальная длина аренды</span>
+        </div>
+        <div class="slot-field">
+          <label>Перерыв</label>
+          <select class="inp" onchange="ui.slots.gapH=parseFloat(this.value);updateFreeSlotsUI()">
             ${[0,1,1.5,2].map(g => `<option value="${g}" ${s.gapH===g?'selected':''}>${g} ч</option>`).join('')}
           </select>
-        </label>
-        <label class="check" title="Обычно отлучки не мешают аренде: на это время можно поставить другого администратора, который откроет помещение">
-          <input type="checkbox" ${s.useTrip?'checked':''} onchange="ui.slots.useTrip=this.checked;updateFreeSlotsUI()">
-          Учитывать отлучки
-        </label>
-        <label class="check" title="Одно большое окно вместо отдельных слотов с шагом 1 ч — список проще воспринимать">
+          <span class="hint">Пауза между занятиями и арендой</span>
+        </div>
+        <div class="slot-field">
+          <label>Период поиска</label>
+          <select class="inp" onchange="ui.slots.days=parseInt(this.value)||14;updateFreeSlotsUI()">
+            ${[7,14,30].map(dd => `<option value="${dd}" ${s.days===dd?'selected':''}>${dd} дней</option>`).join('')}
+          </select>
+          <span class="hint">Сколько дней вперёд показывать</span>
+        </div>
+        <div class="slot-field">
+          <label>С даты</label>
+          <input class="inp" type="date" value="${s.from}" onchange="ui.slots.from=this.value||getTodayISO();updateFreeSlotsUI()">
+          <span class="hint">Первый день поиска</span>
+        </div>
+        <div class="slot-field">
+          <label>Часы работы зала</label>
+          <div class="flex items-center" style="gap:6px">
+            <input class="inp" type="time" value="${s.wStart}" onchange="ui.slots.wStart=this.value||'10:00';updateFreeSlotsUI()">
+            <span class="text-muted">–</span>
+            <input class="inp" type="time" value="${s.wEnd}" onchange="ui.slots.wEnd=this.value||'22:00';updateFreeSlotsUI()">
+          </div>
+          <span class="hint">Когда зал открыт</span>
+        </div>
+      </div>
+      <div class="slot-switches">
+        <label class="slot-switch">
           <input type="checkbox" ${s.merge?'checked':''} onchange="ui.slots.merge=this.checked;updateFreeSlotsUI()">
-          Крупные диапазоны
+          <span><b>Крупные диапазоны</b><span class="hint">Одно окно «10–22» вместо отдельных слотов по часу</span></span>
         </label>
-        <label class="check">
+        <label class="slot-switch">
+          <input type="checkbox" ${s.showInGrid?'checked':''} onchange="ui.slots.showInGrid=this.checked;render();updateFreeSlotsUI()">
+          <span><b>Показывать в сетке Месяца</b><span class="hint">Янтарные блоки свободного времени прямо в календаре</span></span>
+        </label>
+        <label class="slot-switch">
+          <input type="checkbox" ${s.useTrip?'checked':''} onchange="ui.slots.useTrip=this.checked;updateFreeSlotsUI()">
+          <span><b>Учитывать отлучки</b><span class="hint">Отлучки не мешают аренде — зал может открыть другой администратор</span></span>
+        </label>
+        <label class="slot-switch">
           <input type="checkbox" ${s.weekendsOnly?'checked':''} onchange="ui.slots.weekendsOnly=this.checked;updateFreeSlotsUI()">
-          Только выходные
+          <span><b>Только выходные</b><span class="hint">Искать окна только в субботу и воскресенье</span></span>
         </label>
       </div>
       <div class="text-xs text-muted" style="margin-bottom:10px" id="fsCnt"></div>
