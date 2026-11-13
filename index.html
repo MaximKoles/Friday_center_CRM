@@ -667,7 +667,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.6.1';
+const APP_VERSION = '1.6.2';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -5131,11 +5131,14 @@ function buildSlotsImage(list) {
     fsRoundRect(ctx, px, py, pw, ph, 10); ctx.stroke();
     ctx.fillStyle = '#B45309';
     const l1 = `${fmtMin(r.start)}-`, l2 = `-${fmtMin(r.end)}`;
-    let f = 17; ctx.font = `700 ${f}px ${FONT}`;
-    while ((ctx.measureText(l1).width > pw - 14 || ctx.measureText(l2).width > pw - 14) && f > 12) { f--; ctx.font = `700 ${f}px ${FONT}`; }
+    let f = 16; ctx.font = `700 ${f}px ${FONT}`;
+    const tw = Math.max(ctx.measureText(l1).width, ctx.measureText(l2).width);
+    // шрифт подбирается так, чтобы время занимало пилюлю по ширине (две строки — именно ради этого)
+    f = Math.max(12, Math.min(24, Math.floor(f * (pw - 14) / Math.max(tw, 1))));
+    ctx.font = `700 ${f}px ${FONT}`;
     ctx.textAlign = 'center';
-    ctx.fillText(l1, px + pw / 2, py + 15);
-    ctx.fillText(l2, px + pw / 2, py + 37);
+    ctx.fillText(l1, px + pw / 2, py + ph * 0.25);
+    ctx.fillText(l2, px + pw / 2, py + ph * 0.75);
     ctx.textAlign = 'left';
   }
 
