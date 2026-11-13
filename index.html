@@ -172,6 +172,14 @@ button { cursor: pointer; border: none; background: none; }
 .slot-switch input[type=checkbox] { width: 20px; height: 20px; flex: none; margin: 0; }
 .slot-switch > span { flex: 1; min-width: 0; }
 .slot-switch b { font-size: 13px; font-weight: 600; }
+/* Список слотов: карточки дней (2 колонки на широких экранах) + крупные бейджи диапазонов */
+.slot-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; align-items: start; }
+.slot-days .slot-day-card { margin-bottom: 0; }
+.sd-date { font-size: 13px; font-weight: 700; margin-bottom: 7px; display: flex; align-items: center; gap: 8px; }
+.sd-today { font-size: 10.5px; font-weight: 700; color: #B45309; background: #FEF3D9; border-radius: 7px; padding: 2px 7px; }
+.sd-items { display: flex; flex-wrap: wrap; gap: 6px; }
+.slot-pill.big { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: 1 1 100%; font-size: 15px; font-weight: 600; padding: 9px 12px; margin: 0; }
+.slot-pill.big b { font-size: 15.5px; }
 .slot-day-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; margin-bottom: 8px; }
 .slot-day-card.today { border-color: rgba(217,119,6,.4); }
 .slot-pill {
@@ -659,7 +667,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.4.8';
+const APP_VERSION = '1.4.9';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -4896,6 +4904,10 @@ function hrsRu(min) {
   const h = min / 60;
   return h % 1 ? String(h).replace('.', ',') : String(h);
 }
+// Полный формат диапазона: «10:00 - 22:00 · 12 ч»
+function fmtRangeFull(start, end) {
+  return `${fmtMin(start)} - ${fmtMin(end)} · ${hrsRu(end - start)} ч`;
+}
 // Формат даты списка: «14 сентября (ПТ)»
 function fmtDayRu(d) {
   return `${d.getDate()} ${MONTHS_GEN[d.getMonth()]} (${DOW_UP[(d.getDay()+6)%7]})`;
@@ -4978,14 +4990,16 @@ function renderFreeSlotsPreview(list) {
   }
   const todayIso = getTodayISO();
   const merge = !!ui.slots.merge;
-  return list.map(day => `
+  return `<div class="slot-days">` + list.map(day => `
     <div class="slot-day-card ${day.iso === todayIso ? 'today' : ''}">
-      <div class="font-bold" style="font-size:13.5px;margin-bottom:6px">${fmtDayRu(day.date)}${day.iso === todayIso ? ' · сегодня' : ''}</div>
-      <div class="flex flex-wrap" style="margin:-2px 0">
-        ${(merge ? day.windows : day.slots).map(r => `<span class="slot-pill">${fmtRange(r.start, r.end)}${merge ? ` · ${hrsRu(r.end - r.start)} ч` : ''}</span>`).join('')}
+      <div class="sd-date">${fmtDayRu(day.date)}${day.iso === todayIso ? '<span class="sd-today">сегодня</span>' : ''}</div>
+      <div class="sd-items">
+        ${(merge ? day.windows : day.slots).map(r => merge
+          ? `<span class="slot-pill big"><span>${fmtMin(r.start)} - ${fmtMin(r.end)}</span><b>${hrsRu(r.end - r.start)} ч</b></span>`
+          : `<span class="slot-pill">${fmtMin(r.start)} - ${fmtMin(r.end)}</span>`).join('')}
       </div>
     </div>
-  `).join('');
+  `).join('') + `</div>`;
 }
 
 function updateFreeSlotsUI() {
@@ -4996,8 +5010,11 @@ function updateFreeSlotsUI() {
   if (cnt) {
     const merge = !!ui.slots.merge;
     const total = list.reduce((a, d) => a + (merge ? d.windows.length : d.slots.length), 0);
+    const daysWord = `${list.length} ${list.length === 1 ? 'день' : (list.length % 10 === 0 || list.length % 10 >= 5 || (list.length % 100 >= 11 && list.length % 100 <= 14)) ? 'дней' : 'дня'}`;
     cnt.textContent = list.length
-      ? `Найдено ${total} ${merge ? pluralRanges(total) : pluralSlots(total)} в ${list.length} ${list.length === 1 ? 'дне' : 'днях'} · перерыв между арендой и мероприятиями — ${ui.slots.gapH} ч`
+      ? merge
+        ? `Найдено ${total} ${pluralRanges(total)} за ${daysWord} · перерыв между арендой и мероприятиями — ${ui.slots.gapH} ч`
+        : `Найдено ${total} ${pluralSlots(total)} по ${ui.slots.durH} ч за ${daysWord} · перерыв — ${ui.slots.gapH} ч`
       : 'Свободных слотов нет — измените настройки выше';
   }
 }
@@ -5058,11 +5075,9 @@ function buildSlotsText(list) {
   const s = ui.slots;
   const merge = !!s.merge;
   const lines = [`Свободное время под аренду (${s.durH} ч):`];
-  if (!list.length) lines.push('К сожалению, в выбранном периоде свободного времени нет.');
+  if (!list.length) lines.push('К сожалению, в выбранном месяце свободного времени нет.');
   list.forEach(day => {
-    const ranges = (merge ? day.windows : day.slots)
-      .map(r => `${fmtRange(r.start, r.end)}${merge ? ` (${hrsRu(r.end - r.start)} ч)` : ''}`)
-      .join(', ');
+    const ranges = (merge ? day.windows : day.slots).map(r => fmtRangeFull(r.start, r.end)).join(', ');
     lines.push(`${fmtDayRu(day.date)} — ${ranges}`);
   });
   lines.push('');
@@ -5088,15 +5103,26 @@ function fsRoundRect(ctx, x, y, w, h, r) {
 function buildSlotsImage(list) {
   const s = ui.slots;
   const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-  const W = 1080, pad = 44, cardH = 92, cardGap = 12;
-  const rows = Math.max(list.length, 1);
-  const H = 168 + rows * (cardH + cardGap) + 96;
+  const merge = !!s.merge;
+  // Две колонки карточек: на экране телефона текст крупнее, а месяцев два раза больше
+  const W = 1080, pad = 44, colGap = 24;
+  const colW = (W - pad * 2 - colGap) / 2;
+  const itemsOf = day => (merge ? day.windows : day.slots).map(r => fmtRangeFull(r.start, r.end));
+  const cardH = day => {
+    const n = Math.max(itemsOf(day).length, 1);
+    const rows = merge ? n : Math.ceil(n / 2);
+    return 54 + rows * 48 + 12;
+  };
+  const rowHs = [];
+  for (let i = 0; i < list.length; i += 2) rowHs.push(Math.max(cardH(list[i]), list[i + 1] ? cardH(list[i + 1]) : 0));
+  const headH = 152, footH = 88, rowGap = 14;
+  const bodyH = rowHs.reduce((a, b) => a + b + rowGap, 0);
   const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
+  canvas.width = W; canvas.height = Math.max(headH + bodyH + footH, 900);
   const ctx = canvas.getContext('2d');
 
   ctx.fillStyle = '#F4F4F2';
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, W, canvas.height);
 
   const grad = ctx.createLinearGradient(pad, 40, pad + 56, 96);
   grad.addColorStop(0, '#232323'); grad.addColorStop(1, '#4A4A4A');
@@ -5122,99 +5148,71 @@ function buildSlotsImage(list) {
   const mgNote = s.merge ? ' · диапазоны целиком' : '';
   ctx.fillText(`${s.durH} ч · ${dm(fromD)} — ${dm(toD)} · ${s.wStart}–${s.wEnd}${s.gapH ? ` · перерыв ${s.gapH} ч` : ''}${tripNote}${wkNote}${mgNote}`, pad + 74, 94);
 
+  const todayIso = getTodayISO();
+
+  // Пилюля с адаптивным шрифтом, чтобы «10:00 - 22:00 · 12 ч» всегда влезала
+  function pill(px, py, pw, ph, label, fs) {
+    ctx.fillStyle = '#FEF9E7';
+    fsRoundRect(ctx, px, py, pw, ph, 12); ctx.fill();
+    ctx.strokeStyle = 'rgba(217,119,6,.35)';
+    fsRoundRect(ctx, px, py, pw, ph, 12); ctx.stroke();
+    ctx.fillStyle = '#B45309';
+    let f = fs; ctx.font = `700 ${f}px ${FONT}`;
+    while (ctx.measureText(label).width > pw - 22 && f > 15) { f--; ctx.font = `700 ${f}px ${FONT}`; }
+    ctx.textAlign = 'center';
+    ctx.fillText(label, px + pw / 2, py + ph / 2 + 1);
+    ctx.textAlign = 'left';
+  }
+
+  function drawCard(day, x, y) {
+    const h = cardH(day);
+    ctx.fillStyle = '#FFFFFF';
+    fsRoundRect(ctx, x, y, colW, h, 16); ctx.fill();
+    ctx.strokeStyle = day.iso === todayIso ? 'rgba(217,119,6,.55)' : '#E7E7E5';
+    ctx.lineWidth = 1.5;
+    fsRoundRect(ctx, x, y, colW, h, 16); ctx.stroke();
+    ctx.fillStyle = '#1C1C1C';
+    ctx.font = `700 24px ${FONT}`;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(fmtDayRu(day.date) + (day.iso === todayIso ? ' · сегодня' : ''), x + 20, y + 27);
+    let by = y + 54;
+    const items = itemsOf(day);
+    if (merge) {
+      for (const label of items) { pill(x + 20, by, colW - 40, 42, label, 25); by += 48; }
+    } else {
+      const half = (colW - 50) / 2;
+      let cx = x + 20;
+      for (const label of items) {
+        pill(cx, by, half, 42, label, 21);
+        if (cx === x + 20) cx = x + 20 + half + 10; else { cx = x + 20; by += 48; }
+      }
+    }
+    ctx.textAlign = 'left';
+  }
+
   if (!list.length) {
     ctx.fillStyle = '#FFFFFF';
-    fsRoundRect(ctx, pad, 122, W - pad * 2, 88, 18); ctx.fill();
+    fsRoundRect(ctx, pad, headH - 24, W - pad * 2, 88, 18); ctx.fill();
     ctx.fillStyle = '#8B8B8B';
     ctx.font = `600 24px ${FONT}`;
-    ctx.fillText('В выбранном месяце свободных слотов нет', pad + 24, 166);
+    ctx.fillText('В выбранном месяце свободных слотов нет', pad + 24, headH + 20);
     return canvas;
   }
 
-  const todayIso = getTodayISO();
-  let y = 122;
-  list.forEach(day => {
-    ctx.fillStyle = '#FFFFFF';
-    fsRoundRect(ctx, pad, y, W - pad * 2, cardH, 16); ctx.fill();
-    ctx.strokeStyle = day.iso === todayIso ? 'rgba(217,119,6,.55)' : '#E7E7E5';
-    ctx.lineWidth = 1.5;
-    fsRoundRect(ctx, pad, y, W - pad * 2, cardH, 16); ctx.stroke();
+  let y = headH - 6;
+  for (let i = 0; i < list.length; i += 2) {
+    drawCard(list[i], pad, y);
+    if (list[i + 1]) drawCard(list[i + 1], pad + colW + colGap, y);
+    y += rowHs[i / 2] + rowGap;
+  }
 
-    ctx.fillStyle = '#1C1C1C';
-    ctx.font = `700 23px ${FONT}`;
-    ctx.textBaseline = 'middle';
-    const dateLabel = fmtDayRu(day.date);
-    ctx.fillText(dateLabel, pad + 20, y + cardH / 2);
-    const dateW = ctx.measureText(dateLabel).width;
-
-    // Слоты-пилюли, не более двух рядов, остальное — «+N ещё»
-    ctx.font = `700 20px ${FONT}`;
-    const pillX0 = pad + 20 + dateW + 16;
-    const xMax = W - pad - 18;
-    const items = (ui.slots.merge ? day.windows : day.slots).map(r => ({
-      label: `${fmtRange(r.start, r.end)}${ui.slots.merge ? ` · ${hrsRu(r.end - r.start)} ч` : ''}`
-    }));
-    const widths = items.map(it => ctx.measureText(it.label).width + 24);
-    // Предварительный расчёт: сколько рядов займут слоты (для вертикального центрирования)
-    let simQx = pillX0, simRows = 1;
-    for (const w of widths) {
-      if (simQx + w > xMax && simRows < 2) { simRows++; simQx = pillX0; }
-      simQx += w + 10;
-    }
-    const py0 = y + cardH / 2 - (Math.min(simRows, 2) * 40) / 2 + 2;
-    let qx = pillX0, py = py0, row = 0, drawn = 0;
-    for (let i = 0; i < items.length; i++) {
-      const w = widths[i];
-      if (qx + w > xMax) {
-        row++;
-        if (row >= 2) break;
-        py += 40; qx = pillX0;
-      }
-      ctx.fillStyle = '#FEF9E7';
-      fsRoundRect(ctx, qx, py, w, 36, 11); ctx.fill();
-      ctx.strokeStyle = 'rgba(217,119,6,.35)';
-      fsRoundRect(ctx, qx, py, w, 36, 11); ctx.stroke();
-      ctx.fillStyle = '#B45309';
-      ctx.fillText(items[i].label, qx + 12, py + 19);
-      qx += w + 10;
-      drawn++;
-    }
-    if (drawn < items.length) {
-      const more = `+${items.length - drawn} ещё`;
-      const wm = ctx.measureText(more).width + 24;
-      if (qx + wm > xMax && row < 1) { py += 40; qx = pillX0; }
-      ctx.fillStyle = '#F1F1EF';
-      fsRoundRect(ctx, qx, py, wm, 36, 11); ctx.fill();
-      ctx.strokeStyle = '#D8D8D6';
-      fsRoundRect(ctx, qx, py, wm, 36, 11); ctx.stroke();
-      ctx.fillStyle = '#454545';
-      ctx.fillText(more, qx + 12, py + 19);
-    }
-    y += cardH + cardGap;
-  });
-
+  const nowD = new Date();
   ctx.fillStyle = '#8B8B8B';
   ctx.font = `500 20px ${FONT}`;
   ctx.textAlign = 'center';
-  ctx.fillText(`Пятница · актуально на ${dm(new Date())}.${new Date().getFullYear()} · запись у администратора`, W / 2, y + 46);
+  ctx.fillText(`${DOW_FULL[(nowD.getDay()+6)%7]} · актуально на ${dm(nowD)}.${nowD.getFullYear()} · запись у администратора`, W / 2, y + 40);
   ctx.textAlign = 'left';
   return canvas;
-}
-
-async function downloadSlotsImage() {
-  try {
-    const canvas = buildSlotsImage(computeFreeSlots());
-    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-    if (!blob) { toast('Не удалось создать картинку'); return; }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `svobodnoe-vremya-${ymd(new Date())}.png`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-    toast('Картинка скачана — отправьте её клиенту');
-  } catch(e) {
-    toast('Не удалось создать картинку');
-  }
 }
 
 function openTelegramPostModal() {
