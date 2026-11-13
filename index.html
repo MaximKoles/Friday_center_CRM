@@ -457,6 +457,20 @@ textarea.inp { resize: vertical; min-height: 70px; }
 .modal-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .modal-body { padding: 16px 20px; }
 .modal-foot { padding: 14px 20px 18px; position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); z-index: 10; }
+/* Билет аренды: превью картинки */
+.ticket-preview-wrap { border-radius: 16px; padding: 14px; background: repeating-conic-gradient(#F1F1EF 0% 25%, #FFFFFF 0% 50%) 0 0/22px 22px; border: 1px solid var(--line); }
+.ticket-preview-wrap canvas { display: block; width: 100%; height: auto; }
+
+/* Модалка билета: на телефоне превью сверху, чипсы под ним; на компьютере —
+   два столбца, чтобы чипсы и кнопки были видны без прокрутки */
+.rt-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.rt-side { min-width: 0; }
+.rt-fields-block { margin-top: 14px; margin-bottom: 0; }
+@media (min-width: 700px) {
+  .modal.rt-modal { max-width: 780px; }
+  .rt-body { grid-template-columns: 300px minmax(0, 1fr); gap: 22px; align-items: start; }
+  .rt-fields-block { margin-top: 2px; }
+}
 .post-box { background: var(--bg); border-radius: 14px; padding: 16px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; max-height: 48vh; overflow-y: auto; font-family: monospace; border: 1px solid var(--line); }
 
 #dialogRoot { position: fixed; inset: 0; z-index: 150; display: none; }
@@ -572,6 +586,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
     <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
     <symbol id="ic-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
     <symbol id="ic-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="ic-ticket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2" stroke-dasharray="2 2"/><path d="M13 17v2" stroke-dasharray="2 2"/><path d="M13 11v2" stroke-dasharray="2 2"/></symbol>
     <symbol id="ic-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
     <symbol id="ic-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
     <symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
@@ -632,7 +647,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.4.5';
+const APP_VERSION = '1.4.6';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -1051,7 +1066,8 @@ if (window.visualViewport) {
 }
 
 function openModal(html, opts = {}) {
-  MODAL_ROOT.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)requestCloseModal()"><div class="modal ${opts.wide?'modal-wide':''}">${html}</div></div>`;
+  const mCls = ['modal', opts.wide ? 'modal-wide' : '', opts.modalClass || ''].filter(Boolean).join(' ');
+  MODAL_ROOT.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)requestCloseModal()"><div class="${mCls}">${html}</div></div>`;
   MODAL_ROOT.classList.add('open');
   document.body.style.overflow = 'hidden';
   setTimeout(() => { FormGuard.watch(); }, 25);
@@ -2010,6 +2026,7 @@ function openEventMenu(evId, showDelete, btn) {
   pop.innerHTML = `
     <button onclick="closeEventMenu();openAddEventModal('','','','${evId}')">${ic('edit')} Редактировать событие</button>
     <button onclick="closeEventMenu();duplicateEventAction('${evId}')">${ic('copy')} Повторить событие</button>
+    ${isRentEv ? `<button onclick="closeEventMenu();openRentTicketModal('${evId}')">${ic('ticket')} Билет для арендатора</button>` : ''}
     <button onclick="closeEventMenu();copyFilteredGuestList('${evId}')">${ic('list')} Скопировать список гостей</button>
     ${showDelete ? `<div class="ev-menu-sep"></div><button class="danger" onclick="closeEventMenu();confirmDeleteEventAction('${evId}')">${ic('trash')} Удалить событие</button>` : ''}
   `;
@@ -2321,6 +2338,9 @@ function renderEventDetailsCardHtml(activeEv, opts = { isModal: false }) {
             ${activeEv.note ? `<div class="text-sm text-ink2" style="margin-top:8px">${esc(activeEv.note)}</div>` : ''}
           </div>
           <div class="flex items-center gap-2 flex-wrap">
+            <button class="btn btn-soft btn-sm" style="height:34px;min-height:34px;padding:4px 13px" onclick="openRentTicketModal('${activeEv.id}')" title="Картинка-билет с датой и временем — отправить арендатору на подтверждение">
+              ${ic('ticket')} Билет для арендатора
+            </button>
             <button class="pay-pill-btn ${activeEv.isPaid ? 'paid' : 'unpaid'}" style="padding:7px 14px;font-size:12.5px" onclick="toggleRentPayment('${activeEv.id}')">
               ${activeEv.isPaid ? '✓ Аренда оплачена' : '⏳ Отметить оплату'}
             </button>
@@ -3446,6 +3466,385 @@ function toggleRentPayment(id) {
   if (ui.modal?.type === 'event') openEventDetailsModal(id);
   render();
   toast(ev.isPaid ? 'Оплата аренды получена' : 'Отметка оплаты аренды снята');
+}
+
+// ============================================================================
+// БИЛЕТ ДЛЯ АРЕНДАТОРА: генерация PNG-картинки аренды, которую админ отправляет
+// клиенту для подтверждения даты и времени. Перед генерацией чипсами отмечается,
+// какая доп. информация попадёт на картинку. Вертикальный формат под телефон,
+// монохромная «типографическая» вёрстка в стиле логотипа: белое непрозрачное
+// полотно (в Telegram фон и так белеет), двойная рамка отрывного билета,
+// нарисованные дырочки перфорации. Цветовой акцент — только число даты.
+// ============================================================================
+const RENT_TICKET_W = 1000, RENT_TICKET_H = 1680;
+
+// Краткие дни недели для строки даты «14 ноября (сб)» (индекс с понедельника)
+const RENT_TICKET_DOW = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+
+// Логотип «ПЯТНИЦА · центр притяжения» (чёрные чернила на прозрачном фоне),
+// вшит строкой, чтобы билет рисовался мгновенно и работал офлайн без кэша
+const RT_LOGO_SRC = 'data:image/png;base64,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';
+let rtLogoImg = null, rtLogoTried = false;
+function rtLogoImage() {
+  return new Promise(res => {
+    if (rtLogoTried) return res(rtLogoImg);
+    rtLogoTried = true;
+    const img = new Image();
+    img.onload = () => { rtLogoImg = img; res(img); };
+    img.onerror = () => res(null);
+    img.src = RT_LOGO_SRC;
+  });
+}
+
+// Межбуквенный интервал: поддерживается не во всех браузерах — просто пропускаем
+function rtSetLS(ctx, v) { if ('letterSpacing' in ctx) ctx.letterSpacing = v; }
+
+// Перенос текста на строки (не более maxLines, хвост — с многоточием)
+function rtWrap(ctx, text, maxW, maxLines = 2) {
+  const words = String(text ?? '').split(/\s+/).filter(Boolean);
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (cur && ctx.measureText(t).width > maxW) { lines.push(cur); cur = w; }
+    else cur = t;
+  }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    lines[maxLines - 1] = lines[maxLines - 1].trimEnd().replace(/\s+\S*$/, '') + ' …';
+  }
+  return lines;
+}
+const RENT_TICKET_FIELDS_KEY = 'pyatnitsa_rent_ticket_fields_v1';
+const RENT_TICKET_FIELDS = [
+  { id: 'title',  label: 'Название',      def: true },
+  { id: 'price',  label: 'Сумма',         def: true },
+  { id: 'admin',  label: 'Администратор', def: true },
+  { id: 'client', label: 'Арендатор',     def: true },
+  { id: 'paid',   label: 'Статус оплаты', def: false },
+  { id: 'note',   label: 'Заметка',       def: false }
+];
+
+function getRentTicketFields() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(RENT_TICKET_FIELDS_KEY) || '{}') || {}; } catch (e) {}
+  const res = {};
+  RENT_TICKET_FIELDS.forEach(f => { res[f.id] = saved[f.id] === undefined ? f.def : Boolean(saved[f.id]); });
+  return res;
+}
+
+// Есть ли в событии данные для поля: пустое поле на билете не рисуем
+function rentTicketFieldHasData(ev, id) {
+  if (!ev) return false;
+  switch (id) {
+    case 'title':  return Boolean(ev.title);
+    case 'price':  return Number(ev.price) > 0;
+    case 'admin':  return Boolean(ev.adminPerson);
+    case 'client': return Boolean(ev.rentClientPerson);
+    case 'paid':   return true;
+    case 'note':   return Boolean(ev.note);
+    default:       return false;
+  }
+}
+
+function toggleRentTicketField(id) {
+  const fields = getRentTicketFields();
+  fields[id] = !fields[id];
+  try { localStorage.setItem(RENT_TICKET_FIELDS_KEY, JSON.stringify(fields)); } catch (e) {}
+  const chip = document.getElementById(`rtChip_${id}`);
+  if (chip) chip.classList.toggle('on', fields[id]);
+  drawRentTicket();
+}
+
+function openRentTicketModal(evId) {
+  const ev = db.events.find(e => e.id === evId);
+  if (!ev || ev.presenceType !== 'rent') return;
+  ui.modal = { type: 'rentTicket', id: evId };
+
+  const fields = getRentTicketFields();
+  const chipsHtml = RENT_TICKET_FIELDS.map(f => {
+    const has = rentTicketFieldHasData(ev, f.id);
+    return `<button class="chip ${fields[f.id] && has ? 'on' : ''}" id="rtChip_${f.id}" ${has ? '' : 'disabled'} title="${has ? 'Показать или скрыть на билете' : 'В этом событии не заполнено'}" onclick="toggleRentTicketField('${f.id}')">${f.label}</button>`;
+  }).join('');
+  const canShare = typeof navigator.canShare === 'function';
+
+  openModal(`
+    <div class="modal-head flex items-center justify-between gap-3">
+      <div>
+        <div class="modal-title">Билет для арендатора</div>
+        <div class="modal-sub">Картинка для отправки клиенту: он сверит дату и время</div>
+      </div>
+      <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
+    </div>
+    <div class="modal-body rt-body">
+      <div class="ticket-preview-wrap">
+        <canvas id="rentTicketCanvas" width="${RENT_TICKET_W * 2}" height="${RENT_TICKET_H * 2}" style="width:min(100%,340px);margin:0 auto"></canvas>
+      </div>
+      <div class="rt-side">
+        <div class="field rt-fields-block">
+          <label>Дополнительная информация на билете</label>
+          <div class="chips" style="margin:0;gap:6px">${chipsHtml}</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot flex gap-2 justify-end flex-wrap">
+      <button class="btn btn-soft btn-sm" id="rtShareBtn" style="display:${canShare ? '' : 'none'}" onclick="shareRentTicket()">${ic('send')} Отправить…</button>
+      <button class="btn btn-primary btn-sm" onclick="downloadRentTicket()">${ic('download')} Скачать PNG</button>
+    </div>
+  `, { modalClass: 'rt-modal' });
+
+  drawRentTicket();
+}
+
+function rtRoundRect(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function rtTruncate(ctx, text, maxW) {
+  let t = String(text ?? '');
+  if (ctx.measureText(t).width <= maxW) return t;
+  while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+  return t.trimEnd() + '…';
+}
+
+async function drawRentTicket() {
+  const canvas = document.getElementById('rentTicketCanvas');
+  if (!canvas) return;
+  const ev = db.events.find(e => e.id === ui.modal?.id);
+  if (!ev) return;
+  const fields = getRentTicketFields();
+
+  // Ждём шрифты, чтобы Inter не подменялся системным при первом рендере
+  try {
+    await Promise.all([
+      document.fonts.load('800 112px Inter'),
+      document.fonts.load('800 70px Inter'),
+      document.fonts.load('700 44px Inter'),
+      document.fonts.load('700 42px Inter'),
+      document.fonts.load('700 30px Inter'),
+      document.fonts.load('600 22px Inter'),
+      document.fonts.load('500 30px Inter'),
+      document.fonts.load('500 25px Inter'),
+      document.fonts.load('400 30px Inter')
+    ]);
+  } catch (e) {}
+
+  if (!document.getElementById('rentTicketCanvas')) return; // модалку успели закрыть
+
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
+  ctx.clearRect(0, 0, RENT_TICKET_W, RENT_TICKET_H);
+
+  const W = RENT_TICKET_W, H = RENT_TICKET_H;
+  const INK = '#1C1C1C', INK2 = '#454545', MUT = '#6E6E6E', MUT2 = '#8B8B8B', LINE = '#D5D5D2';
+  const AMBER = '#D97706';
+
+  // Полотно полностью непрозрачное: в Telegram прозрачность всё равно белеет,
+  // поэтому перфорация рисуется явными «дырочками», а не вырезами
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, W, H);
+
+  // Двойная рамка «отрывного билета»: внешняя сплошная + внутренняя пунктирная
+  ctx.strokeStyle = INK; ctx.lineWidth = 3;
+  rtRoundRect(ctx, 26, 30, W - 52, H - 60, 28); ctx.stroke();
+  ctx.strokeStyle = LINE; ctx.lineWidth = 1.5; ctx.setLineDash([9, 9]);
+  rtRoundRect(ctx, 38, 42, W - 76, H - 84, 20); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ---- Логотип «ПЯТНИЦА» ----
+  const logo = await rtLogoImage();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  if (logo && logo.width) {
+    const LW = 460, LH = LW * logo.height / logo.width;
+    ctx.drawImage(logo, (W - LW) / 2, 112, LW, LH);
+  } else {
+    // Запасной вариант, если логотип вдруг не загрузился
+    ctx.font = '800 46px Inter, sans-serif'; ctx.fillStyle = INK;
+    ctx.fillText('ПЯТНИЦА', W / 2, 162);
+    ctx.font = '600 17px Inter, sans-serif'; ctx.fillStyle = INK2; rtSetLS(ctx, '4px');
+    ctx.fillText('ЦЕНТР ПРИТЯЖЕНИЯ', W / 2, 194); rtSetLS(ctx, '0px');
+  }
+
+  // ---- Заголовок: — ★ ВАША АРЕНДА ★ — (тихая строка в обрамлении линеек) ----
+  ctx.font = '700 30px Inter, sans-serif';
+  ctx.fillStyle = MUT; rtSetLS(ctx, '8px');
+  const headText = 'ВАША АРЕНДА';
+  const headW = ctx.measureText(headText).width;
+  ctx.fillText(headText, W / 2, 340);
+  rtSetLS(ctx, '0px');
+  const headL = (W - headW) / 2, headR = (W + headW) / 2, lineY = 329;
+  ctx.strokeStyle = LINE; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(118, lineY); ctx.lineTo(headL - 26, lineY);
+  ctx.moveTo(headR + 26, lineY); ctx.lineTo(W - 118, lineY);
+  ctx.stroke();
+
+  // Название события (по чипсу «Название»)
+  if (fields.title && ev.title) {
+    ctx.font = '500 30px Inter, sans-serif'; ctx.fillStyle = INK2;
+    ctx.fillText(rtTruncate(ctx, ev.title, W - 220), W / 2, 406);
+  }
+
+  // ---- Герой: «14 ноября (сб)» + время под ним ----
+  const d = parseYmd(ev.date);
+  const dowShort = RENT_TICKET_DOW[(d.getDay() + 6) % 7] || '';
+  const dateNum = String(d.getDate());
+  const dateMon = ` ${MONTHS_GEN[d.getMonth()]}`;
+  const dowPart = dowShort ? ` (${dowShort.toLowerCase()})` : '';
+
+  // Число даты — единственный цветной элемент билета
+  let df = 112;
+  const fitDate = () => {
+    ctx.font = `800 ${df}px Inter, sans-serif`;
+    const wNum = ctx.measureText(dateNum).width;
+    const wMon = ctx.measureText(dateMon).width;
+    ctx.font = '700 44px Inter, sans-serif';
+    const wDow = ctx.measureText(dowPart).width;
+    return { wNum, wMon, wDow };
+  };
+  let m = fitDate();
+  if (m.wNum + m.wMon + m.wDow > W - 140) {
+    df = Math.max(64, Math.floor(df * (W - 140) / (m.wNum + m.wMon + m.wDow)));
+    m = fitDate();
+  }
+  const dateX = (W - (m.wNum + m.wMon + m.wDow)) / 2;
+  ctx.textAlign = 'left';
+  ctx.font = `800 ${df}px Inter, sans-serif`;
+  ctx.fillStyle = AMBER;
+  ctx.fillText(dateNum, dateX, 628);
+  ctx.fillStyle = INK;
+  ctx.fillText(dateMon, dateX + m.wNum, 628);
+  ctx.font = '700 44px Inter, sans-serif';
+  ctx.fillStyle = MUT2;
+  ctx.fillText(dowPart, dateX + m.wNum + m.wMon, 628);
+  ctx.textAlign = 'center';
+
+  // Время — заметно меньше даты, но по-прежнему крупно
+  const endT = ev.endTime && toMin(ev.endTime) > toMin(ev.time) ? ev.endTime : '';
+  const timeText = endT ? `${ev.time} — ${endT}` : (ev.time || '');
+  if (timeText) {
+    let tf = 70;
+    ctx.font = `800 ${tf}px Inter, sans-serif`;
+    let tw = ctx.measureText(timeText).width;
+    while (tw > W - 200 && tf > 34) {
+      tf -= 4; ctx.font = `800 ${tf}px Inter, sans-serif`;
+      tw = ctx.measureText(timeText).width;
+    }
+    ctx.fillStyle = INK;
+    ctx.fillText(timeText, W / 2, 734);
+  }
+
+  // Короткая черта под временем — точка завершения герой-блока
+  ctx.fillStyle = INK;
+  rtRoundRect(ctx, W / 2 - 60, 764, 120, 7, 3.5); ctx.fill();
+  // ---- Перфорация: пунктир + нарисованные «дырочки» (фон непрозрачный) ----
+  const perfY = 902;
+  ctx.strokeStyle = '#C4C4C4'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.setLineDash([3, 16]);
+  ctx.beginPath(); ctx.moveTo(108, perfY); ctx.lineTo(W - 108, perfY); ctx.stroke();
+  ctx.setLineDash([]);
+  [76, W - 76].forEach(x => {
+    ctx.beginPath(); ctx.arc(x, perfY, 16, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFFFFF'; ctx.fill();
+    ctx.strokeStyle = '#9A9A9A'; ctx.lineWidth = 2.5; ctx.stroke();
+  });
+
+  // ---- Отрывной корешок: детали аренды крупно, читаемо с телефона ----
+  const grid = [];
+  if (fields.price && Number(ev.price) > 0) grid.push({ l: 'Сумма', v: money(ev.price) });
+  if (fields.client && ev.rentClientPerson) grid.push({ l: 'Арендатор', v: ev.rentClientPerson });
+  if (fields.admin && ev.adminPerson) grid.push({ l: 'Администратор', v: ev.adminPerson });
+
+  const PADX = 88, colW = (W - PADX * 2 - 44) / 2, rowH = 124, startY = 992;
+  ctx.textAlign = 'left';
+  grid.forEach((r, i) => {
+    const x = PADX + (i % 2) * (colW + 44);
+    const labelY = startY + Math.floor(i / 2) * rowH;
+    ctx.font = '600 22px Inter, sans-serif'; ctx.fillStyle = MUT2; rtSetLS(ctx, '2.5px');
+    ctx.fillText(r.l.toUpperCase(), x, labelY); rtSetLS(ctx, '0px');
+    ctx.font = '700 42px Inter, sans-serif'; ctx.fillStyle = INK;
+    ctx.fillText(rtTruncate(ctx, r.v, colW), x, labelY + 48);
+  });
+
+  let rowsUsed = Math.ceil(grid.length / 2);
+
+  if (fields.paid) {
+    const labelY = startY + rowsUsed * rowH;
+    ctx.font = '600 22px Inter, sans-serif'; ctx.fillStyle = MUT2; rtSetLS(ctx, '2.5px');
+    ctx.fillText('ОПЛАТА', PADX, labelY); rtSetLS(ctx, '0px');
+    ctx.font = `700 42px Inter, sans-serif`;
+    ctx.fillStyle = ev.isPaid ? INK : MUT;
+    ctx.fillText(rtTruncate(ctx, ev.isPaid ? 'Оплачено' : 'Оплата при встрече', W - PADX * 2), PADX, labelY + 48);
+    rowsUsed++;
+  }
+
+  if (fields.note && ev.note) {
+    const labelY = startY + rowsUsed * rowH + 10;
+    ctx.font = '600 22px Inter, sans-serif'; ctx.fillStyle = MUT2; rtSetLS(ctx, '2.5px');
+    ctx.fillText('ЗАМЕТКА', PADX, labelY); rtSetLS(ctx, '0px');
+    ctx.font = '400 30px Inter, sans-serif'; ctx.fillStyle = INK2;
+    rtWrap(ctx, ev.note, W - PADX * 2, 2).forEach((line, i) => {
+      ctx.fillText(line, PADX, labelY + 46 + i * 40);
+    });
+  }
+
+  // ---- Призыв подтвердить дату и время ----
+  ctx.textAlign = 'center'; ctx.fillStyle = MUT;
+  ctx.font = '500 25px Inter, sans-serif';
+  ctx.fillText('Проверьте, пожалуйста, дату и время —', W / 2, H - 160);
+  ctx.fillText('если всё верно, просто подтвердите', W / 2, H - 124);
+}
+
+function rentTicketFileName(ev) {
+  return `bilet_arendy_${ev.date || ''}${ev.time ? '_' + String(ev.time).replace(':', '-') : ''}.png`;
+}
+
+function rentTicketCanvasBlob() {
+  const canvas = document.getElementById('rentTicketCanvas');
+  if (!canvas) return Promise.resolve(null);
+  return new Promise(res => canvas.toBlob(res, 'image/png'));
+}
+
+function downloadRentTicket() {
+  const ev = db.events.find(e => e.id === ui.modal?.id);
+  if (!ev) return;
+  rentTicketCanvasBlob().then(blob => {
+    if (!blob) { toast('Не удалось создать PNG'); return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = rentTicketFileName(ev);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    toast('Билет сохранён — отправьте его арендатору');
+  });
+}
+
+async function shareRentTicket() {
+  const ev = db.events.find(e => e.id === ui.modal?.id);
+  if (!ev) return;
+  const blob = await rentTicketCanvasBlob();
+  if (!blob) { toast('Не удалось создать PNG'); return; }
+  const file = new File([blob], rentTicketFileName(ev), { type: 'image/png' });
+  if (!(navigator.canShare && navigator.canShare({ files: [file] }))) {
+    toast('Отправка недоступна — скачайте PNG');
+    return;
+  }
+  try {
+    await navigator.share({
+      files: [file],
+      title: ev.title || 'Аренда',
+      text: `Аренда: ${fmtDateFull(ev.date)}, ${ev.time}${ev.endTime ? '–' + ev.endTime : ''}. Проверьте, пожалуйста, дату и время.`
+    });
+  } catch (e) { /* пользователь закрыл окно «Поделиться» — это не ошибка */ }
 }
 
 let acTimer = null;
@@ -5566,7 +5965,24 @@ function openNotificationsModal() {
     meta.content = '#1C1C1C';
     document.head.appendChild(meta);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      // Если страницу контролирует старый SW — при обновлении перезагрузимся
+      const hadController = Boolean(navigator.serviceWorker.controller);
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        // Проверяем обновления: при запуске, при возврате в приложение и раз в час.
+        // Без этого установленное PWA, открытое из памяти, никогда не узнаёт о новой версии
+        const checkUpdate = () => { try { reg.update().catch(() => {}); } catch (e) {} };
+        checkUpdate();
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
+        setInterval(checkUpdate, 60 * 60 * 1000);
+      }).catch(() => {});
+      // Новый service worker перехватил страницу — значит код устарел:
+      // тихо перезагружаемся один раз, чтобы заработала свежая версия
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadController) return; // первая установка — релоад не нужен
+        if (window.__swAutoReloaded) return;
+        window.__swAutoReloaded = true;
+        setTimeout(() => location.reload(), 300);
+      });
     }
   } catch(e) { console.warn('PWA-lite:', e); }
 })();
