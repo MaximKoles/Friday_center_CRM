@@ -667,7 +667,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -1214,7 +1214,7 @@ let ui = {
   cloudStatus: 'disconnected', quickBookingOpen: false,
   selectedDayEventId: null, dayGuestFilter: 'all',
   tgPostOpts: { includePrices: true, includeDescriptions: true, includeAddress: true, includeSeats: true },
-  slots: { durH: 2, gapH: 1, wStart: '10:00', wEnd: '22:00', useTrip: false, weekendsOnly: false, merge: false, showInGrid: false }
+  slots: { durH: 2, gapH: 1, wStart: '10:00', wEnd: '22:00', useTrip: false, weekendsOnly: false, merge: true, showInGrid: false }
 };
 
 function seedDatabase() {
@@ -2547,7 +2547,7 @@ function renderMonthView() {
               ${w.days.map(d => {
                 const dayEvs = evs.filter(e => e.date === d.iso);
                 const gridFree = (ui.slots.showInGrid && d.iso >= getTodayISO())
-                  ? freeRentWindows(d.iso, Math.max(1, parseInt(ui.slots.durH) || 2) * 60, Math.max(0, parseFloat(ui.slots.gapH) || 0) * 60)
+                  ? freeRentWindows(d.iso, 120, Math.max(0, parseFloat(ui.slots.gapH) || 0) * 60) // аренда возможна от 2 ч
                   : [];
                 return `
                   <div class="tt-col">
@@ -4915,7 +4915,7 @@ function fmtDayRu(d) {
 
 function computeFreeSlots() {
   const s = ui.slots;
-  const durMin = Math.max(1, parseInt(s.durH) || 2) * 60;
+  const durMin = 120; // аренда возможна от 2 ч
   const gapMin = Math.max(0, parseFloat(s.gapH) || 0) * 60;
   // Диапазон: выбранный месяц на вкладке «Месяц»; прошедшие дни не показываем
   const todayIso = getTodayISO();
@@ -4986,17 +4986,14 @@ function pluralSlots(n) {
 
 function renderFreeSlotsPreview(list) {
   if (!list.length) {
-    return `<div class="slot-day-card text-muted" style="font-size:13px">В выбранном месяце свободных слотов нет. Попробуйте расширить рабочие часы, уменьшить длительность окна или отключить учёт отлучек.</div>`;
+    return `<div class="slot-day-card text-muted" style="font-size:13px">В выбранном месяце свободных слотов нет. Попробуйте расширить рабочие часы или отключить учёт отлучек.</div>`;
   }
   const todayIso = getTodayISO();
-  const merge = !!ui.slots.merge;
   return `<div class="slot-days">` + list.map(day => `
     <div class="slot-day-card ${day.iso === todayIso ? 'today' : ''}">
       <div class="sd-date">${fmtDayRu(day.date)}${day.iso === todayIso ? '<span class="sd-today">сегодня</span>' : ''}</div>
       <div class="sd-items">
-        ${(merge ? day.windows : day.slots).map(r => merge
-          ? `<span class="slot-pill big"><span>${fmtMin(r.start)} - ${fmtMin(r.end)}</span><b>${hrsRu(r.end - r.start)} ч</b></span>`
-          : `<span class="slot-pill">${fmtMin(r.start)} - ${fmtMin(r.end)}</span>`).join('')}
+        ${day.windows.map(r => `<span class="slot-pill big"><span>${fmtMin(r.start)} - ${fmtMin(r.end)}</span><b>${hrsRu(r.end - r.start)} ч</b></span>`).join('')}
       </div>
     </div>
   `).join('') + `</div>`;
@@ -5008,13 +5005,10 @@ function updateFreeSlotsUI() {
   if (pv) pv.innerHTML = renderFreeSlotsPreview(list);
   const cnt = document.getElementById('fsCnt');
   if (cnt) {
-    const merge = !!ui.slots.merge;
-    const total = list.reduce((a, d) => a + (merge ? d.windows.length : d.slots.length), 0);
+    const total = list.reduce((a, d) => a + d.windows.length, 0);
     const daysWord = `${list.length} ${list.length === 1 ? 'день' : (list.length % 10 === 0 || list.length % 10 >= 5 || (list.length % 100 >= 11 && list.length % 100 <= 14)) ? 'дней' : 'дня'}`;
     cnt.textContent = list.length
-      ? merge
-        ? `Найдено ${total} ${pluralRanges(total)} за ${daysWord} · перерыв между арендой и мероприятиями — ${ui.slots.gapH} ч`
-        : `Найдено ${total} ${pluralSlots(total)} по ${ui.slots.durH} ч за ${daysWord} · перерыв — ${ui.slots.gapH} ч`
+      ? `Найдено ${total} ${pluralRanges(total)} за ${daysWord} · аренда от 2 ч · перерыв ${ui.slots.gapH} ч`
       : 'Свободных слотов нет — измените настройки выше';
   }
 }
@@ -5025,18 +5019,12 @@ function openFreeSlotsModal() {
     <div class="modal-head flex items-start justify-between gap-3">
       <div>
         <div class="modal-title">Свободные слоты под аренду</div>
-        <div class="modal-sub">Свободные окна на выбранный месяц: от ${s.durH} ч с шагом 1 ч, перерыв 1 ч</div>
+        <div class="modal-sub">Свободные окна на выбранный месяц · аренда от 2 ч · перерыв 1 ч</div>
       </div>
       <button class="icon-btn sm" onclick="requestCloseModal()">${ic('x')}</button>
     </div>
     <div class="modal-body">
       <div class="slot-grid">
-        <div class="slot-field">
-          <label>Длительность окна</label>
-          <select class="inp" onchange="ui.slots.durH=parseInt(this.value)||2;updateFreeSlotsUI()">
-            ${[2,3,4,5,6,8,10,12].map(h => `<option value="${h}" ${s.durH===h?'selected':''}>${h} ч</option>`).join('')}
-          </select>
-        </div>
         <div class="slot-field">
           <label>Часы работы зала</label>
           <div class="flex items-center" style="gap:6px">
@@ -5047,10 +5035,6 @@ function openFreeSlotsModal() {
         </div>
       </div>
       <div class="slot-switches">
-        <label class="slot-switch">
-          <input type="checkbox" ${s.merge?'checked':''} onchange="ui.slots.merge=this.checked;updateFreeSlotsUI()">
-          <span><b>Крупные диапазоны</b></span>
-        </label>
         <label class="slot-switch">
           <input type="checkbox" ${s.useTrip?'checked':''} onchange="ui.slots.useTrip=this.checked;updateFreeSlotsUI()">
           <span><b>Учитывать отлучки</b></span>
@@ -5072,12 +5056,10 @@ function openFreeSlotsModal() {
 }
 
 function buildSlotsText(list) {
-  const s = ui.slots;
-  const merge = !!s.merge;
-  const lines = [`Свободное время под аренду (${s.durH} ч):`];
+  const lines = ['Свободное время под аренду (от 2 ч):'];
   if (!list.length) lines.push('К сожалению, в выбранном месяце свободного времени нет.');
   list.forEach(day => {
-    const ranges = (merge ? day.windows : day.slots).map(r => fmtRangeFull(r.start, r.end)).join(', ');
+    const ranges = day.windows.map(r => fmtRangeFull(r.start, r.end)).join(', ');
     lines.push(`${fmtDayRu(day.date)} — ${ranges}`);
   });
   lines.push('');
@@ -5103,22 +5085,17 @@ function fsRoundRect(ctx, x, y, w, h, r) {
 function buildSlotsImage(list) {
   const s = ui.slots;
   const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-  const merge = !!s.merge;
-  // Две колонки карточек: на экране телефона текст крупнее, а месяцев два раза больше
-  const W = 1080, pad = 44, colGap = 24;
-  const colW = (W - pad * 2 - colGap) / 2;
-  const itemsOf = day => (merge ? day.windows : day.slots).map(r => fmtRangeFull(r.start, r.end));
-  const cardH = day => {
-    const n = Math.max(itemsOf(day).length, 1);
-    const rows = merge ? n : Math.ceil(n / 2);
-    return 54 + rows * 48 + 12;
-  };
-  const rowHs = [];
-  for (let i = 0; i < list.length; i += 2) rowHs.push(Math.max(cardH(list[i]), list[i + 1] ? cardH(list[i + 1]) : 0));
-  const headH = 152, footH = 88, rowGap = 14;
-  const bodyH = rowHs.reduce((a, b) => a + b + rowGap, 0);
+  // Сетка календаря: 7 колонок ПН–ВС, весь месяц умещается на экране телефона
+  const W = 1080, pad = 44, gap = 10;
+  const colW = (W - pad * 2 - gap * 6) / 7;
+  const rowH = 172, headH = 152, dowH = 44, footH = 88;
+  const byIso = new Map(list.map(d => [d.iso, d]));
+  const firstD = new Date(ui.year, ui.month, 1);
+  const dow0 = (firstD.getDay() + 6) % 7; // ПН = 0
+  const daysInMonth = new Date(ui.year, ui.month + 1, 0).getDate();
+  const weeks = Math.ceil((dow0 + daysInMonth) / 7);
   const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = Math.max(headH + bodyH + footH, 900);
+  canvas.width = W; canvas.height = Math.max(headH + dowH + weeks * (rowH + gap) + footH, 900);
   const ctx = canvas.getContext('2d');
 
   ctx.fillStyle = '#F4F4F2';
@@ -5137,80 +5114,89 @@ function buildSlotsImage(list) {
   ctx.font = `800 34px ${FONT}`;
   ctx.fillText('Свободные слоты для аренды', pad + 74, 62);
   const todayD = parseYmd(getTodayISO());
-  const monthStartD = new Date(ui.year, ui.month, 1);
-  const fromD = (monthStartD.getFullYear() === todayD.getFullYear() && monthStartD.getMonth() === todayD.getMonth()) ? todayD : monthStartD;
+  const fromD = (firstD.getFullYear() === todayD.getFullYear() && firstD.getMonth() === todayD.getMonth()) ? todayD : firstD;
   const toD = new Date(ui.year, ui.month + 1, 0);
   const dm = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}`;
   ctx.fillStyle = '#8B8B8B';
   ctx.font = `500 21px ${FONT}`;
   const tripNote = s.useTrip ? ' · отлучки учтены' : '';
   const wkNote = s.weekendsOnly ? ' · только выходные' : '';
-  const mgNote = s.merge ? ' · диапазоны целиком' : '';
-  ctx.fillText(`${s.durH} ч · ${dm(fromD)} — ${dm(toD)} · ${s.wStart}–${s.wEnd}${s.gapH ? ` · перерыв ${s.gapH} ч` : ''}${tripNote}${wkNote}${mgNote}`, pad + 74, 94);
+  ctx.fillText(`аренда от 2 ч · ${dm(fromD)} — ${dm(toD)} · ${s.wStart}–${s.wEnd}${s.gapH ? ` · перерыв ${s.gapH} ч` : ''}${tripNote}${wkNote}`, pad + 74, 94);
 
-  const todayIso = getTodayISO();
-
-  // Пилюля с адаптивным шрифтом, чтобы «10:00 - 22:00 · 12 ч» всегда влезала
+  // Пилюля с адаптивным шрифтом
   function pill(px, py, pw, ph, label, fs) {
     ctx.fillStyle = '#FEF9E7';
-    fsRoundRect(ctx, px, py, pw, ph, 12); ctx.fill();
+    fsRoundRect(ctx, px, py, pw, ph, 10); ctx.fill();
     ctx.strokeStyle = 'rgba(217,119,6,.35)';
-    fsRoundRect(ctx, px, py, pw, ph, 12); ctx.stroke();
+    fsRoundRect(ctx, px, py, pw, ph, 10); ctx.stroke();
     ctx.fillStyle = '#B45309';
     let f = fs; ctx.font = `700 ${f}px ${FONT}`;
-    while (ctx.measureText(label).width > pw - 22 && f > 15) { f--; ctx.font = `700 ${f}px ${FONT}`; }
+    while (ctx.measureText(label).width > pw - 16 && f > 13) { f--; ctx.font = `700 ${f}px ${FONT}`; }
     ctx.textAlign = 'center';
     ctx.fillText(label, px + pw / 2, py + ph / 2 + 1);
     ctx.textAlign = 'left';
   }
 
-  function drawCard(day, x, y) {
-    const h = cardH(day);
-    ctx.fillStyle = '#FFFFFF';
-    fsRoundRect(ctx, x, y, colW, h, 16); ctx.fill();
-    ctx.strokeStyle = day.iso === todayIso ? 'rgba(217,119,6,.55)' : '#E7E7E5';
+  const todayIso = getTodayISO();
+
+  // Ячейка дня: число слева сверху, ниже до 3 пилюль «10–22», остальное — «+N»
+  function drawCell(num, x, y, day) {
+    const iso = ymd(new Date(ui.year, ui.month, num));
+    const isToday = iso === todayIso;
+    const isPast = iso < todayIso;
+    ctx.fillStyle = day ? '#FFFFFF' : (isPast ? '#ECECEA' : '#F7F7F5');
+    fsRoundRect(ctx, x, y, colW, rowH, 12); ctx.fill();
+    ctx.strokeStyle = isToday ? 'rgba(217,119,6,.55)' : '#E7E7E5';
     ctx.lineWidth = 1.5;
-    fsRoundRect(ctx, x, y, colW, h, 16); ctx.stroke();
-    ctx.fillStyle = '#1C1C1C';
-    ctx.font = `700 24px ${FONT}`;
+    fsRoundRect(ctx, x, y, colW, rowH, 12); ctx.stroke();
+    ctx.fillStyle = isPast ? '#B9B9B7' : '#1C1C1C';
+    ctx.font = `800 26px ${FONT}`;
     ctx.textBaseline = 'middle';
-    ctx.fillText(fmtDayRu(day.date) + (day.iso === todayIso ? ' · сегодня' : ''), x + 20, y + 27);
-    let by = y + 54;
-    const items = itemsOf(day);
-    if (merge) {
-      for (const label of items) { pill(x + 20, by, colW - 40, 42, label, 25); by += 48; }
-    } else {
-      const half = (colW - 50) / 2;
-      let cx = x + 20;
-      for (const label of items) {
-        pill(cx, by, half, 42, label, 21);
-        if (cx === x + 20) cx = x + 20 + half + 10; else { cx = x + 20; by += 48; }
-      }
+    ctx.fillText(String(num), x + 12, y + 24);
+    if (isToday) {
+      ctx.fillStyle = '#B45309';
+      ctx.font = `700 15px ${FONT}`;
+      ctx.fillText('сегодня', x + 14 + ctx.measureText(String(num)).width + ctx.measureText('00').width, y + 25);
     }
-    ctx.textAlign = 'left';
+    if (!day) return;
+    const labels = day.windows.map(r => `${fmtHr(r.start)}–${fmtHr(r.end)}`);
+    let ly = y + 52;
+    labels.slice(0, 3).forEach(lb => { pill(x + 8, ly, colW - 16, 34, lb, 19); ly += 38; });
+    if (labels.length > 3) {
+      ctx.fillStyle = '#B45309';
+      ctx.font = `700 15px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`+${labels.length - 3} ещё`, x + colW / 2, ly + 12);
+      ctx.textAlign = 'left';
+    }
   }
 
-  if (!list.length) {
+  // Строка дней недели
+  ctx.fillStyle = '#8B8B8B';
+  ctx.font = `700 19px ${FONT}`;
+  ctx.textAlign = 'center';
+  DOW_UP.forEach((wd, i) => ctx.fillText(wd, pad + i * (colW + gap) + colW / 2, headH + 22));
+  ctx.textAlign = 'left';
+
+  if (!list.length && !byIso.size) {
     ctx.fillStyle = '#FFFFFF';
-    fsRoundRect(ctx, pad, headH - 24, W - pad * 2, 88, 18); ctx.fill();
+    fsRoundRect(ctx, pad, headH + dowH + 8, W - pad * 2, 88, 18); ctx.fill();
     ctx.fillStyle = '#8B8B8B';
     ctx.font = `600 24px ${FONT}`;
-    ctx.fillText('В выбранном месяце свободных слотов нет', pad + 24, headH + 20);
+    ctx.fillText('В выбранном месяце свободных слотов нет', pad + 24, headH + dowH + 52);
     return canvas;
   }
 
-  let y = headH - 6;
-  for (let i = 0; i < list.length; i += 2) {
-    drawCard(list[i], pad, y);
-    if (list[i + 1]) drawCard(list[i + 1], pad + colW + colGap, y);
-    y += rowHs[i / 2] + rowGap;
+  for (let num = 1; num <= daysInMonth; num++) {
+    const idx = dow0 + num - 1;
+    drawCell(num, pad + (idx % 7) * (colW + gap), headH + dowH + Math.floor(idx / 7) * (rowH + gap), byIso.get(ymd(new Date(ui.year, ui.month, num))));
   }
 
   const nowD = new Date();
   ctx.fillStyle = '#8B8B8B';
   ctx.font = `500 20px ${FONT}`;
   ctx.textAlign = 'center';
-  ctx.fillText(`${DOW_FULL[(nowD.getDay()+6)%7]} · актуально на ${dm(nowD)}.${nowD.getFullYear()} · запись у администратора`, W / 2, y + 40);
+  ctx.fillText(`${DOW_FULL[(nowD.getDay()+6)%7]} · актуально на ${dm(nowD)}.${nowD.getFullYear()} · запись у администратора`, W / 2, headH + dowH + weeks * (rowH + gap) + 40);
   ctx.textAlign = 'left';
   return canvas;
 }
