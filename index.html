@@ -667,7 +667,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.6.1';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -5123,17 +5123,19 @@ function buildSlotsImage(list) {
   const wkNote = s.weekendsOnly ? ' · только выходные' : '';
   ctx.fillText(`аренда от 2 ч · ${dm(fromD)} — ${dm(toD)} · ${s.wStart}–${s.wEnd}${s.gapH ? ` · перерыв ${s.gapH} ч` : ''}${tripNote}${wkNote}`, pad + 74, 94);
 
-  // Пилюля с адаптивным шрифтом
-  function pill(px, py, pw, ph, label, fs) {
+  // Пилюля диапазона в две строки: «10:00-» / «-22:00» (компактно, с минутами)
+  function drawRange(px, py, pw, ph, r) {
     ctx.fillStyle = '#FEF9E7';
     fsRoundRect(ctx, px, py, pw, ph, 10); ctx.fill();
     ctx.strokeStyle = 'rgba(217,119,6,.35)';
     fsRoundRect(ctx, px, py, pw, ph, 10); ctx.stroke();
     ctx.fillStyle = '#B45309';
-    let f = fs; ctx.font = `700 ${f}px ${FONT}`;
-    while (ctx.measureText(label).width > pw - 16 && f > 13) { f--; ctx.font = `700 ${f}px ${FONT}`; }
+    const l1 = `${fmtMin(r.start)}-`, l2 = `-${fmtMin(r.end)}`;
+    let f = 17; ctx.font = `700 ${f}px ${FONT}`;
+    while ((ctx.measureText(l1).width > pw - 14 || ctx.measureText(l2).width > pw - 14) && f > 12) { f--; ctx.font = `700 ${f}px ${FONT}`; }
     ctx.textAlign = 'center';
-    ctx.fillText(label, px + pw / 2, py + ph / 2 + 1);
+    ctx.fillText(l1, px + pw / 2, py + 15);
+    ctx.fillText(l2, px + pw / 2, py + 37);
     ctx.textAlign = 'left';
   }
 
@@ -5159,14 +5161,13 @@ function buildSlotsImage(list) {
       ctx.fillText('сегодня', x + 14 + ctx.measureText(String(num)).width + ctx.measureText('00').width, y + 25);
     }
     if (!day) return;
-    const labels = day.windows.map(r => `${fmtHr(r.start)}–${fmtHr(r.end)}`);
-    let ly = y + 52;
-    labels.slice(0, 3).forEach(lb => { pill(x + 8, ly, colW - 16, 34, lb, 19); ly += 38; });
-    if (labels.length > 3) {
+    let ly = y + 46;
+    day.windows.slice(0, 2).forEach(r => { drawRange(x + 8, ly, colW - 16, 52, r); ly += 58; });
+    if (day.windows.length > 2) {
       ctx.fillStyle = '#B45309';
-      ctx.font = `700 15px ${FONT}`;
+      ctx.font = `700 12px ${FONT}`;
       ctx.textAlign = 'center';
-      ctx.fillText(`+${labels.length - 3} ещё`, x + colW / 2, ly + 12);
+      ctx.fillText(`+${day.windows.length - 2} ещё`, x + colW / 2, ly + 4);
       ctx.textAlign = 'left';
     }
   }
