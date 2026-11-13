@@ -667,7 +667,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.4.9';
+const APP_VERSION = '1.5.0';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -5064,8 +5064,8 @@ function openFreeSlotsModal() {
       <div id="fsPreview"></div>
     </div>
     <div class="modal-foot flex gap-2 justify-end flex-wrap">
-      <button class="btn" onclick="copyFreeSlotsText()">${ic('copy')} Скопировать список</button>
-      <button class="btn btn-primary" onclick="downloadSlotsImage()">${ic('download')} Скачать картинку</button>
+      <button class="btn" onclick="copyFreeSlotsText()">${ic('copy')} Скопировать</button>
+      ${slotsShareBtn()}
     </div>
   `, { wide: true });
   updateFreeSlotsUI();
@@ -5213,6 +5213,53 @@ function buildSlotsImage(list) {
   ctx.fillText(`${DOW_FULL[(nowD.getDay()+6)%7]} · актуально на ${dm(nowD)}.${nowD.getFullYear()} · запись у администратора`, W / 2, y + 40);
   ctx.textAlign = 'left';
   return canvas;
+}
+
+async function downloadSlotsImage() {
+  try {
+    const canvas = buildSlotsImage(computeFreeSlots());
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    if (!blob) { toast('Не удалось создать картинку'); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `svobodnoe-vremya-${ymd(new Date())}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast('Картинка скачана — отправьте её клиенту');
+  } catch(e) {
+    toast('Не удалось создать картинку');
+  }
+}
+
+async function shareSlotsImage() {
+  try {
+    const list = computeFreeSlots();
+    const canvas = buildSlotsImage(list);
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    if (!blob) { toast('Не удалось создать картинку'); return; }
+    const file = new File([blob], `svobodnoe-vremya-${ymd(new Date())}.png`, { type: 'image/png' });
+    if (!(navigator.canShare && navigator.canShare({ files: [file] }))) {
+      toast('Отправка недоступна — скачайте PNG');
+      downloadSlotsImage();
+      return;
+    }
+    await navigator.share({ files: [file], title: 'Свободные слоты для аренды', text: buildSlotsText(list) });
+  } catch(e) {
+    if (!e || e.name !== 'AbortError') toast('Не удалось открыть меню отправки');
+  }
+}
+
+// На телефоне — «Поделиться» (сразу в Telegram/WhatsApp), на десктопе — «Скачать картинку»
+function slotsShareBtn() {
+  let canFiles = false;
+  try {
+    const probe = new File([new Blob(['x'])], 'probe.png', { type: 'image/png' });
+    canFiles = !!(navigator.canShare && navigator.canShare({ files: [probe] }));
+  } catch(e) {}
+  const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  return isTouch && canFiles
+    ? `<button class="btn btn-primary" onclick="shareSlotsImage()">${ic('send')} Поделиться</button>`
+    : `<button class="btn btn-primary" onclick="downloadSlotsImage()">${ic('download')} Скачать картинку</button>`;
 }
 
 function openTelegramPostModal() {
