@@ -667,7 +667,7 @@ textarea.inp { resize: vertical; min-height: 70px; }
 // ============================================================================
 // ВЕРСИЯ ПРИЛОЖЕНИЯ И РЕПОЗИТОРИЙ GITHUB
 // ============================================================================
-const APP_VERSION = '1.6.2';
+const APP_VERSION = '1.6.3';
 const GITHUB_REPO = 'MaximKoles/Friday_center_CRM';
 const GITHUB_BRANCH = 'main';
 
@@ -2036,6 +2036,9 @@ function closeEventMenu() {
 }
 function openEventMenu(evId, showDelete, btn) {
   if (typeof event !== 'undefined') { event.stopPropagation(); event.preventDefault(); }
+  const ev = db.events.find(e => e.id === evId);
+  if (!ev) return; // событие уже удалено
+  const isRentEv = ev.presenceType === 'rent';
   const wasOpen = document.getElementById('evMenuPop');
   const wasSameBtn = Boolean(wasOpen && btn && evMenuBtnEl === btn);
   closeEventMenu();
